@@ -18,6 +18,12 @@ supabase/.branches/
 # OS files
 .DS_Store
 Thumbs.db
+*.pem
+
+# Next.js
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
 
 .vercel
 .env*

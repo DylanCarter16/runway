@@ -1,5 +1,7 @@
 # Runway
 
+@AGENTS.md
+
 Personal course tracker for Dylan (Waterloo CS, Fall 2026). One user. Runway pulls deadlines, exams, and course info from the places Waterloo scatters them, stores all of it, and makes it easy to find. It also keeps lecture notes, and for courses whose outlines allow AI (STAT 230 this term), adds a Claude-cleaned copy and answers questions about them.
 
 Priorities, in order:
