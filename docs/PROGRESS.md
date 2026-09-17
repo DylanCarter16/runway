@@ -4,23 +4,25 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Now
 
-- **Phase**: S done, 0 not started
-- **Next step**: Phase 0 (Foundation) in this same session
-- **Waiting on Dylan**: nothing blocking Phase 0 yet
+- **Phase**: 0 done
+- **Next step**: Phase 1 (Findability shell), new session
+- **Waiting on Dylan**: nothing blocking Phase 1
 
 ## Project facts (no secrets)
 
 - GitHub repo: https://github.com/DylanCarter16/runway (private)
 - Supabase project ref: <SUPABASE_PROJECT_REF> (name "runway", region ca-central-1) — reused an empty project from an earlier abandoned setup attempt instead of creating a third (free plan caps at 2 active projects; the account's other project, "Prospect", is unrelated and was left untouched)
-- Vercel project: dylancarter16s-projects/runway, GitHub repo auto-connected. Production URL: (Phase 0 fills this in after first deploy)
+- Vercel project: dylancarter16s-projects/runway, GitHub repo auto-connected. Production URL: https://<APP_HOST>
 
 ## Dylan's to-do
 
 - [x] Stopgap calendar: 49 events added by Claude on 2026-09-17 (delete them once Phase 4 sync runs)
 - [ ] SETUP step 0: LEARN feed in Google Calendar, Piazza email settings
 - [x] CS 245 midterm date settled: Quest lists Thursday, Oct 29 only
-- [x] SETUP step 1: setup session started; Phase S done, Phase 0 next
+- [x] SETUP step 1: setup session finished; Phase S and Phase 0 both done
 - [x] Copy `SUPABASE_DB_PASSWORD` from `.env.local` into a password manager (do this now — the CLI has no way to recover a lost DB password, only reset it)
+- [ ] Sign in once at https://<APP_HOST> to confirm the 6-digit code arrives (Supabase's sender allows 2 emails/hour)
+- [ ] Paste the magic-link email template into the Supabase dashboard (Authentication > Emails > Magic Link) — see "Decisions" below; the CLI can't push it on the free plan
 - [ ] SETUP step 4 during Phase 2, step 5 right after it deploys, then step 3
 - [x] Quest schedule read on 2026-09-17; sections seeded in the term config
 - [ ] SETUP step 6 before Phase 3
@@ -60,6 +62,11 @@ Claude Code reads this first in every session and updates it before stopping.
 | 2026-09-17 | Fresh start: mirrored the newer `runway-kit.zip` (with Dylan's Quest sections) over the working folder before Phase S | Dylan asked for a fresh start; the job's sandbox pins the working directory so the folder itself couldn't be deleted, only its contents replaced |
 | 2026-09-17 | Deleted and recreated the GitHub repo `runway` instead of reusing it | It held one leftover commit with no app code, from an earlier abandoned Phase S attempt; Dylan chose delete-and-recreate over force-push or a new name |
 | 2026-09-17 | Reused the existing empty Supabase project `runway` (ref <SUPABASE_PROJECT_REF>) instead of creating a third project | Free plan caps active projects at 2 and the account already had 2 (the other, "Prospect", is unrelated); the schema was already applied out-of-band so `supabase migration repair` marked it as tracked instead of re-running the SQL |
+| 2026-09-17 | `config.toml` no longer declares `auth.email.template.magic_link`; its content lives in `supabase/templates/magic_link.html` for reference only | Supabase's free plan rejects email template pushes when using the default sender ("Email template modification is not available for free tier projects using the default email provider"); Dylan pastes it into the dashboard by hand |
+| 2026-09-17 | `auth.email.otp_length` set to 6 (the hosted project's platform default was 8) | SPEC.md 7 specifies a 6-digit code |
+| 2026-09-17 | Disabled Vercel's SSO deployment protection on the `runway` project | It defaulted to gating every `*.vercel.app` URL (including `/login`) behind Dylan's own Vercel account, which conflicts with the app's single point of access being its own OTP gate |
+| 2026-09-17 | Set the Vercel project's framework preset to Next.js explicitly | It had been created (Phase S) before `package.json` existed, so Vercel locked it to "Other" and served only the static `public/` folder instead of the Next.js server output, 404ing every route until fixed |
+| 2026-09-17 | Pinned `turbopack.root` in `next.config.ts` to the repo directory | A `package-lock.json` in Dylan's home directory (outside any repo) was confusing Turbopack's workspace-root inference |
 
 ## Later
 
@@ -69,6 +76,7 @@ Claude Code reads this first in every session and updates it before stopping.
 
 Newest first. One entry per session: date, phase, model, what changed, commits, open issues, what Dylan must do next.
 
+- 2026-09-17, Phase 0 (Sonnet, background session, same session as Phase S): scaffolded Next.js 16 into the kit, installed the full stack and shadcn/ui, wrote `src/env.ts`, the Supabase server/browser/admin clients, `proxy.ts` (session refresh, route protection), the 6-digit email OTP login gated on `ALLOWED_EMAIL`, America/Toronto time helpers with DST tests, Vitest/Playwright config, and the CI workflow. Deployed to Vercel; fixed two deploy-blocking issues along the way (SSO deployment protection, wrong framework preset from before `package.json` existed). Commit `phase 0: foundation` pushed to `main`. Confirmed live: production URL redirects `/` to `/login`, the login page renders, `select ... not relrowsecurity` still returns no rows. Open issues: Dylan hasn't yet done a real sign-in to confirm the code email arrives, and still needs to paste the magic-link template into the Supabase dashboard by hand (see Decisions). Next: Phase 1 (Findability shell), new session.
 - 2026-09-17, Phase S (Sonnet, background session): fresh-started from the newer kit zip, created the GitHub repo, reused and migrated the Supabase project, generated app secrets, linked Vercel and pushed all env vars. Commit `phase S: setup` pushed to `main`. Open issue: Dylan still needs to copy `SUPABASE_DB_PASSWORD` into a password manager. Next: Phase 0 (Foundation), same session.
 - 2026-09-17, planning (Claude chat): read all four outlines, seeded their dates and policies, added the per-course AI switch, and added 40 more stopgap calendar events (49 total). Schema checks now number 30.
 - 2026-09-17, planning (Claude chat): fixed the CS 251 late policy, added the assignments parser and fixture, added Phase S (automated setup), and switched sign-in to email codes.
