@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!--To edit: 1) folder link to match term, 2) Title of term -->
+
+      <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>CS 251 - Computer Organization and Design</title>
+        
+        <!-- ************************************** -->
+        <!-- MAKE SURE TO EDIT LINK BELOW EACH TERM -->
+        
+        <base href="https://student.cs.uwaterloo.ca/~cs251/F26/">
+        
+        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Work+Sans&display=swap">
+        <link rel="stylesheet" href="course.css">
+        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+          <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+          <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="course.js"></script>
+      </head>
+      <body>
+        <div class="container-fluid header">
+          <div class="logo"><img src="../uwaterloo-logo.svg" title="University of Waterloo"></div>
+          
+          <h1 class="title">CS 251 - Computer Organization and Design</h1>
+        </div>
+    
+        <button type="button" class="nav-button collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </span>
+          navigation
+        </button>
+    
+        <nav id="navbar" class="collapse navbar-collapse navigation" style="overflow-y:scroll!important">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">close</span>
+            <span>&times;</span>
+          </button>
+          
+          <h2>Fall 2026</h2>
+          <ul class="nav">
+              <li id="home"><a href="index.shtml">Home</a></li>
+              
+              <li id="outline"><a href="https://outline.uwaterloo.ca/viewer/view/nve57s" target=outline>Course Outline</a></li>
+
+			  <li id="schedule"><a href="schedule.shtml">Schedule</a></li>
+
+              <li id="contact"><a href="contact.shtml">Who To Contact</a></li>
+              <li id="accommodations"><a href="accommodations.shtml">Accommodations</a></li>
+
+              <li id="piazza"><a href="piazza.shtml">Piazza (course announcements and for questions to instructors)</a></li>
+              <li id="assignments"><a href="assignments.shtml">Assignments</a></li>
+              <li id="protect"><a href="protect/">Lecture Notes and Assignment Solutions</a></li>
+              <li id="examinfo"><a href="examinfo.shtml">Exam Information</a></li>
+              
+              <li id="textbooks"><a href="books.shtml">Textbooks</a></li>
+              <li id="iclicker"><a href="iclicker.shtml">iClicker Information for CS 251</a></li>
+<!--
+              <li id="IA_evals"><a href="IA_evaluations/index.html" target="_blank">IA/ISA Evaluations</a></li>
+-->
+
+              
+          </ul>
+          <h2>RESOURCES</h2>
+          <ul class="nav">
+            <li><a href="https://cs.uwaterloo.ca/" target="_blank">School of Computer Science</a></li>
+            <li><a href="https://cs.uwaterloo.ca/advising" target="_blank">CS Advising</a></li>
+            <li><a href="https://uwaterloo.ca/computer-science-instructional-support-group" target="_blank">Instructional Support Group</a></li>
+            <li><a href="http://steve.hollasch.net/cgindex/coding/ieeefloat.html" target="_blank">Floating point representation</a></li>
+          </ul>
+          <br>
+          <br>
+        </nav>
+    
+        <div class="container-fluid content">
+
+  
+    <input type="hidden" id="selectedMenu" value="home">
+    
+<!--
+    NOTE: move the class "DONE" each week to the <tr> of the end of the week to put a thicker line under that week.
+-->
+<p>
+    This is schedule is tentative. The schedule will be updated throughout the term.<br>
+    </p>
+<table class="schedule">
+<tr>
+    <th>Date</th>
+    <th>Topic</th>
+    <th>Readings (*'ed are optional)</th>
+</tr>
+
+<tr class="week-start week-end " >
+    <td>Sep 10</td>
+    <td>Introduction/overview, admin, ARM.</td>
+    <td> <A HREF="Readings/armOverview.pdf" target=cs251readings>ARM Overview</A>, <A HREF="Readings/ARMsheet1.pdf" target=cs251readings>ARM Reference Sheet</A></td>
+</tr>
+
+<tr class="week-start">
+    <td>Sep 15</td>
+    <td>1st, 2nd, and 3rd simulator examples; performance</td>
+    <td><A HREF="Readings/ch2.html" target=cs251readings>Chapter 2</A>*, <A HREF="Readings/a2-a3.html" target=cs251readings>A2 (Truth tables), A3 (Circuits)</A> </td>
+</tr>
+<tr class="week-end " >
+    <td>Sep 17</td>
+    <td> Logic design, truth tables, minterms, don't cares; Boolean algebra, gates, Transistors through CMOS Not.</td>
+	<td></td>
+</tr>
+
+<tr class="week-start ">
+    <td>Sep 22</td>
+    <td>Finished transistors.  Deriving Truth table, XOR; decoders, muxes. </td>
+    <td><A HREF="Readings/a9.html" target=cs251readings>A9,A64-A66 (Error Correction)</A>*, 
+	<A HREF="Readings/ch4.2.html" target=cs251readings>Section 4.2 (Clocked Circuits)</A>, 
+	</td>
+</tr>
+<tr class="week-end " >
+    <td>Sep 24</td>
+    <td>Clocks and sequential circuits; SR-latch.  D-latch; D-flipflop;  Register file. Started tri-state logic.</td>
+	<td><A HREF="Readings/a7,a8.html">A7,A8 (Latches), A8 (Flip-flops)</td>
+</tr>
+
+<tr class="week-start">
+    <td>Sep 29</td>
+    <td>Tri-state; RAM. FSM; Simple traffic light example; </td>
+	<td>
+	<A HREF="Readings/ch5.2.html" target=cs251readings>Section 5.2 (RAM)</A>,
+	<A HREF="Readings/a9.html" target=cs251readings>Appendix 9 (RAM)</A>
+	</td>
+</tr>
+<tr>
+    <td>Sept 30</td>
+    <td><span style="color:#a00;"><A HREF="assignments/a1.pdf" target=cs251assignments>A1</a> due</span></td>
+</tr>
+<tr class="week-end ">
+    <td>Oct 1</td>
+    <td>Extended traffic light example, extended to pedestrians.  </td>
+	<td>
+	<A HREF="Readings/a10.html" target=cs251readings>Appendix 10 (FSM)</A>
+	</td>
+</tr>
+
+
+<tr class="week-start ">
+    <td>Oct 6</td>
+    <td> Breadboards, chips, building circuits.  Hexidecimal, ASCII.  Data representation, ripple carry adder, Bitwise Operations;  </td>
+	<td>
+	<A HREF="Readings/ch2.4.html" target=cs251readings> Section 2.4 (Binary Numbers)</A>
+	<A HREF="Readings/ch3.2.html" target=cs251readings> Section 3.2 (Binary Arithemtic)</A><br>
+	<A HREF="Readings/ch2.6" target=cs251readings> Section 2.6 (Shifting and Bitwise Operations)</A>
+	<A HREF="Readings/a5.html" target=cs251readings> A5 (1-bit and 64-bit ALUs)</A><br>
+	<A HREF="Readings/ch3.3.html" target=cs251readings> Section 3.3 (Multiplication)</A>
+	</td>
+</tr>
+
+<tr class="week-end DONE" >
+    <td>Oct 8</td>
+    <td> Shifting, ALU; Multiplication. Floating point representation.  </td>
+	<td><A HREF="Readings/ch3.5.html" target=cs251readings> Section 3.5 (Floating Point)</A>, <br>
+	<A HREF="https://booksite.elsevier.com/9780128017333/content/Section%203-12_Hist%20Persp.pdf" target=cs251readings> (Floating Point Historical Perspective)</A>*</td>
+</tr>
+
+<tr class="week-start week-end DONE">
+    <td>Oct 13-15</td>
+    <td><span style="color:#060">Reading week</span></td>
+</tr>
+
+<tr class="week-start ">
+    <td>Oct 20</td>
+    <td>  Floating point addition, multiplication, accuracy. Single cycle computer: introduction.</td>
+    <td> <A HREF="Readings/ch4.1-4.4.html" target=cs251readings>Sections 4.1-4.4 (Single Cycle Datapath--READ THIS)</A></td>
+</tr>
+
+<tr>
+    <td>Oct 22</td>
+    <td>Started Single Cycle Computer Datapath.  Example instructions on datapath</td>
+	<!--
+    <td>Figures: <A HREF="Readings/ADD.pdf" target=cs251readings>ADD</A>
+         <A HREF="Readings/LDUR.pdf" target=cs251readings>LDUR</A>
+         <A HREF="Readings/CBZ.pdf" target=cs251readings>CBZ</A></td>
+-->
+</tr>
+<tr class="week-end ">
+    <td>Oct 23</td>
+    <td><span style="color:#a00;"><A HREF="assignments/a2.pdf" target=cs251assignments>A2</a> due</span></td>
+</tr>
+
+
+
+<tr class="week-start">
+    <td>Oct 27</td>
+    <td>Single Cycle Computer control.  Modifying the datapath.  </td>
+	<td></td>
+</tr>
+<tr class="week-end ">
+    <td>Oct 29</td>
+    <td>Multicycle datapath.  Introduction to pipelined computer.  Pipeline computer datapath.</td>
+    <td><A HREF="Readings/ch4.5.html" target=cs251readings>Section 4.5 (Introduction to Pipelined Computer)</A></td>
+</tr>
+
+<tr class="week-start">
+    <td>Nov 3</td>
+    <td>Pipeline computer datapath, control.  Data hazards, NOPs, Forwarding </td>
+    <td><A HREF="Readings/ch4.6.html" target=cs251readings>Section 4.6 (Pipelined Datapath, Control--READ THIS)</A>
+</tr>
+
+<tr class="week-end ">
+    <td>Nov 5</td>
+    <td>  Review for midterm. Pipeline Stalls.  </td>
+    <A HREF="Readings/ch4.7.html" target=cs251readings>Section 4.7 (Hazard--READ THIS)</A><br>
+     <A HREF="Readings/ch4.8.html" target=cs251readings>Section 4.8 (Control Hazards--READ THIS)</A></td>
+</tr>
+
+
+
+<tr class="week-start">
+    <td>Nov 9</td>
+    <td><span style="color:#a00;"><A HREF="assignments/a3.pdf" target=cs251assignments>A3</a> due</span></td>
+</tr>
+<tr>
+    <td>Nov 10</td>
+    <td>  Control hazards.</td>
+    <td> <A HREF="Readings/ch4.8.html" target=cs251readings>Section 4.8 (Control hazards, branch prediction)</A>
+	</td>
+</tr>
+
+<tr>
+    <td>Nov 12</td>
+    <td><span style="color:#a00">Midterm</span></td>
+</tr>
+
+<tr class="week-end ">
+    <td>Nov 12</td>
+    <td>Assume branch taken, 1-bit branch prediction.  2-bit branch prediction. Timing.  </td>
+	<td>
+	</td> 
+</tr>
+
+<tr class="week-start">
+    <td>Nov 17</td>
+    <td>Code Rearrangement.  Exceptions.  </td>
+    <td> <A HREF="Readings/ch4.9.html" target=cs251readings>Section 4.9 (Exceptions)</A>
+	</td>
+</tr>
+
+<tr >
+    <td>Nov 19</td>
+    <td>  Direct map cache.  Block size cache. 
+	</td>
+    <td> 
+	<A HREF="Readings/ch5.1.html" target=cs251readings>Section 5.1 (Memory Hierarchy)</A><br>
+	    <A HREF="Readings/ch5.3,5.4.html" target=cs251readings>Section 5.3, Section 5.4 (Cache--READ THESE)</A><br>
+    <A HREF="Readings/ch5.2.html" target=cs251readings>Section 5.2 (Memory Technologies)</A>,
+	</td>
+</tr>
+
+<tr class="week-end ">
+    <td>Nov 20</td>
+    <td><span style="color:#a00;"><A HREF="assignments/a4.pdf" target=cs251assignments>A4</a> due</span></td>
+</tr>
+
+<tr class="week-start">
+    <td>Nov 24</td>
+    <td> Array vs linked list code.  Set associative caches.  </td>
+</tr>
+<tr class="week-end DONE">
+    <td>Nov 26</td>
+    <td>Splitting memory address into TAG,Index,Block, and Byte bits.  LRU.  AMAT.  </td>
+</tr>
+
+<tr class="week-start">
+    <td>Nov 30</td>
+    <td><span style="color:#a00;"><A HREF="assignments/a5.pdf" target=cs251assignments>A5</a> due</span></td>
+    </td>
+</tr>
+<tr>
+    <td>Dec 1</td>
+    <td>Virtual Memory</td>
+    <td> <A HREF="Readings/ch5.7.html" target=cs251readings>Section 5.7 (Virtual Memory--READ THIS)</A></td>
+</tr>
+<tr class="week-end ">
+    <td>Dec 3</td>
+    <td>TLB. </td>
+    <td><A HREF="Readings/ch6.html" target=cs251readings>Section 6</A>
+	(very long! only lightly read (skim) most parts)<br>
+    <A HREF="Readings/ch1.4.html" target=cs251readings>Section 1.4 (Some on IO)</A>, 
+    <A HREF="Readings/ch5.2.html" target=cs251readings>Section 5.2 (later parts on IO)</A></td>
+</tr>
+
+
+<tr class="week-start">
+    <td>Dec 7</td>
+    <td>  
+        <span style="color:#a00;"><A HREF="assignments/a6.pdf" target=cs251assignments>A6</a> due</span>
+    </td>
+</tr>
+
+<tr class="week-end DONE">
+    <td>Dec 8</td>
+    <td>x86.   Review for final exam.</td>
+</tr>
+
+<tr class="week-start week-end">
+    <td>TBA</td>
+    <td><span style="color:#a00;"><A HREF="https://student.cs.uwaterloo.ca/~cs251/F25/examinfo.shtml">FINAL EXAM</A></span></td>
+</tr>
+
+</table>
+
+    </div>
+</body>
+
+</html>

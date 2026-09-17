@@ -1,0 +1,32 @@
+{
+  "fixture": "cs251-examinfo-f26.html",
+  "pageUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/examinfo.shtml",
+  "termYear": 2026,
+  "notes": [
+    "Captured 2026-09-15. The page has an old 2022 makeup exam inside an HTML comment. Comments must be ignored.",
+    "Nov 12, 2026 is after the DST change on Nov 1, so Toronto is UTC-05:00 that day.",
+    "'Location: TBA' maps to location null. Seats come from Odyssey a few days before the exam."
+  ],
+  "exams": [
+    {
+      "sourceRef": "cs251:midterm",
+      "kind": "midterm",
+      "title": "Midterm",
+      "startsAt": "2026-11-12T16:30:00-05:00",
+      "endsAt": "2026-11-12T18:20:00-05:00",
+      "durationMinutes": 110,
+      "location": null,
+      "flags": ["location_tba"]
+    },
+    {
+      "sourceRef": "cs251:final",
+      "kind": "final",
+      "title": "Final exam",
+      "startsAt": null,
+      "endsAt": null,
+      "durationMinutes": null,
+      "location": null,
+      "flags": ["date_tba", "location_tba"]
+    }
+  ]
+}

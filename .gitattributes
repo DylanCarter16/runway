@@ -1,0 +1,4 @@
+# LF everywhere; captured fixtures stay byte-for-byte
+* text=auto eol=lf
+tests/fixtures/** -text
+*.sh text eol=lf

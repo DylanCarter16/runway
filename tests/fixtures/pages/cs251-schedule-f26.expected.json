@@ -1,0 +1,116 @@
+{
+  "fixture": "cs251-schedule-f26.html",
+  "pageUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/schedule.shtml",
+  "termYear": 2026,
+  "notes": [
+    "Captured 2026-09-15. Event rows are the ones whose topic cell holds a <span> with color #a00 (deadlines, exams) or #060 (breaks).",
+    "Lecture rows that mention an exam ('Review for midterm', 'Review for final exam') are not events.",
+    "The HTML is malformed in places (missing <td>, stray </td>, unclosed <A>, comments inside rows). Parse with cheerio, not regex over the whole page.",
+    "Dates use both 'Sep' and 'Sept'. Reading week is a range ('Oct 13-15'). The final exam date is 'TBA'.",
+    "The final exam link points at the F25 page. Keep it, and flag it."
+  ],
+  "events": [
+    {
+      "sourceRef": "cs251:A1",
+      "kind": "assignment",
+      "title": "A1",
+      "date": "2026-09-30",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a1.pdf",
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:break:2026-10-13",
+      "kind": "break",
+      "title": "Reading week",
+      "date": "2026-10-13",
+      "endDate": "2026-10-15",
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": null,
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:A2",
+      "kind": "assignment",
+      "title": "A2",
+      "date": "2026-10-23",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a2.pdf",
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:A3",
+      "kind": "assignment",
+      "title": "A3",
+      "date": "2026-11-09",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a3.pdf",
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:midterm",
+      "kind": "midterm",
+      "title": "Midterm",
+      "date": "2026-11-12",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": null,
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:A4",
+      "kind": "assignment",
+      "title": "A4",
+      "date": "2026-11-20",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a4.pdf",
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:A5",
+      "kind": "assignment",
+      "title": "A5",
+      "date": "2026-11-30",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a5.pdf",
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:A6",
+      "kind": "assignment",
+      "title": "A6",
+      "date": "2026-12-07",
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a6.pdf",
+      "flags": []
+    },
+    {
+      "sourceRef": "cs251:final",
+      "kind": "final",
+      "title": "Final exam",
+      "date": null,
+      "endDate": null,
+      "time": null,
+      "timeKnown": false,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F25/examinfo.shtml",
+      "flags": [
+        "date_tba",
+        "link_points_to_other_term"
+      ]
+    }
+  ]
+}

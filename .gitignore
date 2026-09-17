@@ -1,0 +1,20 @@
+# Secrets (the example file stays tracked)
+.env*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# Tool state
+.vercel/
+supabase/.temp/
+supabase/.branches/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,25 @@
+{
+  "fixture": "cs251-assignments-f26.html",
+  "pageUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments.shtml",
+  "termYear": 2026,
+  "notes": [
+    "Captured 2026-09-17. Only A1 is posted so far.",
+    "Rows for A2 to A4 inside an HTML comment are last term's dates. Strip comments before parsing.",
+    "Rows with an empty due date cell (cover page, readings) are not events.",
+    "Due cells look like 'Wednesday September 30 &mdash; 10:00 pm'. Older rows also show '10:00pm' with no space, and '<s>old date</s> new date'. Take the text outside <s> and add the flag date_changed.",
+    "The late policy section hides an old '48 hours late' rule inside a comment. The live rule: late assignments are not accepted without an accommodation."
+  ],
+  "events": [
+    {
+      "sourceRef": "cs251:A1",
+      "kind": "assignment",
+      "title": "A1",
+      "date": "2026-09-30",
+      "endDate": null,
+      "time": "22:00",
+      "timeKnown": true,
+      "sourceUrl": "https://student.cs.uwaterloo.ca/~cs251/F26/assignments/a1.pdf",
+      "flags": []
+    }
+  ]
+}
