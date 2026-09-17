@@ -18,3 +18,7 @@ supabase/.branches/
 # OS files
 .DS_Store
 Thumbs.db
+
+.vercel
+.env*
+.claude/scheduled_tasks.lock

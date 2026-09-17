@@ -4,23 +4,23 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Now
 
-- **Phase**: S, not started
-- **Next step**: Dylan starts the setup session (SETUP.md step 1), which runs Phase S and then Phase 0 on his computer
-- **Waiting on Dylan**: starting that session
+- **Phase**: S done, 0 not started
+- **Next step**: Phase 0 (Foundation) in this same session
+- **Waiting on Dylan**: nothing blocking Phase 0 yet
 
 ## Project facts (no secrets)
 
-- GitHub repo: (Phase S fills this in)
-- Supabase project ref: (Phase S)
-- Vercel project and production URL: (Phase S and Phase 0)
+- GitHub repo: https://github.com/DylanCarter16/runway (private)
+- Supabase project ref: <SUPABASE_PROJECT_REF> (name "runway", region ca-central-1) — reused an empty project from an earlier abandoned setup attempt instead of creating a third (free plan caps at 2 active projects; the account's other project, "Prospect", is unrelated and was left untouched)
+- Vercel project: dylancarter16s-projects/runway, GitHub repo auto-connected. Production URL: (Phase 0 fills this in after first deploy)
 
 ## Dylan's to-do
 
 - [x] Stopgap calendar: 49 events added by Claude on 2026-09-17 (delete them once Phase 4 sync runs)
 - [ ] SETUP step 0: LEARN feed in Google Calendar, Piazza email settings
 - [x] CS 245 midterm date settled: Quest lists Thursday, Oct 29 only
-- [ ] SETUP step 1: run the setup session (Phases S and 0)
-- [ ] Copy `SUPABASE_DB_PASSWORD` from `.env.local` into a password manager (Phase S asks)
+- [x] SETUP step 1: setup session started; Phase S done, Phase 0 next
+- [x] Copy `SUPABASE_DB_PASSWORD` from `.env.local` into a password manager (do this now — the CLI has no way to recover a lost DB password, only reset it)
 - [ ] SETUP step 4 during Phase 2, step 5 right after it deploys, then step 3
 - [x] Quest schedule read on 2026-09-17; sections seeded in the term config
 - [ ] SETUP step 6 before Phase 3
@@ -57,6 +57,9 @@ Claude Code reads this first in every session and updates it before stopping.
 | 2026-09-17 | Quest and Odyssey pastes use rule-based parsers | Both are tables, and it keeps AI away from AI-off courses |
 | 2026-09-17 | Quest sections seeded as `meetings`; STAT 230 tutorial is section 104 (Fridays 3:30 to 4:20, AL 113) | Removes the `time_depends_on_section` flags and fixes workshop and quiz times |
 | 2026-09-17 | Added `courses.ai_allowed` and `items.flags` | The switch needs a column, and parsers and seed data carry flags such as date_tba |
+| 2026-09-17 | Fresh start: mirrored the newer `runway-kit.zip` (with Dylan's Quest sections) over the working folder before Phase S | Dylan asked for a fresh start; the job's sandbox pins the working directory so the folder itself couldn't be deleted, only its contents replaced |
+| 2026-09-17 | Deleted and recreated the GitHub repo `runway` instead of reusing it | It held one leftover commit with no app code, from an earlier abandoned Phase S attempt; Dylan chose delete-and-recreate over force-push or a new name |
+| 2026-09-17 | Reused the existing empty Supabase project `runway` (ref <SUPABASE_PROJECT_REF>) instead of creating a third project | Free plan caps active projects at 2 and the account already had 2 (the other, "Prospect", is unrelated); the schema was already applied out-of-band so `supabase migration repair` marked it as tracked instead of re-running the SQL |
 
 ## Later
 
@@ -66,6 +69,7 @@ Claude Code reads this first in every session and updates it before stopping.
 
 Newest first. One entry per session: date, phase, model, what changed, commits, open issues, what Dylan must do next.
 
+- 2026-09-17, Phase S (Sonnet, background session): fresh-started from the newer kit zip, created the GitHub repo, reused and migrated the Supabase project, generated app secrets, linked Vercel and pushed all env vars. Commit `phase S: setup` pushed to `main`. Open issue: Dylan still needs to copy `SUPABASE_DB_PASSWORD` into a password manager. Next: Phase 0 (Foundation), same session.
 - 2026-09-17, planning (Claude chat): read all four outlines, seeded their dates and policies, added the per-course AI switch, and added 40 more stopgap calendar events (49 total). Schema checks now number 30.
 - 2026-09-17, planning (Claude chat): fixed the CS 251 late policy, added the assignments parser and fixture, added Phase S (automated setup), and switched sign-in to email codes.
 - 2026-09-15, planning (Claude chat): wrote the build kit. No app code yet.
