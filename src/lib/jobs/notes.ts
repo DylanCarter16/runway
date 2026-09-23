@@ -1,5 +1,5 @@
 import 'server-only';
-import { callClaudeText } from '@/lib/ai/client';
+import { callClaude, callClaudeText, type AiDeps, type ClaudeRequest } from '@/lib/ai/client';
 import { AiNotAllowedError } from '@/lib/ai/switch';
 import { createAdminClient } from '@/lib/db/admin';
 import { cleanPart, finishCleanup, planCleanup, type CleanupNote } from '@/lib/notes/cleanup';
@@ -7,7 +7,7 @@ import { noteMetadata } from '@/lib/notes/meta';
 import { rebuildNoteChunks } from '@/lib/notes/store';
 import { toTorontoDate } from '@/lib/time';
 import { JOB_REMINDERS } from './gcal';
-import { aiConfigured, liveAiDeps, liveClaude, monthSpendUsd, overBudget } from './ai';
+import { aiConfigured, liveAiDeps, monthSpendUsd, overBudget } from './ai';
 import { insertProposals, loadPlannerContext } from './inbox';
 import { enqueue, type Admin, type Job, type JobHandler } from './queue';
 
@@ -74,13 +74,19 @@ async function readNote(admin: Admin, job: Job, noteId: string) {
   return data;
 }
 
-async function aiBlocked(admin: Admin, userId: string): Promise<string | null> {
-  if (!aiConfigured()) return 'Claude is not set up yet (no API key), so this note has no cleaned copy.';
+/** The Claude transport and whether it is set up; scratch checks swap in recorded responses. */
+export interface NoteAi {
+  deps(admin: Admin): AiDeps;
+  configured(): boolean;
+}
+
+async function aiBlocked(ai: NoteAi, admin: Admin, userId: string): Promise<string | null> {
+  if (!ai.configured()) return 'Claude is not set up yet (no API key), so this note has no cleaned copy.';
   if (overBudget(await monthSpendUsd(admin, userId))) return "This month's AI budget is spent, so this note has no cleaned copy.";
   return null;
 }
 
-const cleanupHandler: JobHandler = async (admin, job) => {
+const cleanupHandler = (ai: NoteAi): JobHandler => async (admin, job) => {
   const payload = job.payload as unknown as CleanupPayload;
   if (!payload?.noteId) throw new Error('Job has no noteId.');
   const note = await readNote(admin, job, payload.noteId);
@@ -98,7 +104,7 @@ const cleanupHandler: JobHandler = async (admin, job) => {
     throw e;
   }
 
-  const blocked = await aiBlocked(admin, job.user_id);
+  const blocked = await aiBlocked(ai, admin, job.user_id);
   if (blocked) {
     await admin.from('notes').update({ cleanup_status: 'failed', cleanup_error: blocked }).eq('id', note.id);
     await rebuildNoteChunks(admin, note);
@@ -106,7 +112,7 @@ const cleanupHandler: JobHandler = async (admin, job) => {
   }
 
   const { data: settings } = await admin.from('settings').select('note_style_prompt').eq('user_id', job.user_id).maybeSingle();
-  const deps = liveAiDeps(admin);
+  const deps = ai.deps(admin);
   const done = [...(payload.done ?? [])];
   let model = payload.model ?? '';
   const started = Date.now();
@@ -168,14 +174,14 @@ const cleanupHandler: JobHandler = async (admin, job) => {
   await enqueue(admin, metaJob(job.user_id, note.id, warnings));
 };
 
-const metaHandler: JobHandler = async (admin, job) => {
+const metaHandler = (ai: NoteAi): JobHandler => async (admin, job) => {
   const { noteId, warnings = [] } = job.payload as { noteId?: string; warnings?: string[] };
   if (!noteId) throw new Error('Job has no noteId.');
   const note = await readNote(admin, job, noteId);
   if (!note) return;
   const ctx = await loadPlannerContext(admin, job.user_id);
   if (!ctx.courses.find((c) => c.id === note.course_id)?.ai_allowed) return;
-  if (await aiBlocked(admin, job.user_id)) return;
+  if (await aiBlocked(ai, admin, job.user_id)) return;
 
   const meta = await noteMetadata(
     {
@@ -189,7 +195,7 @@ const metaHandler: JobHandler = async (admin, job) => {
       today: toTorontoDate(new Date()),
       term: ctx.term,
     },
-    liveClaude(admin),
+    <T>(req: ClaudeRequest<T>) => callClaude(ai.deps(admin), req),
   );
   const { error } = await admin
     .from('notes')
@@ -206,7 +212,8 @@ const metaHandler: JobHandler = async (admin, job) => {
   await insertProposals(admin, job.user_id, { noteId: note.id }, meta.proposals);
 };
 
-export const NOTE_HANDLERS: Record<string, JobHandler> = {
-  [JOB_NOTE_CLEANUP]: cleanupHandler,
-  [JOB_NOTE_META]: metaHandler,
-};
+export function makeNoteHandlers(ai: NoteAi): Record<string, JobHandler> {
+  return { [JOB_NOTE_CLEANUP]: cleanupHandler(ai), [JOB_NOTE_META]: metaHandler(ai) };
+}
+
+export const NOTE_HANDLERS = makeNoteHandlers({ deps: liveAiDeps, configured: aiConfigured });
