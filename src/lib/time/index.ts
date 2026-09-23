@@ -114,3 +114,8 @@ export function formatAgo(date: Date, now: Date): string {
   if (diff < 7 * 24 * HOUR) return `${plural(Math.floor(diff / (24 * HOUR)), 'day')} ago`;
   return formatListDate(date);
 }
+
+/** ISO 8601 with the Toronto offset for that date: "2026-11-12T16:30:00-05:00". */
+export function torontoIso(date: string, time: string): string {
+  return formatInTimeZone(fromTorontoLocal(date, time), TIME_ZONE, "yyyy-MM-dd'T'HH:mm:ssXXX");
+}
