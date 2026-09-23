@@ -72,14 +72,14 @@ export async function loadReviewGroups(supabase: Supabase, courses: Course[], op
       }
     }
 
-    const from = doc ? 'From your paste' : `From ${sourceLabel(payload.source ?? 'paste')}`;
+    const from = doc ? 'From your paste' : p.source_note_id ? 'From your lecture notes' : `From ${sourceLabel(payload.source ?? 'paste')}`;
     const card: ReviewCard = {
       ...text,
       id: p.id,
       courseColor: course?.color ?? null,
       evidence: p.evidence,
       sourceLine: `${from}, ${formatAgo(new Date(p.created_at), now)}`,
-      sourceHref: doc ? `/library/${doc.id}` : target ? `/items/${target.id}` : null,
+      sourceHref: doc ? `/library/${doc.id}` : p.source_note_id ? `/notes/${p.source_note_id}` : target ? `/items/${target.id}` : null,
       edit,
     };
 
@@ -89,7 +89,7 @@ export async function loadReviewGroups(supabase: Supabase, courses: Course[], op
       group = {
         key,
         title: doc ? doc.title : p.source_note_id ? 'Lecture notes' : sourceLabel(payload.source ?? 'other'),
-        href: doc ? `/library/${doc.id}` : null,
+        href: doc ? `/library/${doc.id}` : p.source_note_id ? `/notes/${p.source_note_id}` : null,
         documentId: doc?.id ?? null,
         cards: [],
         newest: p.created_at,

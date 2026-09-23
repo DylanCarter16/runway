@@ -1,10 +1,12 @@
 import 'server-only';
 import { callClaudeText } from '@/lib/ai/client';
 import { AiNotAllowedError } from '@/lib/ai/switch';
+import { createAdminClient } from '@/lib/db/admin';
 import { cleanPart, finishCleanup, planCleanup, type CleanupNote } from '@/lib/notes/cleanup';
 import { noteMetadata } from '@/lib/notes/meta';
 import { rebuildNoteChunks } from '@/lib/notes/store';
 import { toTorontoDate } from '@/lib/time';
+import { JOB_REMINDERS } from './gcal';
 import { aiConfigured, liveAiDeps, liveClaude, monthSpendUsd, overBudget } from './ai';
 import { insertProposals, loadPlannerContext } from './inbox';
 import { enqueue, type Admin, type Job, type JobHandler } from './queue';
@@ -38,6 +40,23 @@ export function cleanupJob(userId: string, noteId: string, opts: { replaceEdit?:
     dedupeKey: `notes:cleanup:${noteId}`,
     maxAttempts: 2,
   };
+}
+
+/**
+ * Queues the work a new or changed note needs: cleanup when its course has AI on
+ * (false when one is already queued or running), and a reminders refresh so the
+ * day's lecture-note reminder closes. Returns the admin client for after().
+ */
+export async function enqueueNoteWork(
+  userId: string,
+  noteId: string,
+  opts: { cleanup: boolean; replaceEdit?: boolean; refreshReminders?: boolean },
+): Promise<{ admin: Admin; queued: boolean }> {
+  const admin = createAdminClient();
+  let queued = false;
+  if (opts.cleanup) queued = await enqueue(admin, cleanupJob(userId, noteId, { replaceEdit: opts.replaceEdit }));
+  if (opts.refreshReminders) await enqueue(admin, { userId, type: JOB_REMINDERS, dedupeKey: 'reminders:generate' });
+  return { admin, queued };
 }
 
 function metaJob(userId: string, noteId: string, warnings: string[]) {

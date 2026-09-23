@@ -195,3 +195,53 @@
 .dark [data-course] {
   --course: var(--course-d, var(--graphite));
 }
+
+/* Markdown in the reading font (DESIGN.md: notes, Ask answers, documents). */
+.prose-note {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.65;
+  max-width: 68ch;
+  overflow-wrap: anywhere;
+}
+.prose-note > * + * { margin-top: 0.85em; }
+.prose-note h1, .prose-note h2, .prose-note h3, .prose-note h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.4em;
+}
+.prose-note h1 { font-size: 1.35em; }
+.prose-note h2 { font-size: 1.2em; }
+.prose-note h3, .prose-note h4 { font-size: 1.05em; }
+.prose-note > :first-child { margin-top: 0; }
+.prose-note ul { list-style: disc; padding-left: 1.4em; }
+.prose-note ol { list-style: decimal; padding-left: 1.4em; }
+.prose-note li + li { margin-top: 0.25em; }
+.prose-note a { color: var(--tie); text-decoration: underline; text-underline-offset: 2px; }
+.prose-note blockquote { border-left: 3px solid var(--rule); padding-left: 1em; color: var(--graphite); }
+.prose-note code { font-family: var(--font-mono); font-size: 0.85em; }
+.prose-note :not(pre) > code { background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 0 0.25em; }
+.prose-note pre {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+}
+.prose-note table { border-collapse: collapse; display: block; overflow-x: auto; font-size: 0.9em; }
+.prose-note th, .prose-note td { border: 1px solid var(--rule); padding: 0.3em 0.6em; text-align: left; }
+.prose-note th { font-weight: 600; }
+.prose-note .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.2em 0; }
+.prose-note hr { border-color: var(--rule); }
+
+/* Syntax highlighting (rehype-highlight classes) in the ink palette. */
+.hljs-comment, .hljs-quote { color: var(--graphite); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-type { color: var(--tie); }
+.hljs-string, .hljs-regexp, .hljs-symbol { color: #2E7D4F; }
+.dark .hljs-string, .dark .hljs-regexp, .dark .hljs-symbol { color: #8FD1A8; }
+.hljs-number, .hljs-literal { color: var(--soon); }
+.hljs-title, .hljs-function .hljs-title, .hljs-attr { font-weight: 600; }

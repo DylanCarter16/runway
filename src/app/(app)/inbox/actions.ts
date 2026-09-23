@@ -9,6 +9,7 @@ import { createClient, requireUser } from '@/lib/db/server';
 import type { Json } from '@/lib/db/types';
 import { ApprovalError, approvalEditSchema, planApproval, type ApprovalEdit, type ApprovalWrites } from '@/lib/inbox/apply';
 import { enqueueExtract } from '@/lib/jobs/inbox';
+import { createNote } from '../notes/actions';
 import { runQueuedJobs } from '@/lib/jobs/schedule';
 import { addDaysToDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
 import type { ActionResult } from '../actions';
@@ -66,7 +67,7 @@ export async function pasteText(input: PasteInput): Promise<ActionResult<PasteOu
     supabase.from('notes').select('id, title').eq('content_hash', hash).limit(1).maybeSingle(),
   ]);
   if (doc) return { ok: true, data: { status: 'duplicate', href: `/library/${doc.id}`, label: doc.title } };
-  if (note) return { ok: true, data: { status: 'duplicate', href: '/notes', label: note.title ?? 'a lecture note' } };
+  if (note) return { ok: true, data: { status: 'duplicate', href: `/notes/${note.id}`, label: note.title ?? 'a lecture note' } };
 
   let courseAi = false;
   if (courseId) {
@@ -77,16 +78,9 @@ export async function pasteText(input: PasteInput): Promise<ActionResult<PasteOu
 
   if (kind === 'lecture_notes') {
     if (!courseId) return { ok: false, error: 'Pick a course for lecture notes.' };
-    const { error } = await supabase.from('notes').insert({
-      user_id: user.id,
-      course_id: courseId,
-      lecture_on: toTorontoDate(new Date()),
-      original_md: text,
-      content_hash: hash,
-    });
-    if (error) return { ok: false, error: `Could not save the note: ${error.message}` };
-    revalidatePath('/', 'layout');
-    return { ok: true, data: { status: 'note', href: '/notes' } };
+    const res = await createNote({ courseId, lectureOn: toTorontoDate(new Date()), text });
+    if (!res.ok) return res;
+    return { ok: true, data: { status: 'note', href: `/notes/${res.data.id}` } };
   }
 
   const { data: saved, error } = await supabase
@@ -145,21 +139,15 @@ export async function getPasteStatus(documentId: string): Promise<ActionResult<P
 /** "This looks like lecture notes. Save it as a note?" The document stays in the Library too. */
 export async function saveDocumentAsNote(documentId: string): Promise<ActionResult<{ href: string }>> {
   if (!z.uuid().safeParse(documentId).success) return { ok: false, error: 'Unknown document.' };
-  const user = await requireUser();
+  await requireUser();
   const supabase = await createClient();
-  const { data: doc } = await supabase.from('documents').select('course_id, raw_text, content_hash, captured_at').eq('id', documentId).maybeSingle();
+  const { data: doc } = await supabase.from('documents').select('course_id, raw_text, captured_at').eq('id', documentId).maybeSingle();
   if (!doc) return { ok: false, error: 'Unknown document.' };
   if (!doc.course_id) return { ok: false, error: 'Pick a course for lecture notes.' };
-  const { error } = await supabase.from('notes').insert({
-    user_id: user.id,
-    course_id: doc.course_id,
-    lecture_on: toTorontoDate(new Date(doc.captured_at)),
-    original_md: doc.raw_text,
-    content_hash: doc.content_hash,
-  });
-  if (error && error.code !== '23505') return { ok: false, error: `Could not save the note: ${error.message}` };
+  const res = await createNote({ courseId: doc.course_id, lectureOn: toTorontoDate(new Date(doc.captured_at)), text: doc.raw_text });
+  if (!res.ok) return res;
   revalidatePath('/', 'layout');
-  return { ok: true, data: { href: '/notes' } };
+  return { ok: true, data: { href: `/notes/${res.data.id}` } };
 }
 
 async function applyWrites(supabase: Awaited<ReturnType<typeof createClient>>, writes: ApprovalWrites): Promise<string | null> {

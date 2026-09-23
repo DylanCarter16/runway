@@ -1,24 +1,15 @@
-import Link from 'next/link';
-import { buttonVariants } from '@/components/ui/button';
-import { EmptyState } from '@/components/app/empty-state';
-import { cn } from '@/lib/utils';
+import { NotesList, readNotesFilters } from '@/components/app/notes-list';
+import { getAppContext } from '@/lib/db/queries';
 
 export const metadata = { title: 'Notes' };
 
-export default function NotesPage() {
+export default async function NotesPage({ searchParams }: PageProps<'/notes'>) {
+  const sp = await searchParams;
+  const { supabase, courses } = await getAppContext();
   return (
-    <div className="grid gap-6">
+    <div className="grid max-w-4xl gap-6">
       <h2 className="text-2xl font-semibold">Notes</h2>
-      <EmptyState
-        title="No notes yet."
-        action={
-          <Link href="/notes/new" className={cn(buttonVariants(), 'h-11 sm:h-9')}>
-            Paste notes
-          </Link>
-        }
-      >
-        Paste today&apos;s lecture notes to keep them searchable.
-      </EmptyState>
+      <NotesList supabase={supabase} courses={courses} filters={readNotesFilters(sp, courses)} action="/notes" />
     </div>
   );
 }

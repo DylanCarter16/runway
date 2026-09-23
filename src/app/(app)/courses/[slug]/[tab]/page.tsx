@@ -4,6 +4,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/app/empty-state';
 import { LibraryList, readLibraryFilters } from '@/components/app/library-list';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
+import { NotesList, readNotesFilters } from '@/components/app/notes-list';
 import { DiffLines, type PageDiff } from '@/components/app/page-diff';
 import { getAppContext, getCourseBySlug } from '@/lib/db/queries';
 import { documentKindLabel } from '@/lib/inbox/kinds';
@@ -102,17 +103,7 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
 
     case 'notes':
       return (
-        <EmptyState
-          title={`No notes for ${course.code} yet.`}
-          action={
-            <Link href={`/notes/new?course=${course.slug}`} className={cn(buttonVariants(), 'h-11 sm:h-9')}>
-              Paste notes
-            </Link>
-          }
-        >
-          Paste today&apos;s lecture notes.
-          {course.ai_allowed ? '' : ` They are stored exactly as written; ${course.code} bans generative AI, so no cleaned copy is made.`}
-        </EmptyState>
+        <NotesList supabase={supabase} courses={[course]} filters={readNotesFilters(sp, [course])} action={`/courses/${course.slug}/notes`} fixedCourse={course} />
       );
 
     case 'ask':
