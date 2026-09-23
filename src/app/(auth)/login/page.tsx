@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, type FormEvent } from 'react';
+import { LegalFooter } from '@/components/app/legal-footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { requestCode, verifyCode } from './actions';
@@ -93,6 +94,7 @@ export default function LoginPage() {
           </form>
         )}
       </div>
+      <LegalFooter />
     </main>
   );
 }

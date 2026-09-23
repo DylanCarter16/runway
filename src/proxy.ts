@@ -5,8 +5,10 @@ export async function proxy(request: NextRequest) {
   const { response, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
   const isLoginPage = pathname === '/login';
+  // Privacy and terms are public (Google's OAuth consent screen links to them).
+  const isPublic = pathname === '/privacy' || pathname === '/terms';
 
-  if (!user && !isLoginPage) {
+  if (!user && !isLoginPage && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);

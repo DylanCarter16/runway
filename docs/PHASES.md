@@ -104,6 +104,12 @@ Acceptance
 - Every page works at 390px wide. Keyboard: palette opens with Ctrl/Cmd+K and arrows move through results.
 - Lint, typecheck, test, build pass.
 
+
+Also add two public routes, /privacy and /terms, excluded from the proxy.ts auth
+redirect: a single-user personal app, no data shared with anyone, data stored in
+Supabase and Google Calendar, contact email from ALLOWED_EMAIL, use at your own risk.
+Link both in the footer.
+
 Commit: `phase 1: findability shell`
 
 ---
