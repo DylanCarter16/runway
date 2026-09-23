@@ -42,3 +42,33 @@ export function prepDaysFor(kind: ItemKind, courseSlug: string | null, override?
   const courseValue = courseSlug ? COURSE_PREP_DAYS[courseSlug]?.[kind] : undefined;
   return courseValue ?? DEFAULT_RULES[kind].prepDays;
 }
+
+/** Google Calendar limits: 5 reminder overrides per event, 4 weeks at most. */
+export const MAX_REMINDERS = 5;
+export const MAX_REMINDER_MINUTES = 40320;
+
+/** Settings, Reminders overrides, stored in settings.reminder_rules. */
+export type RuleOverrides = Partial<Record<ItemKind, { prepDays?: number; reminders?: number[] }>>;
+
+/** Valid offsets only, largest first, at most five. */
+export function cleanReminders(minutes: readonly number[]): number[] {
+  const valid = minutes.filter((m) => Number.isInteger(m) && m >= 0 && m <= MAX_REMINDER_MINUTES);
+  return [...new Set(valid)].sort((a, b) => b - a).slice(0, MAX_REMINDERS);
+}
+
+/**
+ * The rule that applies to one item: the item's own fields win, then Settings,
+ * then the course default, then DEFAULT_RULES.
+ */
+export function resolveRule(
+  kind: ItemKind,
+  courseSlug: string | null,
+  overrides: RuleOverrides = {},
+  item: { prep_days?: number | null; reminder_minutes?: number[] | null } = {},
+): Required<Pick<ReminderRule, 'prepDays' | 'reminders'>> & Pick<ReminderRule, 'studyBlocks'> {
+  const base = DEFAULT_RULES[kind];
+  const settings = overrides[kind] ?? {};
+  const prepDays = prepDaysFor(kind, courseSlug, item.prep_days ?? settings.prepDays ?? null);
+  const reminders = cleanReminders(item.reminder_minutes ?? settings.reminders ?? base.reminders);
+  return { prepDays: Math.max(0, prepDays), reminders, studyBlocks: base.studyBlocks };
+}
