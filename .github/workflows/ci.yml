@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SKIP_ENV_VALIDATION: '1'
-      # tsc needs a little over 2 GB (Supabase's typed query strings); Node 20's default heap is about 2 GB.
-      NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,5 +19,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+        env:
+          # tsc needs a little over 2 GB (Supabase's typed query strings); Node 20's default heap is about 2 GB.
+          NODE_OPTIONS: --max-old-space-size=4096
       - run: npm run test
       - run: npm run build
