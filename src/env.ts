@@ -38,11 +38,16 @@ function formatError(scope: string, error: z.ZodError): string {
 
 const skipValidation = process.env.SKIP_ENV_VALIDATION === '1';
 
+/** process.env with empty values dropped, so `KEY=` in .env.local counts as unset. */
+function setVars(): Record<string, string> {
+  return Object.fromEntries(Object.entries(process.env).filter((e): e is [string, string] => Boolean(e[1])));
+}
+
 function parseServer(): z.infer<typeof serverSchema> {
   if (skipValidation) {
     return process.env as unknown as z.infer<typeof serverSchema>;
   }
-  const result = serverSchema.safeParse(process.env);
+  const result = serverSchema.safeParse(setVars());
   if (!result.success) {
     throw new Error(formatError('server', result.error));
   }

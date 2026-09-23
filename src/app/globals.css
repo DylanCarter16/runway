@@ -187,3 +187,11 @@
 .fc-list-event-dot {
   border-color: var(--course) !important;
 }
+
+/* Course colors: set --course-l and --course-d inline with data-course; they mark, never color text. */
+[data-course] {
+  --course: var(--course-l, var(--graphite));
+}
+.dark [data-course] {
+  --course: var(--course-d, var(--graphite));
+}

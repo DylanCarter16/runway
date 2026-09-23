@@ -104,3 +104,13 @@ export function termWeek(startsOn: string, endsOn: string, now: Date): number | 
   const startMonday = addDaysToDate(startsOn, -mondayOffset(startsOn));
   return Math.floor(daysBetweenDates(startMonday, today) / 7) + 1;
 }
+
+/** "just now", "12 min ago", "3 hours ago", "Sep 20". */
+export function formatAgo(date: Date, now: Date): string {
+  const diff = now.getTime() - date.getTime();
+  if (diff < MINUTE) return 'just now';
+  if (diff < HOUR) return `${Math.floor(diff / MINUTE)} min ago`;
+  if (diff < 24 * HOUR) return `${plural(Math.floor(diff / HOUR), 'hour')} ago`;
+  if (diff < 7 * 24 * HOUR) return `${plural(Math.floor(diff / (24 * HOUR)), 'day')} ago`;
+  return formatListDate(date);
+}
