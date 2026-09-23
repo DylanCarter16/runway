@@ -9,6 +9,7 @@ import { AiSwitch } from '@/components/app/ai-switch';
 import { CourseDot } from '@/components/app/course-mark';
 import { LoadTermButton } from '@/components/app/settings-bits';
 import { DisconnectGoogleButton, ReminderRulesForm } from '@/components/app/reminder-controls';
+import { DeleteTermButton } from '@/components/app/data-controls';
 import { FeedControls } from '@/components/app/feed-controls';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
 import { buttonVariants } from '@/components/ui/button';
@@ -548,12 +549,57 @@ export default async function SettingsSection({ params, searchParams }: PageProp
       );
     }
 
-    case 'data':
-      return (
-        <Block title="Export">
-          <p className="text-sm text-muted-foreground">Export to JSON is not built yet. Everything lives in your Supabase project in the meantime.</p>
-        </Block>
+    case 'data': {
+      const [{ data: terms }, { data: termCourses }] = await Promise.all([
+        supabase.from('terms').select('id, name, starts_on').order('starts_on', { ascending: false }),
+        supabase.from('courses').select('id, term_id'),
+      ]);
+      const itemCounts = await Promise.all(
+        (termCourses ?? []).map((c) => supabase.from('items').select('id', { count: 'exact', head: true }).eq('course_id', c.id)),
       );
+      const counts = new Map<string, { courses: number; items: number }>();
+      (termCourses ?? []).forEach((c, i) => {
+        const e = counts.get(c.term_id) ?? { courses: 0, items: 0 };
+        e.courses++;
+        e.items += itemCounts[i].count ?? 0;
+        counts.set(c.term_id, e);
+      });
+      return (
+        <div className="grid gap-6">
+          <Block title="Export">
+            <p className="max-w-prose text-sm text-muted-foreground">
+              Downloads one zip: every deadline, course, link, paste, note, grade, reminder, Ask thread, and change log as JSON, each
+              lecture note as a Markdown file, and any stored files. Connection tokens are left out.
+            </p>
+            <div>
+              <a href="/api/export" download className={cn(buttonVariants(), 'h-11 sm:h-9')}>
+                Download export
+              </a>
+            </div>
+          </Block>
+          <Block title="Delete a term">
+            {terms?.length ? (
+              <ul className="grid gap-4">
+                {terms.map((t) => {
+                  const c = counts.get(t.id) ?? { courses: 0, items: 0 };
+                  return (
+                    <li key={t.id} className="grid gap-2">
+                      <p className="text-sm tabular">
+                        <span className="font-semibold">{t.name}</span>: {c.courses} {c.courses === 1 ? 'course' : 'courses'}, {c.items}{' '}
+                        {c.items === 1 ? 'item' : 'items'}
+                      </p>
+                      <DeleteTermButton termId={t.id} name={t.name} courses={c.courses} items={c.items} />
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No terms stored.</p>
+            )}
+          </Block>
+        </div>
+      );
+    }
   }
   notFound();
 }

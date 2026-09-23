@@ -259,3 +259,30 @@ export async function savePiazzaMap(input: { map: Record<string, string> }): Pro
   revalidatePath('/settings', 'layout');
   return { ok: true, data: { moved } };
 }
+
+const deleteTermSchema = z.object({ termId: z.uuid(), confirmName: z.string().max(200) });
+
+/**
+ * Settings, Data: delete a term with its courses, and through them its items, links,
+ * grades, reminders, and watched pages. Notes and pasted documents stay (they lose
+ * their course). Needs the term's name typed out.
+ */
+export async function deleteTerm(input: z.infer<typeof deleteTermSchema>): Promise<ActionResult<{ courses: number; items: number }>> {
+  const parsed = deleteTermSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Bad request.' };
+  await requireUser();
+  const supabase = await createClient();
+  const { data: term } = await supabase.from('terms').select('id, name').eq('id', parsed.data.termId).maybeSingle();
+  if (!term) return { ok: false, error: 'That term no longer exists.' };
+  const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  if (norm(parsed.data.confirmName) !== norm(term.name)) return { ok: false, error: `Type ${term.name} to confirm.` };
+  const { data: courses } = await supabase.from('courses').select('id').eq('term_id', term.id);
+  const ids = (courses ?? []).map((c) => c.id);
+  const { count } = ids.length
+    ? await supabase.from('items').select('id', { count: 'exact', head: true }).in('course_id', ids)
+    : { count: 0 };
+  const { error } = await supabase.from('terms').delete().eq('id', term.id);
+  if (error) return { ok: false, error: `Could not delete the term: ${error.message}` };
+  revalidatePath('/', 'layout');
+  return { ok: true, data: { courses: ids.length, items: count ?? 0 } };
+}
