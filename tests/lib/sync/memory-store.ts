@@ -27,6 +27,15 @@ function text(v: unknown): string | null {
   return String(v);
 }
 
+function reorderKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(reorderKeys);
+  if (v && typeof v === 'object') {
+    const entries = Object.entries(v as Record<string, unknown>).sort(([a], [b]) => a.length - b.length || (a < b ? -1 : 1));
+    return Object.fromEntries(entries.map(([k, x]) => [k, reorderKeys(x)]));
+  }
+  return v;
+}
+
 export class MemoryStore implements ItemStore {
   items: MemItem[] = [];
   changes: MemChange[] = [];
@@ -90,7 +99,8 @@ export class MemoryStore implements ItemStore {
 
   async insertProposal(row: NewProposal) {
     this.writes++;
-    this.proposals.push({ ...row, id: randomUUID(), state: 'pending' });
+    // jsonb does not keep key order; store the payload reordered like Postgres would.
+    this.proposals.push({ ...row, payload: reorderKeys(row.payload) as Record<string, unknown>, id: randomUUID(), state: 'pending' });
   }
 
   async supersedeProposal(id: string) {

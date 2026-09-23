@@ -62,8 +62,21 @@ export interface SyncItemsOptions {
   trackMissing?: { now: Date };
 }
 
+/** Stable JSON with sorted keys: jsonb stores object keys in its own order. */
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  if (v && typeof v === 'object') {
+    const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);
+    return `{${entries
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([k, x]) => `${JSON.stringify(k)}:${canonical(x)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(v);
+}
+
 function jsonEqual(a: unknown, b: unknown): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return canonical(a) === canonical(b);
 }
 
 export function emptyStats(): SyncStats {
