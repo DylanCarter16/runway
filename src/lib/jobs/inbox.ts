@@ -59,13 +59,19 @@ export async function loadPlannerContext(admin: Admin, userId: string) {
   };
 }
 
-export async function insertProposals(admin: Admin, userId: string, ref: { documentId?: string | null }, proposals: PlannedProposal[]) {
+export async function insertProposals(
+  admin: Admin,
+  userId: string,
+  ref: { documentId?: string | null; noteId?: string | null },
+  proposals: PlannedProposal[],
+) {
   if (!proposals.length) return;
   const { error } = await admin.from('proposals').insert(
     proposals.map((p) => ({
       user_id: userId,
       course_id: p.course_id,
       source_document_id: ref.documentId ?? null,
+      source_note_id: ref.noteId ?? null,
       kind: p.kind,
       target_item_id: p.target_item_id,
       payload: p.payload as unknown as Json,
