@@ -286,7 +286,7 @@ export async function loadCourseContext(db: Db, courses: AskCourse[], now = new 
       })
       .sort((a, b) => a.sort.localeCompare(b.sort))
       .slice(0, 5)
-      .map(({ sort: _sort, ...rest }) => rest),
+      .map((i) => ({ kind: i.kind, title: i.title, date: i.date, time: i.time })),
   }));
 }
 

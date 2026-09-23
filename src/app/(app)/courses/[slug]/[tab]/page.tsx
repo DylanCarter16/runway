@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
+import { AskThreads } from '@/components/app/ask-threads';
+import { AskView } from '@/components/app/ask-view';
 import { EmptyState } from '@/components/app/empty-state';
 import { LibraryList, readLibraryFilters } from '@/components/app/library-list';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
@@ -14,6 +16,7 @@ import { COURSE_TABS } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 import { CourseDeadlines } from './deadlines';
 import { CourseOverview } from './overview';
+import { askPageData } from '../../../ask/data';
 
 export async function generateMetadata({ params }: PageProps<'/courses/[slug]/[tab]'>) {
   const { slug, tab } = await params;
@@ -76,7 +79,7 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
   const sp = await searchParams;
   const course = await getCourseBySlug(slug);
   if (!course || !COURSE_TABS.some(([t]) => t === tab)) notFound();
-  const { supabase } = await getAppContext();
+  const { supabase, user } = await getAppContext();
   const now = new Date();
 
   switch (tab) {
@@ -116,11 +119,29 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
           </section>
         );
       }
-      return (
-        <EmptyState title={`No questions about ${course.code} yet.`}>
-          Ask answers from your {course.code} notes once some are saved. The outline allows AI as a study aid: {course.ai_policy}
-        </EmptyState>
-      );
+      {
+        const data = await askPageData(supabase, user.id, course.id);
+        return (
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+            <AskView
+              threadId={null}
+              initialScope={{ type: 'course', courseId: course.id }}
+              options={data.options}
+              messages={[]}
+              aiReady={data.aiReady}
+              overBudget={data.overBudget}
+              navigate={false}
+              lockCourse={course.id}
+            />
+            <section aria-labelledby="course-threads" className="grid content-start gap-2">
+              <h3 id="course-threads" className="text-base font-semibold">
+                Past {course.code} questions
+              </h3>
+              <AskThreads threads={data.threads} options={data.options} now={new Date()} />
+            </section>
+          </div>
+        );
+      }
 
     case 'updates': {
       const { data: items } = await supabase.from('items').select('id, title').eq('course_id', course.id);

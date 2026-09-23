@@ -41,3 +41,37 @@ export function parseScopeKey(key: string | null | undefined): AskScope {
   const [type, id] = key.split(':');
   return readScope(type === 'course' ? { type, courseId: id } : type === 'note' ? { type, noteId: id } : { type, itemId: id });
 }
+
+/** What the scope picker offers: only courses with AI on, and their notes and items. */
+export interface ScopeOptions {
+  courses: { id: string; code: string; slug: string; ai_policy: string | null; outline_url: string | null }[];
+  notes: { id: string; title: string; courseId: string; lectureOn: string | null }[];
+  items: { id: string; title: string; kind: string; courseId: string; date: string | null }[];
+}
+
+export function scopeLabel(scope: AskScope, options: ScopeOptions): string {
+  const code = (id: string) => options.courses.find((c) => c.id === id)?.code ?? 'Course';
+  switch (scope.type) {
+    case 'all':
+      return 'Everything';
+    case 'course':
+      return code(scope.courseId);
+    case 'note': {
+      const n = options.notes.find((x) => x.id === scope.noteId);
+      return n ? `${code(n.courseId)} note: ${n.title}` : 'A note';
+    }
+    case 'item': {
+      const i = options.items.find((x) => x.id === scope.itemId);
+      return i ? `${code(i.courseId)} ${i.title}` : 'An item';
+    }
+  }
+}
+
+/** The AI policy banner for graded work (SPEC 4.6), or null. */
+export function scopeBanner(scope: AskScope, options: ScopeOptions): { courseCode: string; policy: string | null; outlineUrl: string | null } | null {
+  if (scope.type !== 'item') return null;
+  const item = options.items.find((i) => i.id === scope.itemId);
+  if (!item || !GRADED_KINDS.has(item.kind)) return null;
+  const course = options.courses.find((c) => c.id === item.courseId);
+  return course ? { courseCode: course.code, policy: course.ai_policy, outlineUrl: course.outline_url } : null;
+}
