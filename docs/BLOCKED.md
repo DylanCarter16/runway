@@ -49,3 +49,9 @@ Items parked during autopilot runs (docs/AUTOPILOT.md). Each needs one human ste
 - Why: Crowdmark assessment links and due dates would arrive without a paste. Without it, the paste reminder for Crowdmark stays the way in.
 - Done so far: nothing; the spike needs a UW Microsoft login with Duo.
 - Time: 30 minutes, and it may not be allowed by UW.
+
+## Phase 8: Voyage AI key for hybrid search
+- Needed: make a key at https://dashboard.voyageai.com/ (API keys; the first 200M tokens a month are free, and a payment method lifts the low free-tier rate limits). Put it in `.env.local` as `VOYAGE_API_KEY` (the line is there but empty), then ask a local Claude Code session to add it to Vercel (production and preview, sensitive), redeploy, and run `.scratch/record-embeddings.ts` to check the similarity floor (`MIN_SIMILARITY` in `src/lib/search/hybrid.ts`) against real voyage-4 answers. Then open https://<APP_HOST>/settings/ai and press "Turn on hybrid search".
+- Why: Ask then also finds passages that say the same thing in other words (a question about "disjoint outcomes" finds the notes on mutually exclusive events). Only STAT 230 passages (AI on) are embedded. Ask works without it, by words only.
+- Done so far: migration `20260923182414_hybrid_search.sql` (pgvector `chunks.embedding`, `match_chunks`, `settings.ask_hybrid_search`, a trigger that queues the embedding job), the Voyage client with the AI switch gate and `ai_calls` logging, the `embeddings.chunks` job, rank fusion in Ask's search, and the Settings, AI block (it says "Not set up" until the key is in Vercel). Checked with synthetic vectors: 15 unit tests and `.scratch/phase8-hybrid.ts` (33 checks on the hosted project). Not checked live: a real Voyage call.
+- Time: 10 minutes.
