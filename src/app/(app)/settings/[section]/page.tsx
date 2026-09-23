@@ -9,6 +9,7 @@ import { AiSwitch } from '@/components/app/ai-switch';
 import { CourseDot } from '@/components/app/course-mark';
 import { LoadTermButton } from '@/components/app/settings-bits';
 import { DisconnectGoogleButton, ReminderRulesForm } from '@/components/app/reminder-controls';
+import { FeedControls } from '@/components/app/feed-controls';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
 import { buttonVariants } from '@/components/ui/button';
 import { TERM_F26 } from '@/config/term-f26';
@@ -17,7 +18,9 @@ import { createAdminClient } from '@/lib/db/admin';
 import { getAppContext } from '@/lib/db/queries';
 import { pageRunSource } from '@/lib/jobs/sync';
 import { googleStatus, parseOverrides } from '@/lib/jobs/gcal';
+import { feedStatus } from '@/lib/jobs/feed';
 import { learnFeedStatus } from '@/lib/jobs/tokens';
+import { webcalUrl } from '@/lib/ics/feed';
 import type { RunTarget } from '@/lib/jobs/types';
 import { ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
 import { resolveRule } from '@/lib/reminders/rules';
@@ -267,9 +270,10 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'integrations': {
-      const [learn, google, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
+      const [learn, google, feed, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
         learnFeedStatus(createAdminClient(), user.id),
         googleStatus(user.id),
+        feedStatus(createAdminClient(), user.id),
         supabase.from('sync_runs').select('started_at, stats').eq('source', 'bridge').order('started_at', { ascending: false }).limit(200),
         supabase
           .from('documents')
@@ -338,6 +342,25 @@ export default async function SettingsSection({ params, searchParams }: PageProp
                   <DisconnectGoogleButton />
                 </div>
               </>
+            )}
+          </Block>
+          <Block title="Apple Calendar feed">
+            <p className="text-sm text-muted-foreground">
+              A read-only calendar link with the same events as the Google calendar: deadlines, exams, prep days, study blocks, and paste
+              reminders. Calendar apps check it about once an hour.
+            </p>
+            {feed.on ? (
+              <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm tabular">
+                <dt className="text-muted-foreground">Made</dt>
+                <dd>{feed.createdAt ? formatAgo(new Date(feed.createdAt), now) : 'yes'}</dd>
+                <dt className="text-muted-foreground">Last read</dt>
+                <dd>{feed.lastFetchedAt ? formatAgo(new Date(feed.lastFetchedAt), now) : 'Not yet'}</dd>
+              </dl>
+            ) : null}
+            {serverEnv.TOKEN_ENCRYPTION_KEY ? (
+              <FeedControls url={feed.url} webcal={feed.url ? webcalUrl(feed.url) : null} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Waiting for TOKEN_ENCRYPTION_KEY, which stores the link.</p>
             )}
           </Block>
           <Block title="LEARN feed">

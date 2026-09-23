@@ -41,7 +41,7 @@ function item(over: Partial<PlanItem> = {}): PlanItem {
 }
 
 function parse(ics: string): VEvent[] {
-  return Object.values(ical.sync.parseICS(ics)).filter((c): c is VEvent => c.type === 'VEVENT');
+  return Object.values(ical.sync.parseICS(ics)).filter((c): c is VEvent => c?.type === 'VEVENT');
 }
 
 describe('feed tokens', () => {
@@ -114,7 +114,7 @@ describe('buildIcs', () => {
     const main = parsed.find((e) => e.uid === 'item:a1@runway')!;
     expect(main.summary).toBe('CS 251 A1');
     // Due 22:00 EDT = 02:00Z the next day; the event is the 15 minutes before it.
-    expect(main.end.toISOString()).toBe('2026-10-01T02:00:00.000Z');
+    expect(main.end?.toISOString()).toBe('2026-10-01T02:00:00.000Z');
     expect(main.start.toISOString()).toBe('2026-10-01T01:45:00.000Z');
     expect(String(main.description)).toContain('https://runway.example/items/a1');
     expect(main.transparency).toBe('OPAQUE');

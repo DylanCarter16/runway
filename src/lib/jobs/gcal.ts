@@ -221,6 +221,11 @@ async function desiredEvents(admin: Admin, userId: string) {
   };
 }
 
+/** Every event the Runway calendar should hold. The ICS feed renders the same list. */
+export async function plannedCalendarEvents(admin: Admin, userId: string): Promise<PlannedEvent[]> {
+  return (await desiredEvents(admin, userId)).planned;
+}
+
 // ---------------------------------------------------------------------------
 // Jobs
 // ---------------------------------------------------------------------------

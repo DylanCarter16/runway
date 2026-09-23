@@ -77,7 +77,7 @@ tests/                            vitest specs, fixtures (pages, ai), db checks
 - Next.js 16: route protection lives in `proxy.ts` (exported function `proxy`). `params` and `searchParams` are Promises: `const { slug } = await params`.
 - Auth is checked at three layers: `proxy.ts` redirects signed-out users, every server action and route handler calls `requireUser()`, and RLS guards every table.
 - Supabase clients: server code calls `createServerClient` from `@supabase/ssr` inside the function that needs it. Browser code imports one memoized client from `src/lib/db/browser.ts`. Never create a client in a component body or pass one through a hook dependency list; that caused infinite render loops in a past project.
-- The service-role client lives in `src/lib/db/admin.ts` and is imported only by `src/app/api/(cron|jobs|ingest|digest)` and `src/lib/jobs`. Never import it into client code.
+- The service-role client lives in `src/lib/db/admin.ts` and is imported only by `src/app/api/(cron|jobs|ingest|digest|feed)` and `src/lib/jobs`. Never import it into client code.
 - Every table has `user_id` and an owner-only RLS policy. Copy the pattern in the init migration.
 - Validate every external input with zod at the boundary: route handlers, server actions, parsed pages, LLM output.
 - Timestamps are `timestamptz`. Convert only through `src/lib/time`. Date-only items set `all_day = true` and `time_known = false` and store local midnight in America/Toronto. DST ends Nov 1, 2026; tests cover dates on both sides.

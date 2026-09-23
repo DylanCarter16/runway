@@ -12,6 +12,7 @@ import { disconnectGoogle } from '@/lib/jobs/gcal';
 import { enqueueNow, runQueuedJobs, runWorkerNow } from '@/lib/jobs/schedule';
 import { cleanReminders, ITEM_KIND_VALUES, resolveRule, type RuleOverrides } from '@/lib/reminders/rules';
 import type { RunTarget } from '@/lib/jobs/types';
+import { createFeedToken, deleteFeedToken } from '@/lib/jobs/feed';
 import { deleteLearnFeedUrl, saveLearnFeedUrl } from '@/lib/jobs/tokens';
 import type { ActionResult } from '../actions';
 
@@ -80,6 +81,29 @@ export async function removeLearnFeed(): Promise<ActionResult> {
     await deleteLearnFeedUrl(createAdminClient(), user.id);
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not remove the feed URL.' };
+  }
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+/** Turns the ICS feed on, or replaces its link (the old URL stops working). */
+export async function makeFeedLink(): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await createFeedToken(createAdminClient(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not make the feed link.' };
+  }
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+export async function turnOffFeed(): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await deleteFeedToken(createAdminClient(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not turn off the feed.' };
   }
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };
