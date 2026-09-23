@@ -1,0 +1,26 @@
+[
+  {
+    "purpose": "synthetic",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_piazza_2",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"summary\": \"A student asks whether the course notes are on reserve at the library.\", \"importance\": \"noise\", \"course_slug\": \"stat230\", \"items\": [], \"course_info\": [], \"post_url\": \"https://piazza.com/class/<PIAZZA_CLASS_1>?cid=61\"}"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 1380,
+        "output_tokens": 90,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      }
+    }
+  }
+]

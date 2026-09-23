@@ -95,7 +95,16 @@ const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
   if (!doc || doc.processed_at) return;
 
   const meta = (doc.meta ?? {}) as Record<string, unknown>;
-  const declaredKind = (meta.declared_kind as PasteKind | 'detect' | undefined) ?? (doc.kind as PasteKind);
+  const declaredKind = (meta.declared_kind as PasteKind | 'detect' | undefined) ?? (doc.kind as PasteKind | 'piazza_email');
+  const email =
+    doc.kind === 'piazza_email'
+      ? {
+          from: String(meta.from ?? ''),
+          subject: String(meta.subject ?? ''),
+          date: String(meta.date ?? ''),
+          classId: typeof meta.class_id === 'string' ? meta.class_id : null,
+        }
+      : undefined;
   const ctx = await loadPlannerContext(admin, job.user_id);
 
   // Budget and configuration are checked at the moment Claude would be called,
@@ -116,6 +125,7 @@ const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
         userId: job.user_id,
         doc: { id: doc.id, course_id: doc.course_id, raw_text: doc.raw_text, source_url: doc.source_url },
         declaredKind,
+        email,
         courses: ctx.courses,
         items: ctx.items,
         today: toTorontoDate(new Date()),
@@ -142,10 +152,13 @@ const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
   // A retried job may have written proposals before failing; start clean.
   await admin.from('proposals').delete().eq('source_document_id', doc.id).eq('state', 'pending');
   await insertProposals(admin, job.user_id, { documentId: doc.id }, result.proposals);
+  // Claude may find the post link when the bridge's copy had none.
+  const postUrl = doc.source_url ?? (result.postUrl && /^https:\/\/piazza\.com\//.test(result.postUrl) ? result.postUrl : null);
   const { error: upErr } = await admin
     .from('documents')
     .update({
       kind: result.kind,
+      source_url: postUrl,
       processed_at: new Date().toISOString(),
       meta: {
         ...meta,
@@ -156,6 +169,7 @@ const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
         notes: result.notes,
         used_ai: result.usedAi,
         proposals: result.proposals.length,
+        ...(doc.kind === 'piazza_email' ? { post_url: postUrl } : {}),
       } as Json,
     })
     .eq('id', doc.id);

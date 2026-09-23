@@ -35,8 +35,10 @@ export type Claude = <T>(req: ClaudeRequest<T>) => Promise<ClaudeResult<T>>;
 export interface ProcessInput {
   userId: string;
   doc: { id: string; course_id: string | null; raw_text: string; source_url: string | null };
-  /** What Dylan picked in the kind menu. */
-  declaredKind: PasteKind | 'detect';
+  /** What Dylan picked in the kind menu; 'piazza_email' for emails from the bridge. */
+  declaredKind: PasteKind | 'detect' | 'piazza_email';
+  /** Header fields of a Piazza email, passed to Claude in the source tag. */
+  email?: { from: string; subject: string; date: string; classId: string | null };
   courses: CourseCtx[];
   items: ItemCtx[];
   today: string;
@@ -54,7 +56,7 @@ export type ProcessStatus =
 export interface ProcessResult {
   status: ProcessStatus;
   /** Final document kind (documents.kind); lecture notes stay 'other'. */
-  kind: Exclude<PasteKind, 'lecture_notes'>;
+  kind: Exclude<PasteKind, 'lecture_notes'> | 'piazza_email';
   detectedKind: PasteKind | null;
   /** Course the classifier picked, when the paste had none. */
   courseId: string | null;
@@ -64,6 +66,8 @@ export interface ProcessResult {
   /** Human-readable notes for the Library page ("No course named CS 136"). */
   notes: string[];
   usedAi: boolean;
+  /** The post link Claude found in an email, when the bridge's links had none. */
+  postUrl?: string | null;
 }
 
 function courseLookup(courses: CourseCtx[]) {
@@ -92,8 +96,9 @@ function result(partial: Partial<ProcessResult> & Pick<ProcessResult, 'status' |
 export async function processDocument(input: ProcessInput, claude: Claude): Promise<ProcessResult> {
   const { doc, courses, items } = input;
   const text = doc.raw_text;
-  let kind: PasteKind | 'detect' = input.declaredKind;
   const notes: string[] = [];
+  if (input.declaredKind === 'piazza_email') return processPiazzaEmail(input, claude);
+  let kind: PasteKind | 'detect' = input.declaredKind;
 
   if (kind === 'detect') kind = sniffKind(text) ?? 'detect';
 
@@ -215,3 +220,53 @@ export async function processDocument(input: ProcessInput, claude: Claude): Prom
   }
 }
 
+
+/**
+ * A Piazza email (PROMPTS.md 3, purpose extract_piazza). AI-off courses and
+ * emails with no course are stored and listed in Updates, nothing more.
+ */
+async function processPiazzaEmail(input: ProcessInput, claude: Claude): Promise<ProcessResult> {
+  const { doc, courses, items } = input;
+  const clearance = await aiAllowed(courseLookup(courses), doc.course_id);
+  if (!clearance) {
+    const course = courses.find((c) => c.id === doc.course_id);
+    const note = course
+      ? `${course.code} has AI turned off, so this email was stored without extraction.`
+      : 'No course yet, so this email was stored without extraction.';
+    return result({ status: 'stored_only', kind: 'piazza_email', notes: [note] });
+  }
+  const course = courses.find((c) => c.id === clearance.courseId)!;
+  const ctx: PromptContext = {
+    today: input.today,
+    term: input.term,
+    courses: courses.map((c) => ({ slug: c.slug, code: c.code, title: c.title })),
+    items: contextItems(items, courses, course.id),
+  };
+  const email = input.email;
+  const extra: Record<string, string> = email
+    ? { from: email.from, subject: email.subject, date: email.date, class_id: email.classId ?? '' }
+    : {};
+  const { data } = await claude({
+    clearance,
+    userId: input.userId,
+    requestRef: doc.id,
+    purpose: 'extract_piazza',
+    system: ANNOUNCEMENT_SYSTEM,
+    user: userTurn(ctx, 'piazza_email', course.slug, doc.raw_text, extra),
+    schema: announcementResult,
+  });
+  const draftCtx: DraftContext = { courses, items, defaultCourseId: course.id, source: 'piazza_email', sourceUrl: doc.source_url };
+  return result({
+    status: 'extracted',
+    kind: 'piazza_email',
+    // A Piazza email speaks for its own class only.
+    proposals: announcementToProposals(
+      { ...data, course_slug: course.slug, items: data.items.map((d) => ({ ...d, course_slug: course.slug })) },
+      draftCtx,
+    ),
+    summary: data.summary,
+    importance: data.importance,
+    postUrl: data.post_url,
+    usedAi: true,
+  });
+}

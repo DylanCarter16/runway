@@ -1,0 +1,38 @@
+{
+  "source": "piazza",
+  "messages": [
+    {
+      "id": "18f0a0000000a001",
+      "threadId": "18f0a0000000a001",
+      "date": "2026-10-02T14:05:00.000Z",
+      "from": "\"STAT 230 Instructor (Piazza)\" <no-reply@piazza.com>",
+      "subject": "Instr Note @57: Quiz 2 moved to Nov 6",
+      "text": "Quiz 2 moved to Nov 6\n\nQuiz 2 is moving from Friday, October 30 to Friday, November 6, still during your usual tutorial. It covers Chapters 5 and 6.\n\nGo to https://piazza.com/class/<PIAZZA_CLASS_1>/post/57 to view this note on Piazza.\nSearch or link to this note with @57.\n\n(Sample written for Runway's tests; not a real post.)\n",
+      "html": "<html><body><p>Quiz 2 is moving from Friday, October 30 to Friday, November 6, still during your usual tutorial. It covers Chapters 5 and 6.</p><p><a href=\"https://piazza.com/class/<PIAZZA_CLASS_1>/post/57?utm_source=digest&amp;utm_medium=email\">Click here</a> to view.</p></body></html>"
+    },
+    {
+      "id": "18f0a0000000a002",
+      "threadId": "18f0a0000000a002",
+      "date": "2026-10-02T15:10:00.000Z",
+      "from": "\"A student (Piazza)\" <no-reply@piazza.com>",
+      "subject": "Question @61: Is the textbook on reserve?",
+      "text": "Is the textbook on reserve?\n\nA student asked: Does the library have the course notes on reserve?\n\nGo to https://piazza.com/class/<PIAZZA_CLASS_1>?cid=61 to view this question on Piazza.\n\n(Sample written for Runway's tests; not a real post.)\n"
+    },
+    {
+      "id": "18f0a0000000a003",
+      "threadId": "18f0a0000000a003",
+      "date": "2026-10-02T16:00:00.000Z",
+      "from": "\"CS 251 Staff (Piazza)\" <no-reply@piazza.com>",
+      "subject": "Instr Note @88: A2 is out",
+      "text": "A2 is out\n\nAssignment 2 is posted on the assignments page. It is due Wednesday, October 21 at 10:00 pm.\n\nGo to https://piazza.com/class/<PIAZZA_CLASS_4>/post/88 to view this note on Piazza.\n\n(Sample written for Runway's tests; not a real post.)\n"
+    },
+    {
+      "id": "18f0a0000000a004",
+      "threadId": "18f0a0000000a004",
+      "date": "2026-10-02T16:30:00.000Z",
+      "from": "\"Course staff (Piazza)\" <no-reply@piazza.com>",
+      "subject": "Instr Note @3: Welcome to the course",
+      "text": "Welcome to the course\n\nWelcome! Office hours start next week.\n\nGo to https://piazza.com/class/<PIAZZA_CLASS_2>/post/3 to view this note on Piazza.\n\n(Sample written for Runway's tests; not a real post.)\n"
+    }
+  ]
+}
