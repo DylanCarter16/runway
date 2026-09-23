@@ -38,7 +38,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
     if (polling.current) window.clearTimeout(polling.current);
   }, []);
 
-  function poll(documentId: string, href: string, tries = 0) {
+  function poll(documentId: string, href: string, courseId: string | null, tries = 0) {
     polling.current = window.setTimeout(async () => {
       const res = await getPasteStatus(documentId);
       if (res.ok && res.data.done) {
@@ -52,9 +52,11 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
           failed: res.data.status === 'failed',
         });
         router.refresh();
+        // Stored without extraction (AI off): offer quick add for any dates.
+        if (res.data.status === 'stored_only' && courseId) openQuickAdd({ courseId });
         return;
       }
-      if (tries < 40) poll(documentId, href, tries + 1);
+      if (tries < 40) poll(documentId, href, courseId, tries + 1);
       else setOutcome({ type: 'done', href, documentId, proposals: 0, notes: ['Still working. Proposals appear below when it finishes.'], suggestNote: false, failed: false });
     }, tries < 5 ? 1500 : 3000);
   }
@@ -85,7 +87,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
       }
       if (data.extracting) {
         setOutcome({ type: 'working', href: data.href });
-        poll(data.documentId, data.href);
+        poll(data.documentId, data.href, courseId);
       } else {
         const code = courses.find((c) => c.id === courseId)?.code ?? null;
         setOutcome({ type: 'stored', href: data.href, courseCode: code });
