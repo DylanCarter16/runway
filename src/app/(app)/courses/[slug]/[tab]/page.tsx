@@ -2,10 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/app/empty-state';
+import { LibraryList, readLibraryFilters } from '@/components/app/library-list';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
+import { DiffLines, type PageDiff } from '@/components/app/page-diff';
 import { getAppContext, getCourseBySlug } from '@/lib/db/queries';
+import { documentKindLabel } from '@/lib/inbox/kinds';
 import { describeChange } from '@/lib/items/changes';
-import { formatAgo, formatListDate } from '@/lib/time';
+import { formatAgo } from '@/lib/time';
 import { COURSE_TABS } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 import { CourseDeadlines } from './deadlines';
@@ -20,16 +23,13 @@ export async function generateMetadata({ params }: PageProps<'/courses/[slug]/[t
 
 type UpdateEntry =
   | { type: 'change'; at: string; change: { id: string; item_id: string; field: string; old_value: string | null; new_value: string | null; source: string | null } }
-  | { type: 'page'; at: string; doc: { id: string; title: string; source_url: string | null; meta: unknown } };
+  | { type: 'page'; at: string; doc: { id: string; title: string; kind: string; source_url: string | null; meta: unknown } };
 
-const DIFF_LINES = 12;
-
-/** A watched page that changed, with its raw added and removed lines. */
+/** A watched page that changed: the summary when AI read it, and the raw added and removed lines. */
 function PageUpdate({ doc, now, at }: { doc: { id: string; title: string; source_url: string | null; meta: unknown }; now: Date; at: string }) {
-  const meta = (doc.meta ?? {}) as { label?: string; diff?: { added: string[]; removed: string[] } | null };
+  const meta = (doc.meta ?? {}) as { label?: string; diff?: PageDiff | null; summary?: string | null };
   const label = meta.label ?? doc.title;
   const diff = meta.diff;
-  const lines = diff ? [...diff.removed.map((t) => ['-', t] as const), ...diff.added.map((t) => ['+', t] as const)] : [];
   return (
     <li className="grid gap-1 py-2">
       <span>
@@ -39,26 +39,33 @@ function PageUpdate({ doc, now, at }: { doc: { id: string; title: string; source
         </Link>
         {doc.source_url ? (
           <>
-            {' · '}
+            {', '}
             <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
-              Open page
+              open page
             </a>
           </>
         ) : null}{' '}
         <span className="text-muted-foreground">{formatAgo(new Date(at), now)}</span>
       </span>
-      {lines.length ? (
-        <ul className="grid gap-0.5 rounded-md border border-rule bg-sheet p-2 font-mono text-[13px]">
-          {lines.slice(0, DIFF_LINES).map(([sign, text], i) => (
-            <li key={i} className={sign === '+' ? 'text-foreground' : 'text-muted-foreground line-through'}>
-              <span aria-hidden="true">{sign} </span>
-              <span className="sr-only">{sign === '+' ? 'Added: ' : 'Removed: '}</span>
-              {text}
-            </li>
-          ))}
-          {lines.length > DIFF_LINES ? <li className="text-muted-foreground">and {lines.length - DIFF_LINES} more lines</li> : null}
-        </ul>
-      ) : null}
+      {meta.summary ? <span>{meta.summary}</span> : null}
+      {diff ? <DiffLines diff={diff} /> : null}
+    </li>
+  );
+}
+
+/** A paste filed under this course (announcement, outline, grades...). */
+function PasteUpdate({ doc, now, at }: { doc: { id: string; title: string; kind: string; meta: unknown }; now: Date; at: string }) {
+  const meta = (doc.meta ?? {}) as { summary?: string | null };
+  return (
+    <li className="grid gap-1 py-2">
+      <span>
+        {documentKindLabel(doc.kind)} pasted:{' '}
+        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+          {doc.title}
+        </Link>{' '}
+        <span className="text-muted-foreground">{formatAgo(new Date(at), now)}</span>
+      </span>
+      {meta.summary ? <span>{meta.summary}</span> : null}
     </li>
   );
 }
@@ -138,11 +145,10 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
           : Promise.resolve({ data: [] }),
         supabase
           .from('documents')
-          .select('id, title, source_url, captured_at, meta')
+          .select('id, title, kind, source_url, captured_at, meta')
           .eq('course_id', course.id)
-          .eq('kind', 'page_snapshot')
           .order('captured_at', { ascending: false })
-          .limit(50),
+          .limit(80),
       ]);
       const feed: UpdateEntry[] = [
         ...(changes ?? []).map((c) => ({ type: 'change' as const, at: c.detected_at, change: c })),
@@ -172,8 +178,10 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
                 </Link>{' '}
                 <span className="text-muted-foreground">{formatAgo(new Date(e.at), now)}</span>
               </li>
-            ) : (
+            ) : e.doc.kind === 'page_snapshot' ? (
               <PageUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
+            ) : (
+              <PasteUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
             ),
           )}
         </ul>
@@ -195,39 +203,15 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
       );
 
     case 'library': {
-      const { data: docs } = await supabase
-        .from('documents')
-        .select('id, title, kind, captured_at')
-        .eq('course_id', course.id)
-        .order('captured_at', { ascending: false })
-        .limit(200);
-      if (!docs?.length) {
-        return (
-          <EmptyState
-            title={`No documents for ${course.code} yet.`}
-            action={
-              <Link href="/inbox" className={cn(buttonVariants({ variant: 'outline' }), 'h-11 sm:h-9')}>
-                Paste something
-              </Link>
-            }
-          >
-            Everything you paste for this course is stored here word for word.
-          </EmptyState>
-        );
-      }
+      const { courses } = await getAppContext();
       return (
-        <ul className="divide-y divide-rule text-sm">
-          {docs.map((d) => (
-            <li key={d.id} className="py-2">
-              <Link href={`/library/${d.id}`} className="font-semibold text-tie underline-offset-2 hover:underline">
-                {d.title}
-              </Link>
-              <span className="block text-muted-foreground">
-                {d.kind.replace(/_/g, ' ')}, {formatListDate(new Date(d.captured_at))}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <LibraryList
+          supabase={supabase}
+          courses={courses}
+          filters={readLibraryFilters(sp, courses)}
+          action={`/courses/${course.slug}/library`}
+          fixedCourse={course}
+        />
       );
     }
   }

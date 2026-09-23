@@ -16,3 +16,25 @@ export const PASTE_KINDS: { value: PasteKind | 'detect'; label: string }[] = [
   { value: 'crowdmark_assessment', label: 'Crowdmark assessment' },
   { value: 'other', label: 'Other' },
 ];
+
+/** documents.kind values and their labels, for Library filters. */
+export const DOCUMENT_KIND_LABEL: Record<string, string> = {
+  outline: 'Course outline',
+  announcement: 'Announcement',
+  piazza_email: 'Piazza email',
+  piazza_resources: 'Piazza resources',
+  crowdmark_email: 'Crowdmark email',
+  crowdmark_assessment: 'Crowdmark assessment',
+  page_snapshot: 'Page snapshot',
+  assignment_pdf: 'Assignment PDF',
+  assignment_header: 'Assignment header',
+  quest_schedule: 'Quest class schedule',
+  odyssey_paste: 'Odyssey exam row',
+  grade_paste: 'Grades',
+  resource: 'Resource',
+  other: 'Other',
+};
+
+export function documentKindLabel(kind: string): string {
+  return DOCUMENT_KIND_LABEL[kind] ?? kind.replace(/_/g, ' ');
+}
