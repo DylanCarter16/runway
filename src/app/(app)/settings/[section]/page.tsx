@@ -11,6 +11,7 @@ import { LoadTermButton } from '@/components/app/settings-bits';
 import { DisconnectGoogleButton, ReminderRulesForm } from '@/components/app/reminder-controls';
 import { DeleteTermButton } from '@/components/app/data-controls';
 import { FeedControls } from '@/components/app/feed-controls';
+import { InstallApp } from '@/components/app/pwa';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
 import { buttonVariants } from '@/components/ui/button';
 import { TERM_F26 } from '@/config/term-f26';
@@ -345,6 +346,13 @@ export default async function SettingsSection({ params, searchParams }: PageProp
                 </div>
               </>
             )}
+          </Block>
+          <Block title="Install on this device">
+            <p className="text-sm text-muted-foreground">
+              Runway opens from the home screen like an app. Today and Calendar keep their last copy, so they still open with no
+              signal.
+            </p>
+            <InstallApp />
           </Block>
           <Block title="Apple Calendar feed">
             <p className="text-sm text-muted-foreground">

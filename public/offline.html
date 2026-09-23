@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Offline, Runway</title>
+    <style>
+      :root { --paper: #f3f6f4; --ink: #1b2230; --graphite: #5a6372; --tie: #b8135f; }
+      @media (prefers-color-scheme: dark) {
+        :root { --paper: #18211e; --ink: #e6ece8; --graphite: #9fb0a9; --tie: #f06aa6; }
+      }
+      body {
+        margin: 0; min-height: 100dvh; display: grid; place-items: center;
+        background: var(--paper); color: var(--ink);
+        font: 16px/1.5 system-ui, sans-serif; padding: 24px; box-sizing: border-box;
+      }
+      main { max-width: 26rem; }
+      h1 { font-size: 21px; margin: 0 0 8px; }
+      p { margin: 0 0 12px; color: var(--graphite); }
+      a { color: var(--tie); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You're offline</h1>
+      <p>This page isn't saved on this device. Today and Calendar keep their last copy, so they still open.</p>
+      <p><a href="/">Open Today</a> · <a href="/calendar">Open Calendar</a></p>
+    </main>
+  </body>
+</html>
