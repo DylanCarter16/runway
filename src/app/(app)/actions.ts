@@ -200,7 +200,8 @@ export async function search(query: string, opts: { limit?: number; courseId?: s
       id: r.result_id,
       courseId: r.course_id,
       title: r.title,
-      snippet: r.result_type === 'link' ? null : r.snippet,
+      // ts_headline marks matches with <b>; the palette shows plain text.
+      snippet: r.result_type === 'link' ? null : (r.snippet?.replace(/<\/?b>/g, '') ?? null),
       at: r.happened_at,
       url: r.result_type === 'link' ? r.snippet : null,
       kind: null,
