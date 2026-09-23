@@ -1,9 +1,9 @@
 import { CourseNotesEditor } from '@/components/app/course-notes-editor';
-import { ItemRow, ROW_FIELDS, type RowItem } from '@/components/app/item-row';
+import { ItemRow, type RowItem } from '@/components/app/item-row';
 import { OpenItemButton } from '@/components/app/quick-actions';
 import type { Course } from '@/lib/db/queries';
 import { getAppContext } from '@/lib/db/queries';
-import { ASSESSMENT_KINDS, EXAM_KINDS } from '@/lib/items/labels';
+import { ASSESSMENT_KINDS, EXAM_KINDS, ROW_FIELDS } from '@/lib/items/labels';
 import { effectiveDue } from '@/lib/items/runway';
 import { formatCountdown, formatWhen } from '@/lib/time';
 

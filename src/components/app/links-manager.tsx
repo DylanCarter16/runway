@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { deleteLink, moveLink, saveLink, setLinkPinned, type LinkForm } from '@/app/(app)/actions';
-import { selectClass } from './item-form';
+import { selectClass } from '@/lib/ui';
 
 export interface LinkRow {
   id: string;

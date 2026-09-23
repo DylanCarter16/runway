@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CourseDot } from '@/components/app/course-mark';
-import { selectClass } from '@/components/app/item-form';
 import { OpenItemButton } from '@/components/app/quick-actions';
 import { search, type SearchHit } from '@/app/(app)/actions';
 import { getAppContext } from '@/lib/db/queries';
 import { fromTorontoLocal, formatListDate } from '@/lib/time';
+import { selectClass } from '@/lib/ui';
 
 export const metadata = { title: 'Search' };
 

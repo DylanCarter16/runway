@@ -7,10 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import type { ItemForm } from '@/lib/items/edit';
 import { ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
 import type { CourseLite } from '@/lib/db/queries';
+import { selectClass } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 
-export const selectClass =
-  'h-11 w-full rounded-md border border-input bg-sheet px-3 text-base sm:h-9 sm:text-sm focus-visible:outline-2 focus-visible:outline-tie';
 
 export interface ItemFormValues {
   courseId: string;

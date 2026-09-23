@@ -13,9 +13,9 @@ import type { ItemKind } from '@/config/term-f26';
 import { EXAM_KINDS, ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
 import { runwayState } from '@/lib/items/runway';
 import { toTorontoDate, toTorontoTime } from '@/lib/time';
+import { selectClass } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 import { courseStyle } from './course-mark';
-import { selectClass } from './item-form';
 import { useShell } from './shell-provider';
 
 export interface CalendarItem {

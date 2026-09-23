@@ -7,17 +7,9 @@ import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { loadTermSetup } from '@/app/(app)/actions';
+import { SETTINGS_SECTIONS } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 
-export const SETTINGS_SECTIONS = [
-  ['term', 'Term'],
-  ['courses', 'Courses'],
-  ['integrations', 'Integrations'],
-  ['reminders', 'Reminders'],
-  ['ai', 'AI'],
-  ['sync', 'Sync'],
-  ['data', 'Data'],
-] as const;
 
 export function SettingsNav() {
   const pathname = usePathname();

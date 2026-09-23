@@ -1,8 +1,8 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { selectClass } from '@/lib/ui';
 import { cn } from '@/lib/utils';
-import { selectClass } from './item-form';
 
 /** A select whose value lives in one URL search param. */
 export function UrlSelect({

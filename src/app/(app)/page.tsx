@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/app/empty-state';
-import { ItemRow, ROW_FIELDS, type RowItem } from '@/components/app/item-row';
+import { ItemRow, type RowItem } from '@/components/app/item-row';
 import { QuickActions } from '@/components/app/quick-actions';
 import { countNeedsYou, getAppContext } from '@/lib/db/queries';
 import { describeChange } from '@/lib/items/changes';
-import { EXAM_KINDS, sourceLabel } from '@/lib/items/labels';
+import { EXAM_KINDS, ROW_FIELDS, sourceLabel } from '@/lib/items/labels';
 import { effectiveDue, isDone } from '@/lib/items/runway';
 import { formatAgo, formatCountdown, formatHeadingDate, formatListDate, termWeek, toTorontoDate } from '@/lib/time';
 import { cn } from '@/lib/utils';

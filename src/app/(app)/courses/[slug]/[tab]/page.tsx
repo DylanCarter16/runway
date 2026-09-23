@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
-import { COURSE_TABS } from '@/components/app/course-tabs';
 import { EmptyState } from '@/components/app/empty-state';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
 import { getAppContext, getCourseBySlug } from '@/lib/db/queries';
 import { describeChange } from '@/lib/items/changes';
 import { formatAgo, formatListDate } from '@/lib/time';
+import { COURSE_TABS } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 import { CourseDeadlines } from './deadlines';
 import { CourseOverview } from './overview';

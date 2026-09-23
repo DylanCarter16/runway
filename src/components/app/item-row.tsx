@@ -26,8 +26,6 @@ export interface RowItem {
   flags: string[];
 }
 
-export const ROW_FIELDS = 'id, course_id, kind, title, due_at, starts_at, ends_at, time_known, progress, prep_days, location, seat, flags, weight_percent, source, state';
-
 /** One deadline row: 4px course bar, title, kind, due, countdown, runway bar, progress. */
 export function ItemRow({
   item,

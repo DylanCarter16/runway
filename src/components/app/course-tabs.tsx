@@ -2,18 +2,9 @@
 
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
+import { COURSE_TABS } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 
-export const COURSE_TABS = [
-  ['overview', 'Overview'],
-  ['deadlines', 'Deadlines'],
-  ['notes', 'Notes'],
-  ['ask', 'Ask'],
-  ['resources', 'Resources'],
-  ['updates', 'Updates'],
-  ['grades', 'Grades'],
-  ['library', 'Library'],
-] as const;
 
 export function CourseTabs({ slug }: { slug: string }) {
   const segment = useSelectedLayoutSegment();

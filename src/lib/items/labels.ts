@@ -58,3 +58,7 @@ export const FLAG_LABEL: Record<string, string> = {
 export function sourceLabel(source: string): string {
   return SOURCE_LABEL[source] ?? source;
 }
+
+/** Columns an item row needs (see components/app/item-row.tsx). */
+export const ROW_FIELDS =
+  'id, course_id, kind, title, due_at, starts_at, ends_at, time_known, progress, prep_days, location, seat, flags, weight_percent, source, state';

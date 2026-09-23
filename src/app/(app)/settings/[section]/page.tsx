@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation';
 import { CourseDot } from '@/components/app/course-mark';
-import { LoadTermButton, SETTINGS_SECTIONS } from '@/components/app/settings-bits';
+import { LoadTermButton } from '@/components/app/settings-bits';
 import { TERM_F26 } from '@/config/term-f26';
 import { serverEnv } from '@/env';
 import { getAppContext } from '@/lib/db/queries';
 import { ITEM_KINDS, KIND_LABEL, sourceLabel } from '@/lib/items/labels';
 import { DEFAULT_RULES } from '@/lib/reminders/rules';
+import { SETTINGS_SECTIONS } from '@/lib/ui';
 import { formatAgo, formatListDate, fromTorontoLocal } from '@/lib/time';
 
 export async function generateMetadata({ params }: PageProps<'/settings/[section]'>) {
