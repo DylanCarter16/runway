@@ -9,9 +9,11 @@ import type { ItemKind } from '@/config/term-f26';
 import type { Json } from '@/lib/db/types';
 import { fileWaitingEmails } from '@/lib/jobs/email';
 import { disconnectGoogle } from '@/lib/jobs/gcal';
+import { enqueue } from '@/lib/jobs/queue';
 import { enqueueNow, runQueuedJobs, runWorkerNow } from '@/lib/jobs/schedule';
 import { cleanReminders, ITEM_KIND_VALUES, resolveRule, type RuleOverrides } from '@/lib/reminders/rules';
 import type { RunTarget } from '@/lib/jobs/types';
+import { embedJob, voyageConfigured } from '@/lib/jobs/embeddings';
 import { createFeedToken, deleteFeedToken } from '@/lib/jobs/feed';
 import { createMcpToken, deleteMcpToken } from '@/lib/jobs/mcp';
 import { createOdysseyToken, deleteOdysseyToken } from '@/lib/jobs/odyssey';
@@ -270,6 +272,30 @@ export async function saveAskSettings(input: { style: string; budget: number | s
     .from('settings')
     .upsert({ user_id: user.id, answer_style_prompt: parsed.data.style || null, ask_context_budget: parsed.data.budget }, { onConflict: 'user_id' });
   if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+/**
+ * Settings, AI: hybrid search for Ask. Turning it on queues embeddings for every
+ * passage from a course with AI on; turning it off keeps them for next time.
+ */
+export async function setHybridSearch(input: { on: boolean }): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = z.object({ on: z.boolean() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Bad request.' };
+  if (parsed.data.on && !voyageConfigured()) return { ok: false, error: 'Hybrid search needs VOYAGE_API_KEY in Vercel first.' };
+  const supabase = await createClient();
+  const { error } = await supabase.from('settings').upsert({ user_id: user.id, ask_hybrid_search: parsed.data.on }, { onConflict: 'user_id' });
+  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  if (parsed.data.on) {
+    try {
+      await enqueue(createAdminClient(), embedJob(user.id));
+      after(runWorkerNow);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'Could not queue the embeddings.' };
+    }
+  }
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };
 }

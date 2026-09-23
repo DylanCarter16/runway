@@ -3,6 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/db/types';
 import { anthropic } from '@/lib/jobs/ai';
+import type { QueryEmbedder } from '@/lib/search/hybrid';
 import { searchChunks } from './load';
 import type { AskDeps } from './run';
 
@@ -14,7 +15,7 @@ type Db = SupabaseClient<Database>;
 
 const TOOL_RESULTS = 10;
 
-export function liveAskDeps(db: Db): AskDeps {
+export function liveAskDeps(db: Db, embed?: QueryEmbedder): AskDeps {
   return {
     async stream(params, on) {
       const stream = anthropic().messages.stream(params);
@@ -36,6 +37,6 @@ export function liveAskDeps(db: Db): AskDeps {
       const { error } = await db.from('ai_calls').insert({ ...row, raw_output: row.raw_output as Json });
       if (error) console.error('could not log ai call:', error.message);
     },
-    search: (query, courseIds) => searchChunks(db, query, courseIds, TOOL_RESULTS),
+    search: (query, courseIds) => searchChunks(db, query, courseIds, TOOL_RESULTS, embed),
   };
 }

@@ -4,6 +4,7 @@ import { modelFor } from '@/lib/ai/models';
 import { askSystem } from '@/lib/ai/prompts';
 import { assertAiAllowed, type CourseLookup } from '@/lib/ai/switch';
 import type { Database, Json } from '@/lib/db/types';
+import type { QueryEmbedder } from '@/lib/search/hybrid';
 import { toTorontoDate } from '@/lib/time';
 import { askContextBlock, historyTurns, type HistoryMessage } from './context';
 import type { SavedCitation } from './citations';
@@ -52,7 +53,7 @@ export async function runAsk(
   input: AskInput,
   deps: AskDeps,
   emit: (e: AskStreamEvent) => void,
-  opts: { overBudget: boolean; now?: Date },
+  opts: { overBudget: boolean; now?: Date; embed?: QueryEmbedder },
 ): Promise<{ threadId: string; messageId: string } | null> {
   const now = opts.now ?? new Date();
   const resolved = await resolveScope(db, input.scope);
@@ -95,7 +96,7 @@ export async function runAsk(
   emit({ type: 'meta', threadId, model, budgetNotice: opts.overBudget, scopeLabel: resolved.label, banner: resolved.banner });
 
   const [chunks, contextCourses] = await Promise.all([
-    loadChunks(db, resolved, input.question, budget),
+    loadChunks(db, resolved, input.question, budget, opts.embed),
     loadCourseContext(db, resolved.courses, now),
   ]);
   const scopeItem = resolved.item ? resolved.label : null;

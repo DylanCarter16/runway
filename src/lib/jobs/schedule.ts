@@ -3,6 +3,7 @@ import { serverEnv } from '@/env';
 import { createAdminClient } from '@/lib/db/admin';
 import { enqueue, processJobs, type Admin, type JobHandler } from './queue';
 import type { RunTarget } from './types';
+import { EMBEDDING_HANDLERS, embedJob, hybridSearchOn } from './embeddings';
 import { GCAL_HANDLERS, JOB_REMINDERS } from './gcal';
 import { INBOX_HANDLERS } from './inbox';
 import { NOTE_HANDLERS } from './notes';
@@ -12,7 +13,7 @@ import { JOB_SYNC_LEARN, JOB_SYNC_OPEN_DATA, JOB_SYNC_PAGE, SYNC_HANDLERS } from
 
 export type Cadence = 'hourly' | 'every_3h' | 'daily';
 
-export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS, ...GCAL_HANDLERS, ...NOTE_HANDLERS };
+export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS, ...GCAL_HANDLERS, ...NOTE_HANDLERS, ...EMBEDDING_HANDLERS };
 
 export function runQueuedJobs(admin: Admin) {
   return processJobs(admin, HANDLERS);
@@ -78,6 +79,8 @@ export async function enqueueCadence(admin: Admin, cadence: Cadence): Promise<nu
     // (the reminders job queues the calendar sync when Google is connected).
     if (cadence === 'daily') {
       if (await enqueue(admin, { userId, type: JOB_REMINDERS, dedupeKey: 'reminders:generate' })) queued++;
+      // Catches passages the chunk trigger didn't queue, such as a course whose AI switch was turned on.
+      if ((await hybridSearchOn(admin, userId)) && (await enqueue(admin, embedJob(userId)))) queued++;
     }
   }
   return queued;

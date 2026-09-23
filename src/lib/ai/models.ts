@@ -15,7 +15,10 @@ export type Purpose =
   | 'cleanup'
   | 'note_meta'
   | 'ask'
-  | 'ask_deep';
+  | 'ask_deep'
+  /** Voyage AI embeddings for hybrid search (not a Claude model; see src/lib/ai/embed.ts). */
+  | 'embed'
+  | 'embed_query';
 
 export const DEFAULT_MODELS = {
   MODEL_EXTRACT: 'claude-sonnet-5',

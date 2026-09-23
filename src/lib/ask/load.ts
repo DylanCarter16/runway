@@ -10,6 +10,8 @@ import {
   type AskChunk,
   type ContextCourse,
 } from './context';
+import { toPgVector } from '@/lib/ai/embed';
+import { fuseRankings, vectorHits, type QueryEmbedder } from '@/lib/search/hybrid';
 import { GRADED_KINDS, type AskScope } from './scope';
 
 // Loads what an Ask question needs (Phase 6 task 1): the scope's courses, the
@@ -157,9 +159,8 @@ async function hydrate(db: Db, rows: ChunkRow[]): Promise<AskChunk[]> {
     }));
 }
 
-/** search_chunks over each course, merged by rank. Used for retrieval and the search_library tool. */
-export async function searchChunks(db: Db, query: string, courseIds: string[], limit: number): Promise<AskChunk[]> {
-  if (!query.trim() || !courseIds.length) return [];
+/** search_chunks over each course, merged by rank. */
+async function fullTextIds(db: Db, query: string, courseIds: string[], limit: number): Promise<string[]> {
   const results = await Promise.all(
     courseIds.map(async (courseId) => {
       const { data, error } = await db.rpc('search_chunks', { q: query, p_course_id: courseId, p_limit: limit });
@@ -167,24 +168,54 @@ export async function searchChunks(db: Db, query: string, courseIds: string[], l
       return data ?? [];
     }),
   );
-  const ranked = results
+  return results
     .flat()
     .filter((r) => r.course_id && courseIds.includes(r.course_id))
     .sort((a, b) => b.rank - a.rank)
-    .slice(0, limit);
-  if (!ranked.length) return [];
-  // search_chunks doesn't return ord or token counts; read them back.
-  const { data: rows } = await db
-    .from('chunks')
-    .select(CHUNK_COLS)
-    .in(
-      'id',
-      ranked.map((r) => r.chunk_id),
-    );
+    .slice(0, limit)
+    .map((r) => r.chunk_id);
+}
+
+/** match_chunks over each course: the nearest passages above the similarity floor. */
+async function vectorIds(db: Db, vector: number[], courseIds: string[], limit: number): Promise<string[]> {
+  const embedding = toPgVector(vector);
+  const results = await Promise.all(
+    courseIds.map(async (courseId) => {
+      const { data, error } = await db.rpc('match_chunks', { query_embedding: embedding, p_course_id: courseId, p_limit: limit });
+      if (error) throw new Error(`Vector search failed: ${error.message}`);
+      return data ?? [];
+    }),
+  );
+  return vectorHits(
+    results.flat().filter((r) => r.course_id && courseIds.includes(r.course_id)),
+    limit,
+  ).map((r) => r.chunk_id);
+}
+
+/**
+ * Passages that best match the query, best first. Used for retrieval and the
+ * search_library tool. With an embedder (hybrid search on), full-text and
+ * vector hits merge by reciprocal rank fusion; without one, or when embedding
+ * fails, it is full-text search alone.
+ */
+export async function searchChunks(db: Db, query: string, courseIds: string[], limit: number, embed?: QueryEmbedder): Promise<AskChunk[]> {
+  if (!query.trim() || !courseIds.length) return [];
+  const [textIds, vector] = await Promise.all([fullTextIds(db, query, courseIds, limit), embed ? embed(query, courseIds) : null]);
+  let ids = textIds;
+  if (vector) {
+    const near = await vectorIds(db, vector, courseIds, limit).catch((e) => {
+      console.error(e instanceof Error ? e.message : e);
+      return [];
+    });
+    ids = fuseRankings([textIds, near], limit);
+  }
+  if (!ids.length) return [];
+  // The search functions don't return ord or token counts; read them back.
+  const { data: rows } = await db.from('chunks').select(CHUNK_COLS).in('id', ids);
   const byId = new Map((rows ?? []).map((r) => [r.id, r]));
   return hydrate(
     db,
-    ranked.map((r) => byId.get(r.chunk_id)).filter((r): r is ChunkRow => Boolean(r)),
+    ids.map((id) => byId.get(id)).filter((r): r is ChunkRow => Boolean(r)),
   );
 }
 
@@ -208,7 +239,7 @@ function inReadingOrder(chunks: AskChunk[]): AskChunk[] {
   return [...chunks].sort((a, b) => a.parentType.localeCompare(b.parentType) * -1 || a.title.localeCompare(b.title) || a.ord - b.ord);
 }
 
-export async function loadChunks(db: Db, resolved: ResolvedScope, question: string, budget: number): Promise<AskChunk[]> {
+export async function loadChunks(db: Db, resolved: ResolvedScope, question: string, budget: number, embed?: QueryEmbedder): Promise<AskChunk[]> {
   const courseIds = resolved.courses.map((c) => c.id);
   if (!courseIds.length) return [];
   const { scope } = resolved;
@@ -232,7 +263,7 @@ export async function loadChunks(db: Db, resolved: ResolvedScope, question: stri
       .lte('lecture_on', end);
     const noteIds = (notes ?? []).map((n) => n.id);
     const nearChunks = noteIds.length ? await hydrate(db, await chunksWhere(db, { parentType: 'note', parentIds: noteIds, courseIds })) : [];
-    const hits = await searchChunks(db, `${item.title} ${question}`, courseIds, COURSE_SEARCH_TOP);
+    const hits = await searchChunks(db, `${item.title} ${question}`, courseIds, COURSE_SEARCH_TOP, embed);
     return withinBudget([...docChunks, ...inReadingOrder(nearChunks), ...hits], budget);
   }
 
@@ -241,14 +272,14 @@ export async function loadChunks(db: Db, resolved: ResolvedScope, question: stri
     const total = all.reduce((sum, c) => sum + c.tokens, 0);
     if (total <= budget) return all;
     const [hits, recent] = await Promise.all([
-      searchChunks(db, question, courseIds, COURSE_SEARCH_TOP),
+      searchChunks(db, question, courseIds, COURSE_SEARCH_TOP, embed),
       recentChunks(db, courseIds, COURSE_RECENT),
     ]);
     return selectCourseChunks(all, hits, recent, budget);
   }
 
   // Everything: the top passages across every course with AI on, or the newest when nothing matches.
-  const hits = await searchChunks(db, question, courseIds, ALL_SCOPE_TOP);
+  const hits = await searchChunks(db, question, courseIds, ALL_SCOPE_TOP, embed);
   return withinBudget(hits.length ? hits : await recentChunks(db, courseIds, COURSE_RECENT), budget);
 }
 

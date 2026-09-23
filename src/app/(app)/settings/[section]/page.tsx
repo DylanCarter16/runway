@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { NoteStyleForm } from '@/components/app/note-style-form';
 import { PiazzaMapForm, type PiazzaClassRow } from '@/components/app/piazza-map-form';
 import { AskSettingsForm } from '@/components/app/ask-settings-form';
+import { HybridSearchControls } from '@/components/app/hybrid-search-controls';
+import { EMBED_MODEL } from '@/lib/ai/embed';
 import { DEFAULT_ANSWER_STYLE, DEFAULT_NOTE_STYLE } from '@/lib/ai/prompts';
 import { DEFAULT_CONTEXT_BUDGET } from '@/lib/ask/session';
 import { AiSwitch } from '@/components/app/ai-switch';
@@ -22,6 +24,7 @@ import { createAdminClient } from '@/lib/db/admin';
 import { getAppContext } from '@/lib/db/queries';
 import { pageRunSource } from '@/lib/jobs/sync';
 import { googleStatus, parseOverrides } from '@/lib/jobs/gcal';
+import { embeddingStatus } from '@/lib/jobs/embeddings';
 import { feedStatus } from '@/lib/jobs/feed';
 import { mcpStatus } from '@/lib/jobs/mcp';
 import { odysseyScriptStatus } from '@/lib/jobs/odyssey';
@@ -548,7 +551,10 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'ai': {
-      const { data: aiSettings } = await supabase.from('settings').select('note_style_prompt, answer_style_prompt, ask_context_budget').maybeSingle();
+      const [{ data: aiSettings }, embeddings] = await Promise.all([
+        supabase.from('settings').select('note_style_prompt, answer_style_prompt, ask_context_budget').maybeSingle(),
+        embeddingStatus(supabase, user.id),
+      ]);
       return (
         <div className="grid gap-6">
           <Block title="Notes">
@@ -560,6 +566,13 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               budget={aiSettings?.ask_context_budget ?? DEFAULT_CONTEXT_BUDGET}
               fallback={DEFAULT_ANSWER_STYLE}
             />
+          </Block>
+          <Block title="Hybrid search">
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Ask finds passages by their words. Hybrid search also finds passages that say the same thing in other words, using
+              embeddings from Voyage AI ({EMBED_MODEL}). Only passages from courses with AI on are sent.
+            </p>
+            <HybridSearchControls {...embeddings} />
           </Block>
           <Block title="Models">
             <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
