@@ -127,7 +127,7 @@ process.stdout.write(`\nStopped: ${stopReason}. ${cycle} sessions, $${spent.toFi
 process.stdout.write(`Read docs/autopilot-log.md, docs/PROGRESS.md, docs/BLOCKED.md, and docs/HANDOFF.md.\n`);
 
 function claudeArgs() {
-  const args = ['-p', PROMPT, '--output-format', 'json', '--permission-mode', 'auto',
+  const args = ['-p', '--output-format', 'json', '--permission-mode', 'auto',
     '--permission-prompts', 'none', '--max-turns', String(cfg.maxTurns)];
   if (existsSync(path.join(repo, cfg.settings))) args.push('--settings', cfg.settings);
   if (cfg.bare) args.push('--bare');
@@ -137,6 +137,9 @@ function claudeArgs() {
 function runClaude() {
   return new Promise((resolve) => {
     const child = spawn(cfg.claude, claudeArgs(), { cwd: repo, shell: process.platform === 'win32' });
+    child.stdin.on('error', () => {});
+    child.stdin.write(PROMPT);
+    child.stdin.end();
     let out = '';
     let err = '';
     child.stdout.on('data', (d) => { out += d; });
