@@ -1,0 +1,26 @@
+[
+  {
+    "purpose": "synthetic",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_1",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"course_slug\": \"stat230\", \"assessments\": [{\"action\": \"update\", \"match_item_id\": \"00000000-0000-4000-8000-00000000a001\", \"course_slug\": \"stat230\", \"kind\": \"quiz\", \"title\": \"Quiz 1\", \"date\": \"2026-10-07\", \"time\": null, \"end_time\": null, \"location\": null, \"seat\": null, \"weight_percent\": 5, \"evidence\": \"Quiz 1               5%       Wednesday, October 7, in tutorial\", \"confidence\": 0.95}, {\"action\": \"create\", \"match_item_id\": null, \"course_slug\": \"stat230\", \"kind\": \"midterm\", \"title\": \"Midterm 1\", \"date\": \"2026-10-22\", \"time\": \"16:30\", \"end_time\": \"18:20\", \"location\": null, \"seat\": null, \"weight_percent\": 20, \"evidence\": \"Midterm 1            20%      Thursday, October 22, 4:30 pm to 6:20 pm\", \"confidence\": 0.97}, {\"action\": \"create\", \"match_item_id\": null, \"course_slug\": \"stat230\", \"kind\": \"quiz\", \"title\": \"Quiz 2 (window Nov 9-13)\", \"date\": \"2026-11-09\", \"time\": null, \"end_time\": null, \"location\": null, \"seat\": null, \"weight_percent\": 5, \"evidence\": \"Quiz 2               5%       Week of November 9 (in tutorial)\", \"confidence\": 0.8}, {\"action\": \"create\", \"match_item_id\": null, \"course_slug\": \"stat230\", \"kind\": \"midterm\", \"title\": \"Midterm 2\", \"date\": \"2026-11-26\", \"time\": \"16:30\", \"end_time\": \"18:20\", \"location\": null, \"seat\": null, \"weight_percent\": 20, \"evidence\": \"Midterm 2            20%      Thursday, November 26, 4:30 pm to 6:20 pm\", \"confidence\": 0.97}, {\"action\": \"create\", \"match_item_id\": null, \"course_slug\": \"stat230\", \"kind\": \"final\", \"title\": \"Final exam\", \"date\": null, \"time\": null, \"end_time\": null, \"location\": null, \"seat\": null, \"weight_percent\": 50, \"evidence\": \"Final exam           50%      Scheduled by the Registrar's Office\", \"confidence\": 0.9}], \"policies\": [{\"field\": \"late_policy\", \"value\": \"No late submissions are accepted.\", \"evidence\": \"There are no late submissions in this course.\"}, {\"field\": \"missed_work_policy\", \"value\": \"A missed quiz gets zero unless a Verification of Illness Form is submitted within 48 hours; its weight then moves to the final exam.\", \"evidence\": \"A missed quiz receives a grade of zero unless you submit a Verification of Illness Form within 48 hours\"}, {\"field\": \"remark_policy\", \"value\": \"Request remarks through Crowdmark within 7 days of marks being returned.\", \"evidence\": \"Remark requests must be submitted through Crowdmark within 7 days of the marks being returned.\"}, {\"field\": \"ai_policy\", \"value\": \"Generative AI may be used to study, review concepts, and make practice problems. It is not allowed on quizzes, midterms, or the final exam.\", \"evidence\": \"You may use generative AI tools to study, review concepts, and generate practice problems.\"}, {\"field\": \"submission_platforms\", \"value\": \"Crowdmark\", \"evidence\": \"All written work is submitted on Crowdmark.\"}], \"grading_scheme\": [{\"component\": \"Quiz 1\", \"weight_percent\": 5, \"notes\": null}, {\"component\": \"Midterm 1\", \"weight_percent\": 20, \"notes\": null}, {\"component\": \"Quiz 2\", \"weight_percent\": 5, \"notes\": null}, {\"component\": \"Midterm 2\", \"weight_percent\": 20, \"notes\": null}, {\"component\": \"Final exam\", \"weight_percent\": 50, \"notes\": null}], \"contacts\": [{\"name\": \"Dr. Priya Raman\", \"role\": \"Instructor (Section 001)\", \"email\": \"praman@uwaterloo.example\"}, {\"name\": \"Sam Ortiz\", \"role\": \"Instructional Support Coordinator\", \"email\": \"stat230-isc@uwaterloo.example\"}], \"office_hours\": [{\"who\": \"Dr. Priya Raman\", \"when\": \"Tuesdays 1:00 to 2:00 pm\", \"where\": \"M3 3120\"}]}"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 2180,
+        "output_tokens": 1450,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      }
+    }
+  }
+]

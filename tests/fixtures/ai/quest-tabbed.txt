@@ -1,0 +1,17 @@
+My Class Schedule
+Fall 2026 | Undergraduate | University of Waterloo
+CS 251 - Computer Organization and Design
+Status	Units	Grading	Grade	Deadlines
+Enrolled	0.50	Numeric Grading Basis		Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+4801	001	LEC	TTh 10:00AM - 11:20AM	MC 2065	Rosina Kharal	09/09/2026 - 12/08/2026
+4855	201	TST	Th 4:30PM - 6:20PM	TBA	Staff	11/12/2026 - 11/12/2026
+STAT 230 - Probability
+Status	Units	Grading	Grade	Deadlines
+Enrolled	0.50	Numeric Grading Basis		Academic Calendar Deadlines
+Class Nbr	Section	Component	Days & Times	Room	Instructor	Start/End Date
+6016	001	LEC	MWF 12:30PM - 1:20PM	M3 1006	Diana Skrzydlo	09/09/2026 - 12/08/2026
+6345	104	TUT	F 3:30PM - 4:20PM	AL 113	Erik Hintz	09/09/2026 - 12/08/2026
+6538	201	TST	Th 4:30PM - 6:20PM	TBA	Staff	10/08/2026 - 10/08/2026
+			Th 4:30PM - 6:20PM	TBA	Staff	11/19/2026 - 11/19/2026
+Printer Friendly Page

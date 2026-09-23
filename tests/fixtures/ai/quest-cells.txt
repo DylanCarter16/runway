@@ -1,0 +1,39 @@
+CS 246 - Object-Oriented Software Development
+Status
+Units
+Grading
+Grade
+Deadlines
+Enrolled
+0.50
+Numeric Grading Basis
+Academic Calendar Deadlines
+Class Nbr
+Section
+Component
+Days & Times
+Room
+Instructor
+Start/End Date
+5210
+003
+LEC
+MW 2:30PM - 3:50PM
+MC 4020
+Ross Evans,
+Grace Lee
+09/09/2026 - 12/08/2026
+5230
+102
+TUT
+F 9:30AM - 10:20AM
+MC 4045
+TBA
+09/09/2026 - 12/08/2026
+5301
+201
+TST
+TBA
+TBA
+Staff
+11/10/2026 - 11/10/2026

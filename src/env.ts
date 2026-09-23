@@ -9,6 +9,8 @@ const serverSchema = z.object({
   INGEST_WEBHOOK_SECRET: z.string().min(1).optional(),
   UW_OPENDATA_API_KEY: z.string().min(1).optional(),
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  /** Only for API keys that are not scoped to a workspace (sent as anthropic-workspace-id). */
+  ANTHROPIC_WORKSPACE_ID: z.string().min(1).optional(),
   AI_MONTHLY_BUDGET_USD: z.coerce.number().default(15),
   MODEL_EXTRACT: z.string().default('claude-sonnet-5'),
   MODEL_CLEANUP: z.string().default('claude-sonnet-5'),
