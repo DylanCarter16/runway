@@ -7,6 +7,9 @@ import type { CalendarApi, GoogleEventBody, RemoteEvent } from './sync';
 // CalendarApi. Only the calendar.app.created scope: Runway can manage the calendar
 // it creates and nothing else in Dylan's account.
 
+/** Holds the OAuth state between /api/gcal/connect and the callback. */
+export const GCAL_STATE_COOKIE = 'runway_gcal_state';
+
 export const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
 
 /** Thrown when the refresh token no longer works; the integration needs a reconnect. */

@@ -1,5 +1,6 @@
 import 'server-only';
 import { serverEnv } from '@/env';
+import { createAdminClient } from '@/lib/db/admin';
 import { enqueue, processJobs, type Admin, type JobHandler } from './queue';
 import type { RunTarget } from './types';
 import { GCAL_HANDLERS, JOB_REMINDERS } from './gcal';
@@ -14,6 +15,15 @@ export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX
 
 export function runQueuedJobs(admin: Admin) {
   return processJobs(admin, HANDLERS);
+}
+
+/** Runs ready jobs right away (from after() in a user-facing route), logging instead of throwing. */
+export async function runWorkerNow(): Promise<void> {
+  try {
+    await runQueuedJobs(createAdminClient());
+  } catch (e) {
+    console.error('job worker failed:', e instanceof Error ? e.message : e);
+  }
 }
 
 /** Users with a current term: the one account in practice. */
