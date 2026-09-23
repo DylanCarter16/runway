@@ -177,6 +177,8 @@ export type Database = {
           content: string
           course_id: string | null
           created_at: string
+          embedding: string | null
+          embedding_model: string | null
           heading: string | null
           id: string
           ord: number
@@ -190,6 +192,8 @@ export type Database = {
           content: string
           course_id?: string | null
           created_at?: string
+          embedding?: string | null
+          embedding_model?: string | null
           heading?: string | null
           id?: string
           ord: number
@@ -203,6 +207,8 @@ export type Database = {
           content?: string
           course_id?: string | null
           created_at?: string
+          embedding?: string | null
+          embedding_model?: string | null
           heading?: string | null
           id?: string
           ord?: number
@@ -987,6 +993,7 @@ export type Database = {
         Row: {
           answer_style_prompt: string | null
           ask_context_budget: number
+          ask_hybrid_search: boolean
           created_at: string
           digest_hour: number
           note_style_prompt: string | null
@@ -1000,6 +1007,7 @@ export type Database = {
         Insert: {
           answer_style_prompt?: string | null
           ask_context_budget?: number
+          ask_hybrid_search?: boolean
           created_at?: string
           digest_hour?: number
           note_style_prompt?: string | null
@@ -1013,6 +1021,7 @@ export type Database = {
         Update: {
           answer_style_prompt?: string | null
           ask_context_budget?: number
+          ask_hybrid_search?: boolean
           created_at?: string
           digest_hour?: number
           note_style_prompt?: string | null
@@ -1181,6 +1190,22 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      match_chunks: {
+        Args: {
+          p_course_id?: string
+          p_limit?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          content: string
+          course_id: string
+          heading: string
+          parent_id: string
+          parent_type: string
+          similarity: number
+        }[]
       }
       requeue_stale_jobs: { Args: { p_stale?: string }; Returns: number }
       search_all: {
