@@ -1,0 +1,9 @@
+[
+  { "id": 41, "name": "Reading week", "details": [
+    { "termName": "Winter 2027", "startDate": "2027-02-15T00:00:00", "endDate": "2027-02-19T00:00:00" },
+    { "termName": "Fall 2026", "startDate": "2026-10-12T00:00:00", "endDate": "2026-10-16T00:00:00" } ] },
+  { "id": 7, "name": "Last day to drop a course with a WD grade", "details": [
+    { "termName": "Fall 2026", "startDate": "2026-11-13T00:00:00", "endDate": null } ] },
+  { "id": 9, "name": "Spring term lectures begin", "details": [
+    { "termName": "Spring 2027", "startDate": "2027-05-04T00:00:00", "endDate": null } ] }
+]

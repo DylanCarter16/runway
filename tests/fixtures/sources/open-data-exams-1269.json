@@ -1,0 +1,7 @@
+[
+  { "examDisplayName": "CS 251", "sections": "001, 002", "day": "Monday", "examWindowStartDate": "2026-12-14T00:00:00", "examWindowStartTime": "9:00 AM", "examDuration": "02:30:00", "location": "PAC", "isOnlineDescription": "No", "notes": null },
+  { "examDisplayName": "CS 246", "sections": "001", "day": "Thursday", "examWindowStartDate": "2026-12-17T00:00:00", "examWindowStartTime": "7:30 PM", "examDuration": "02:30:00", "location": "M3 1006", "isOnlineDescription": "No", "notes": null },
+  { "examDisplayName": "CS 246", "sections": "002, 003", "day": "Friday", "examWindowStartDate": "2026-12-18T00:00:00", "examWindowStartTime": "12:30 PM", "examDuration": "02:30:00", "location": "PAC", "isOnlineDescription": "No", "notes": "Bring your WatCard" },
+  { "examDisplayName": "CS 2510", "sections": "001", "day": "Friday", "examWindowStartDate": "2026-12-11T00:00:00", "examWindowStartTime": "9:00 AM", "examDuration": "02:00:00", "location": "DC 1350", "isOnlineDescription": "No", "notes": null },
+  { "examDisplayName": "STAT 230", "sections": "001-004", "day": "Tuesday", "examWindowStartDate": "2026-12-22T00:00:00", "examWindowStartTime": null, "examDuration": null, "location": null, "isOnlineDescription": "No", "notes": null }
+]

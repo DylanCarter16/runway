@@ -71,12 +71,12 @@ export class MemoryStore implements ItemStore {
     this.add({ ...r });
   }
 
-  async updateItem(id: string, patch: Record<string, unknown>) {
+  async updateItem(id: string, patch: object) {
     const item = this.items.find((i) => i.id === id);
     if (!item) throw new Error('no such item');
     this.writes++;
     const before = { ...item };
-    Object.assign(item, patch);
+    Object.assign(item, patch as Record<string, unknown>);
     for (const f of TRACKED) {
       const a = text(before[f]);
       const b = text(item[f]);
