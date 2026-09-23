@@ -25,6 +25,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/cron|api/jobs|api/ingest|api/digest|api/feed|_next/static|_next/image|favicon.ico).*)',
+    // The PWA files (manifest, service worker, icons, offline page) load before sign-in.
+    '/((?!api/cron|api/jobs|api/ingest|api/digest|api/feed|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline.html|icons/).*)',
   ],
 };

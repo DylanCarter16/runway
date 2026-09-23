@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   title: { default: 'Runway', template: '%s, Runway' },
   description: 'Deadlines, notes, and links for Fall 2026.',
   robots: { index: false, follow: false },
+  appleWebApp: { capable: true, title: 'Runway', statusBarStyle: 'default' },
+  icons: { apple: '/icons/apple-touch-icon.png' },
 };
 
 export const viewport: Viewport = {
