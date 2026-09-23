@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { AiSwitch } from '@/components/app/ai-switch';
 import { CourseDot } from '@/components/app/course-mark';
 import { LoadTermButton } from '@/components/app/settings-bits';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
@@ -83,6 +84,83 @@ function SyncRow({ name, detail, url, runs, target, idle, now }: SyncRowProps & 
   );
 }
 
+const PURPOSE_LABEL: Record<string, string> = {
+  classify: 'Detecting paste kinds',
+  extract_outline: 'Outlines',
+  extract_announcement: 'Announcements',
+  extract_piazza: 'Piazza emails',
+  extract_quest: 'Quest schedules',
+  extract_odyssey: 'Odyssey rows',
+  extract_assignment_header: 'Assignment headers',
+  extract_crowdmark: 'Crowdmark',
+  extract_generic: 'Other pastes',
+  extract_grades: 'Grades',
+  summarize_diff: 'Page change summaries',
+  cleanup: 'Note cleanup',
+  note_meta: 'Note topics and summaries',
+  ask: 'Ask',
+  ask_deep: 'Ask, deep',
+};
+
+function usd(n: number): string {
+  return `$${n.toFixed(n < 1 ? 3 : 2)}`;
+}
+
+/** Month-to-date Claude spend by purpose, from ai_calls. */
+async function AiSpend() {
+  const { supabase } = await getAppContext();
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const { data } = await supabase.from('ai_calls').select('purpose, cost_usd, ok').gte('created_at', monthStart).limit(5000);
+  const rows = data ?? [];
+  const byPurpose = new Map<string, { calls: number; failed: number; cost: number }>();
+  for (const r of rows) {
+    const e = byPurpose.get(r.purpose) ?? { calls: 0, failed: 0, cost: 0 };
+    e.calls++;
+    if (!r.ok) e.failed++;
+    e.cost += Number(r.cost_usd ?? 0);
+    byPurpose.set(r.purpose, e);
+  }
+  const total = [...byPurpose.values()].reduce((s, e) => s + e.cost, 0);
+  const budget = serverEnv.AI_MONTHLY_BUDGET_USD;
+  return (
+    <Block title="Spend this month">
+      {!serverEnv.ANTHROPIC_API_KEY ? <p className="text-sm text-late">No Anthropic API key is set, so nothing is sent to Claude.</p> : null}
+      <p className="text-sm tabular">
+        {usd(total)} of the {usd(budget)} monthly budget.{' '}
+        {total >= budget ? <span className="font-semibold text-late">Budget reached: pastes are stored without extraction until next month.</span> : null}
+      </p>
+      {rows.length ? (
+        <table className="w-full max-w-lg text-sm tabular">
+          <thead>
+            <tr className="border-b border-rule text-left text-muted-foreground">
+              <th className="py-1 font-normal">Purpose</th>
+              <th className="py-1 text-right font-normal">Calls</th>
+              <th className="py-1 text-right font-normal">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...byPurpose.entries()]
+              .sort((a, b) => b[1].cost - a[1].cost)
+              .map(([purpose, e]) => (
+                <tr key={purpose} className="border-b border-rule">
+                  <td className="py-1">{PURPOSE_LABEL[purpose] ?? purpose}</td>
+                  <td className="py-1 text-right">
+                    {e.calls}
+                    {e.failed ? ` (${e.failed} failed)` : ''}
+                  </td>
+                  <td className="py-1 text-right">{usd(e.cost)}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="text-sm text-muted-foreground">No Claude calls this month.</p>
+      )}
+    </Block>
+  );
+}
+
 export default async function SettingsSection({ params }: PageProps<'/settings/[section]'>) {
   const { section } = await params;
   if (!SETTINGS_SECTIONS.some(([s]) => s === section)) notFound();
@@ -136,11 +214,14 @@ export default async function SettingsSection({ params }: PageProps<'/settings/[
               </p>
               <p className="text-sm">
                 <span className="font-semibold">AI switch: {c.ai_allowed ? 'on' : 'off'}.</span>{' '}
-                <span className="text-muted-foreground">{c.ai_policy}</span>
+                {c.ai_allowed
+                  ? `${c.code}'s pastes and notes can be sent to Claude.`
+                  : `Nothing from ${c.code} is sent to Claude.`}
               </p>
+              <p className="text-sm text-muted-foreground">Outline AI policy: {c.ai_policy ?? 'not recorded'}</p>
+              <AiSwitch courseId={c.id} code={c.code} on={c.ai_allowed} policy={c.ai_policy} />
             </Block>
           ))}
-          <p className="text-sm text-muted-foreground">Changing an AI switch and mapping Piazza classes arrive with the paste inbox.</p>
         </div>
       );
 
@@ -218,9 +299,7 @@ export default async function SettingsSection({ params }: PageProps<'/settings/[
               <dd>{serverEnv.MODEL_ASK_DEEP}</dd>
             </dl>
           </Block>
-          <Block title="Spend this month">
-            <p className="text-sm text-muted-foreground">No Claude calls yet.</p>
-          </Block>
+          <AiSpend />
         </div>
       );
 

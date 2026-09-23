@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { after } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/db/admin';
-import { requireUser } from '@/lib/db/server';
+import { createClient, requireUser } from '@/lib/db/server';
 import { enqueueNow, runQueuedJobs } from '@/lib/jobs/schedule';
 import type { RunTarget } from '@/lib/jobs/types';
 import { deleteLearnFeedUrl, saveLearnFeedUrl } from '@/lib/jobs/tokens';
@@ -76,5 +76,34 @@ export async function removeLearnFeed(): Promise<ActionResult> {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not remove the feed URL.' };
   }
   revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+const aiSwitchSchema = z.object({
+  courseId: z.uuid(),
+  on: z.boolean(),
+  confirmCode: z.string().max(40).optional(),
+  instructorAllows: z.boolean().optional(),
+});
+
+/**
+ * The course AI switch (SPEC 4.10). Turning it on needs the course code typed
+ * out and a confirmation that the instructor allows AI for this use.
+ */
+export async function setCourseAi(input: z.infer<typeof aiSwitchSchema>): Promise<ActionResult> {
+  const parsed = aiSwitchSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Bad request.' };
+  await requireUser();
+  const supabase = await createClient();
+  const { data: course } = await supabase.from('courses').select('id, code').eq('id', parsed.data.courseId).maybeSingle();
+  if (!course) return { ok: false, error: 'That course no longer exists.' };
+  if (parsed.data.on) {
+    const typed = (parsed.data.confirmCode ?? '').replace(/\s+/g, '').toUpperCase();
+    if (typed !== course.code.replace(/\s+/g, '').toUpperCase()) return { ok: false, error: `Type ${course.code} to confirm.` };
+    if (!parsed.data.instructorAllows) return { ok: false, error: 'Confirm that the instructor allows AI for this use.' };
+  }
+  const { error } = await supabase.from('courses').update({ ai_allowed: parsed.data.on }).eq('id', course.id);
+  if (error) return { ok: false, error: `Could not change the switch: ${error.message}` };
+  revalidatePath('/', 'layout');
   return { ok: true, data: null };
 }
