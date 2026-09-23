@@ -14,6 +14,7 @@ import { cleanReminders, ITEM_KIND_VALUES, resolveRule, type RuleOverrides } fro
 import type { RunTarget } from '@/lib/jobs/types';
 import { createFeedToken, deleteFeedToken } from '@/lib/jobs/feed';
 import { deleteLearnFeedUrl, saveLearnFeedUrl } from '@/lib/jobs/tokens';
+import { termDatedFilter } from '@/lib/term/range';
 import type { ActionResult } from '../actions';
 
 // Settings actions that touch server-only tables (jobs, integration_tokens). Each
@@ -272,7 +273,7 @@ export async function deleteTerm(input: z.infer<typeof deleteTermSchema>): Promi
   if (!parsed.success) return { ok: false, error: 'Bad request.' };
   await requireUser();
   const supabase = await createClient();
-  const { data: term } = await supabase.from('terms').select('id, name').eq('id', parsed.data.termId).maybeSingle();
+  const { data: term } = await supabase.from('terms').select('id, name, starts_on, ends_on').eq('id', parsed.data.termId).maybeSingle();
   if (!term) return { ok: false, error: 'That term no longer exists.' };
   const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
   if (norm(parsed.data.confirmName) !== norm(term.name)) return { ok: false, error: `Type ${term.name} to confirm.` };
@@ -281,8 +282,11 @@ export async function deleteTerm(input: z.infer<typeof deleteTermSchema>): Promi
   const { count } = ids.length
     ? await supabase.from('items').select('id', { count: 'exact', head: true }).in('course_id', ids)
     : { count: 0 };
+  // Course-less items dated in the term (reading week, exam period) go too.
+  const { data: termWide, error: itemsError } = await supabase.from('items').delete().is('course_id', null).or(termDatedFilter(term)).select('id');
+  if (itemsError) return { ok: false, error: `Could not delete the term's dates: ${itemsError.message}` };
   const { error } = await supabase.from('terms').delete().eq('id', term.id);
   if (error) return { ok: false, error: `Could not delete the term: ${error.message}` };
   revalidatePath('/', 'layout');
-  return { ok: true, data: { courses: ids.length, items: count ?? 0 } };
+  return { ok: true, data: { courses: ids.length, items: (count ?? 0) + (termWide?.length ?? 0) } };
 }

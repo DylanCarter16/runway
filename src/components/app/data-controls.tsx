@@ -51,9 +51,9 @@ export function DeleteTermButton({ termId, name, courses, items }: { termId: str
           <DialogHeader>
             <DialogTitle>Delete {name}?</DialogTitle>
             <DialogDescription>
-              This deletes {courses} {courses === 1 ? 'course' : 'courses'} and {items} {items === 1 ? 'item' : 'items'}, with their links, grades,
-              reminders, watched pages, and calendar events. Notes and pastes are kept without a course. It can&apos;t be undone, so export
-              first.
+              This deletes {courses} {courses === 1 ? 'course' : 'courses'} and {items} {items === 1 ? 'item' : 'items'} (dates like reading week
+              included), with their links, grades, reminders, watched pages, and calendar events. Notes and pastes are kept without a course. It
+              can&apos;t be undone, so export first.
             </DialogDescription>
           </DialogHeader>
           <form

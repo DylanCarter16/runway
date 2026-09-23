@@ -26,6 +26,7 @@ import type { RunTarget } from '@/lib/jobs/types';
 import { ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
 import { resolveRule } from '@/lib/reminders/rules';
 import { runSummary, sourceHealth, type RunRow } from '@/lib/sync/summary';
+import { termDatedFilter } from '@/lib/term/range';
 import { SETTINGS_SECTIONS } from '@/lib/ui';
 import { formatAgo, formatListDate, fromTorontoLocal } from '@/lib/time';
 import { cn } from '@/lib/utils';
@@ -551,18 +552,25 @@ export default async function SettingsSection({ params, searchParams }: PageProp
 
     case 'data': {
       const [{ data: terms }, { data: termCourses }] = await Promise.all([
-        supabase.from('terms').select('id, name, starts_on').order('starts_on', { ascending: false }),
+        supabase.from('terms').select('id, name, starts_on, ends_on').order('starts_on', { ascending: false }),
         supabase.from('courses').select('id, term_id'),
       ]);
-      const itemCounts = await Promise.all(
-        (termCourses ?? []).map((c) => supabase.from('items').select('id', { count: 'exact', head: true }).eq('course_id', c.id)),
+      const [itemCounts, termWideCounts] = await Promise.all([
+        Promise.all((termCourses ?? []).map((c) => supabase.from('items').select('id', { count: 'exact', head: true }).eq('course_id', c.id))),
+        Promise.all(
+          (terms ?? []).map((t) =>
+            supabase.from('items').select('id', { count: 'exact', head: true }).is('course_id', null).or(termDatedFilter(t)),
+          ),
+        ),
+      ]);
+      const counts = new Map<string, { courses: number; items: number }>(
+        (terms ?? []).map((t, i) => [t.id, { courses: 0, items: termWideCounts[i].count ?? 0 }]),
       );
-      const counts = new Map<string, { courses: number; items: number }>();
       (termCourses ?? []).forEach((c, i) => {
-        const e = counts.get(c.term_id) ?? { courses: 0, items: 0 };
+        const e = counts.get(c.term_id);
+        if (!e) return;
         e.courses++;
         e.items += itemCounts[i].count ?? 0;
-        counts.set(c.term_id, e);
       });
       return (
         <div className="grid gap-6">
