@@ -19,3 +19,9 @@ Items parked during autopilot runs (docs/AUTOPILOT.md). Each needs one human ste
 - Why: without it nothing runs on schedule; syncs only run from Settings, Sync, "Run now".
 - Done so far: `/api/cron/sync` and `/api/jobs/run` are deployed and answer 401 without the secret and 202 with it (checked 2026-09-23).
 - Time: 5 minutes.
+
+## Phase 3: Anthropic API key can't make calls yet
+- Needed: the key in `.env.local` is not scoped to a workspace, so the API answers "This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header". Either create a new key inside a workspace in the Claude Console (https://platform.claude.com/settings/keys, pick a workspace when creating it) and replace `ANTHROPIC_API_KEY` in `.env.local`, or keep the key and add `ANTHROPIC_WORKSPACE_ID=<workspace id>` (from https://platform.claude.com/settings/workspaces) to `.env.local`. Set a monthly spend limit on the workspace. Then ask a local Claude Code session to add `ANTHROPIC_API_KEY` (and `ANTHROPIC_WORKSPACE_ID` if used) to Vercel (production and preview, sensitive) and redeploy, and to re-record the AI fixtures with `.scratch/record-ai.ts`.
+- Why: unblocks Claude extraction for STAT 230 pastes (outlines, announcements, grades, assignment headers) and page change summaries. Rule-based pastes (Quest schedules, Odyssey rows) and AI-off courses work without it.
+- Done so far: the whole pipeline (`src/lib/ai`, `src/lib/inbox`, `src/lib/jobs/inbox.ts`) is built and tested against hand-written responses in `tests/fixtures/ai/`. Without a working key, STAT 230 pastes are stored with the note "Claude is not set up yet" (production has no key yet) or, locally, fail after three tries and show "Reading it failed" in the Library.
+- Time: 10 minutes.

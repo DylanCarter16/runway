@@ -4,15 +4,26 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Now
 
-- **Phase**: 2 done (2026-09-23, autopilot). Live LEARN and Open Data syncs are parked on Dylan's steps (docs/BLOCKED.md); their code is built and tested against fixtures.
-- **Next step**: Phase 3 (Paste inbox and review queue), new session. `ANTHROPIC_API_KEY` is set in `.env.local`. Tests must use recorded fixtures in `tests/fixtures/ai/`. Build the AI switch (`assertAiAllowed`) first (Phase 3 task 11). Sync proposals already exist: `proposals.payload` holds `{source, source_ref, title, changes}` for `update_item` (a sync disagreeing with a locked field) and `{source, source_ref, item}` for `create_item` (LEARN events with no course). The review queue must render and apply both; approving an `update_item` applies `changes` and removes those fields from `locked_fields`.
-- **Waiting on Dylan**: docs/BLOCKED.md (UW Open Data key, LEARN feed URL, scheduled jobs SQL). None block Phase 3.
+- **Phase**: 3 done (2026-09-23, autopilot). Claude extraction for STAT 230 is built and tested against hand-written fixtures, but the Anthropic key can't make calls yet (no workspace, docs/BLOCKED.md). Rule-based pastes (Quest, Odyssey) and AI-off courses work fully.
+- **Next step**: Phase 4 (Google Calendar, reminders, digest) needs SETUP steps 7 and 8 (Google OAuth client, Apps Script bridge). If `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are still empty in `.env.local`, build Phase 4's code against fixtures (reminder generator, paste reminder catalog, digest payload, calendar sync behind a fake client), park the live Google parts, or skip to Phase 5 (Notes) per docs/AUTOPILOT.md. Phase 5's cleanup uses `callClaude()` and `assertAiAllowed()` from `src/lib/ai`, the job queue in `src/lib/jobs`, and the `notes` rows the Inbox already creates for "Lecture notes" pastes.
+- **Waiting on Dylan**: docs/BLOCKED.md (UW Open Data key, LEARN feed URL, scheduled jobs SQL, a workspace-scoped Anthropic key).
 - **Autopilot decisions**: `docs/DECISIONS.md`. Parked items: `docs/BLOCKED.md`.
 - **Scratch checks** (gitignored `.scratch/`, run against the hosted project with a throwaway user they create and delete):
   - `.scratch/it.ts`: Phase 1 DB paths. `.scratch/smoke.ts`: Phase 1 UI at 1280 and 390px.
-  - `.scratch/phase2.ts`: every CS 251 page sync twice against the live pages, merge rules, bad LEARN URL. `.scratch/phase2-smoke.ts`: Sync, Integrations, Updates, Today banner at 390 and 1280px (needs `npx next start -p 3100`).
-  - Run with `set -a; . ./.env.local; set +a; NODE_OPTIONS=--conditions=react-server npx tsx --tsconfig tsconfig.json .scratch/<file>.ts`. The `react-server` condition lets scripts import `server-only` modules.
-- **tests/db/run.sh** was not run this session (no scratch Postgres on this machine). The new migration only changes one function to security definer.
+  - `.scratch/phase2.ts`: every CS 251 page sync twice against the live pages, merge rules, bad LEARN URL. `.scratch/phase2-smoke.ts`: Sync, Integrations, Updates, Today banner at 390 and 1280px.
+  - `.scratch/phase3.ts`: the Phase 3 acceptance checks through the real UI (Odyssey paste, Already saved, AI-off paste, Quest paste, outline proposals replayed from the fixture, Edit then approve, Today, Calendar, bulk approve, AI switch dialog) plus page loads at 390 and 1280px. `.scratch/record-ai.ts` re-records `tests/fixtures/ai/*.response.json` from the live API once the key works.
+  - UI scripts need `npx next start -p 3100` (after `npm run build`). Run with `set -a; . ./.env.local; set +a; NODE_OPTIONS=--conditions=react-server npx tsx --tsconfig tsconfig.json .scratch/<file>.ts`. The `react-server` condition lets scripts import `server-only` modules.
+- **tests/db/run.sh** was not run (no scratch Postgres on this machine). Phase 3 added no migration.
+
+## Phase 3 map (where things live)
+
+- AI core (pure, tested): `src/lib/ai/models.ts` (model per purpose from env), `pricing.ts`, `json.ts` (`parseJson`), `switch.ts` (`assertAiAllowed` returns the `AiClearance` that `callClaude` requires), `client.ts` (`callClaude(deps, req)`: structured output via `output_config.format`, zod validation, one `ai_calls` row per call), `prompts/` (PROMPTS.md sections 1 to 7), `schemas/` (zod, converted with `jsonSchema()`).
+- Live transport: `src/lib/jobs/ai.ts` (Anthropic SDK, `ANTHROPIC_WORKSPACE_ID` header, `ai_calls` insert, `monthSpendUsd`, `overBudget`).
+- Rule-based parsers: `src/lib/sources/quest.ts`, `odyssey.ts`.
+- Inbox pipeline: `src/lib/inbox/process.ts` (`processDocument(input, claude)`: sniff tables, then the AI switch, then classify and extract), `plan.ts` (drafts to proposals, duplicate check, course info, meetings, Odyssey matching), `apply.ts` (`planApproval`: the writes an approval makes), `describe.ts` (card text), `queue.ts` (review queue groups), `diff-summary.ts` (page change summaries), `types.ts` (proposal payload shapes, shared with the Phase 2 sync proposals), `kinds.ts`.
+- Jobs: `inbox.extract` and `inbox.summarize_diff` in `src/lib/jobs/inbox.ts`, registered in `HANDLERS`. The page sync queues a summary only for AI-on courses.
+- UI: `/inbox` (`components/app/paste-box.tsx`, `review-queue.tsx`, actions in `src/app/(app)/inbox/actions.ts`), `/library` and the course Library tab (`components/app/library-list.tsx`: kind, course, dates, full-text search), `/library/[id]` (status, proposals, items made, snapshot diff, raw text), course Updates now lists pastes, Settings AI (spend by purpose), Settings Courses (`components/app/ai-switch.tsx`, action `setCourseAi`).
+- Tests: `tests/lib/inbox/` (fake term in `context.ts`), `tests/lib/ai/`, `tests/lib/sources/paste-parsers.test.ts`, fixtures in `tests/fixtures/ai/`.
 
 ## Phase 2 map (where things live)
 
@@ -41,7 +52,7 @@ Claude Code reads this first in every session and updates it before stopping.
 - [ ] Paste the magic-link email template into the Supabase dashboard (Authentication > Emails > Magic Link) — see "Decisions" below; the CLI can't push it on the free plan
 - [ ] SETUP step 4 (UW Open Data key), step 5 (scheduled jobs SQL, Phase 2 is deployed), then step 3 (LEARN feed URL in Settings, Integrations). Details and links in docs/BLOCKED.md
 - [x] Quest schedule read on 2026-09-17; sections seeded in the term config
-- [ ] SETUP step 6 before Phase 3
+- [ ] SETUP step 6: the Anthropic key needs a workspace (docs/BLOCKED.md, "Anthropic API key can't make calls yet"), then have a local session add it to Vercel
 - [ ] SETUP steps 7 and 8 before Phase 4
 - [ ] SETUP step 9 before Phase 7 (step 10 is optional)
 - [ ] SETUP step 2 only if a cloud session needs to change the database
@@ -86,6 +97,8 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Later
 
+- Inbox paste reminders (SPEC 4.4) render once the Phase 4 reminder generator writes `reminders` rows; the section is a placeholder until then.
+- Quest TST rows could become midterm proposals when a course has no exam item for that date.
 - CS 251 assignment PDFs (SOURCES.md 2, optional): fetch, store as `assignment_pdf`. Only useful with the assignment header prompt, which can't run for AI-off courses.
 - Sort Settings, Sync rows by course, and say "first snapshot" instead of "page changed" on a page's first run.
 - Calendar: add `@fullcalendar/luxon3` so the calendar renders in Toronto time even when the device is elsewhere (see DECISIONS.md).
@@ -94,6 +107,8 @@ Claude Code reads this first in every session and updates it before stopping.
 ## Session log
 
 Newest first. One entry per session: date, phase, model, what changed, commits, open issues, what Dylan must do next.
+
+- 2026-09-23, Phase 3 (Opus 5.5, autopilot): AI switch (`assertAiAllowed` hands out the clearance `callClaude` requires), Claude client with structured outputs, zod validation, `ai_calls` logging and pricing, prompts and schemas from PROMPTS.md, rule-based Quest and Odyssey parsers, the paste pipeline (sniff tables, switch, classify, extract, duplicate check), approval writes for items, course info, meetings, and grades, `/inbox` paste box and review queue (Approve, Edit then approve, Dismiss, Approve all per document with a confirm dialog), Library filters and full-text search, document detail, pastes in course Updates, Settings AI spend and the course AI switch with its confirmation step, and Claude page diff summaries for AI-on courses. 123 unit tests; they prove CS 245, CS 246, CS 251, and course-less pastes and page diffs never reach `callClaude`. Checked on the hosted project through the UI with `.scratch/phase3.ts`: the CS 251 Odyssey row proposes room STC 0010 and seat 45 on the synced midterm without Claude, and approving writes them with source `paste` in the change log; the same text again says "Already saved" and creates nothing; a CS 246 paste is stored, makes no `ai_calls` row, and opens quick add; a Quest paste with No course proposes new CS 251 class times; the STAT 230 outline (Claude answer replayed from the fixture) makes create proposals with weights and dates plus late and AI policy proposals; Edit then approve moved Midterm 1 to Sep 30 and it shows on Today and the Calendar; bulk approve wrote the policies; every new page loads at 390 and 1280px with no horizontal scroll or console errors. Found and fixed: a Detect paste for an AI-off course didn't open quick add. Blocked: the Anthropic key isn't scoped to a workspace, so live Claude calls fail (docs/BLOCKED.md); the fixtures are hand-written until it works. Next: Phase 4, or Phase 5 if the Google credentials are still missing.
 
 - 2026-09-23, Phase 2 (Opus 5.5, autopilot): CS 251 schedule, exam info, and assignments parsers match all three expected fixtures exactly. Merge rules as a pure planner with an in-memory store: running every sync twice writes nothing, a moved A2 logs one `due_at` change from `cs251_schedule`, a locked date gets a proposal instead of an overwrite (and isn't repeated), precision never drops, syncs never touch state or progress, dropped items get `source_missing_at`. LEARN feed parser, Open Data mappers (finals, important dates), page watcher with raw diffs, AES-256-GCM helper, job queue with dedupe and backoff, sync handlers writing `sync_runs`, cron and worker routes, Settings Sync and Integrations, Updates tab, Today banner. 83 unit tests. Checked on the hosted project with the live CS 251 pages: A1 to A6, the midterm Nov 12 4:30 to 6:20 pm, and reading week appear with links, A1 due 10:00 pm, the second run adds no items, change-log rows, or snapshots, and a bad LEARN URL shows "Could not reach ...: the connection failed." without the token. Found and fixed: jsonb reorders proposal keys (proposals repeated), and deleting a user with documents failed on the chunk trigger (migration `20260923010000_chunk_trigger_definer.sql`, applied). Production deploy Ready; `/api/jobs/run` answers 202 with the secret. Parked: live LEARN and Open Data syncs, scheduled jobs SQL (docs/BLOCKED.md). Next: Phase 3.
 

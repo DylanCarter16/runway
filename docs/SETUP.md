@@ -83,7 +83,7 @@ In a local session, Claude Code runs the "Scheduled jobs" snippet below with `np
 
 ## 6. Anthropic API key (Phase 3)
 
-Create a key in the Claude Console and set a monthly spend limit there. Paste the key into `.env.local` as `ANTHROPIC_API_KEY`, then ask Claude Code (local session) to add it to Vercel. Phase 3 fills `src/lib/ai/pricing.ts` from the API pricing page; check the numbers once.
+Create a key inside a workspace in the Claude Console and set a monthly spend limit there. A key that isn't scoped to a workspace also needs `ANTHROPIC_WORKSPACE_ID`. Paste the key into `.env.local` as `ANTHROPIC_API_KEY`, then ask Claude Code (local session) to add it to Vercel. Phase 3 fills `src/lib/ai/pricing.ts` from the API pricing page; check the numbers once.
 
 ## 7. Google Calendar access (Phase 4)
 
@@ -199,6 +199,7 @@ Status 202 or 200 means Runway accepted the call. 401 means the Vault secret doe
 | `TOKEN_ENCRYPTION_KEY` | random base64 | 2 |
 | `UW_OPENDATA_API_KEY` | step 4 | 2 |
 | `ANTHROPIC_API_KEY` | step 6 | 3 |
+| `ANTHROPIC_WORKSPACE_ID` | only for a key that is not scoped to a workspace | 3 |
 | `AI_MONTHLY_BUDGET_USD` | for example `15` | 3 |
 | `MODEL_EXTRACT`, `MODEL_CLEANUP`, `MODEL_ASK`, `MODEL_ASK_DEEP` | optional overrides (defaults in PROMPTS.md) | 3 |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | step 7 | 4 |
