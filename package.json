@@ -18,7 +18,7 @@
     "@fullcalendar/daygrid": "^6.1.21",
     "@fullcalendar/interaction": "^6.1.21",
     "@fullcalendar/list": "^6.1.21",
-    "@fullcalendar/react": "^7.1.0",
+    "@fullcalendar/react": "^6.1.21",
     "@fullcalendar/timegrid": "^6.1.21",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",

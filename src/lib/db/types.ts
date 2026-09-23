@@ -224,6 +224,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          ai_allowed: boolean
           ai_policy: string | null
           archived: boolean
           checklist: Json
@@ -251,6 +252,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_allowed?: boolean
           ai_policy?: string | null
           archived?: boolean
           checklist?: Json
@@ -278,6 +280,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          ai_allowed?: boolean
           ai_policy?: string | null
           archived?: boolean
           checklist?: Json
@@ -528,6 +531,7 @@ export type Database = {
           description: string | null
           due_at: string | null
           ends_at: string | null
+          flags: string[]
           gcal_event_id: string | null
           gcal_prep_event_ids: string[]
           gcal_synced_at: string | null
@@ -563,6 +567,7 @@ export type Database = {
           description?: string | null
           due_at?: string | null
           ends_at?: string | null
+          flags?: string[]
           gcal_event_id?: string | null
           gcal_prep_event_ids?: string[]
           gcal_synced_at?: string | null
@@ -598,6 +603,7 @@ export type Database = {
           description?: string | null
           due_at?: string | null
           ends_at?: string | null
+          flags?: string[]
           gcal_event_id?: string | null
           gcal_prep_event_ids?: string[]
           gcal_synced_at?: string | null
