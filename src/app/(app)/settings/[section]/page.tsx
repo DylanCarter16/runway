@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { NoteStyleForm } from '@/components/app/note-style-form';
+import { DEFAULT_NOTE_STYLE } from '@/lib/ai/prompts';
 import { AiSwitch } from '@/components/app/ai-switch';
 import { CourseDot } from '@/components/app/course-mark';
 import { LoadTermButton } from '@/components/app/settings-bits';
@@ -373,9 +375,13 @@ export default async function SettingsSection({ params, searchParams }: PageProp
       );
     }
 
-    case 'ai':
+    case 'ai': {
+      const { data: aiSettings } = await supabase.from('settings').select('note_style_prompt').maybeSingle();
       return (
         <div className="grid gap-6">
+          <Block title="Notes">
+            <NoteStyleForm style={aiSettings?.note_style_prompt ?? null} fallback={DEFAULT_NOTE_STYLE} />
+          </Block>
           <Block title="Models">
             <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
               <dt className="text-muted-foreground">Extraction</dt>
@@ -391,6 +397,7 @@ export default async function SettingsSection({ params, searchParams }: PageProp
           <AiSpend />
         </div>
       );
+    }
 
     case 'sync': {
       const [{ data: pages }, { data: runs }, learn] = await Promise.all([

@@ -160,3 +160,19 @@ export async function saveReminderSettings(input: z.infer<typeof reminderSetting
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };
 }
+
+const noteStyleSchema = z.object({ style: z.string().trim().max(1000, 'Keep the style under 1,000 characters.') });
+
+/** Settings, AI: the note cleanup style. Empty means the default from docs/PROMPTS.md. */
+export async function saveNoteStyle(input: { style: string }): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = noteStyleSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the style.' };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('settings')
+    .upsert({ user_id: user.id, note_style_prompt: parsed.data.style || null }, { onConflict: 'user_id' });
+  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
