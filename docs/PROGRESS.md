@@ -4,9 +4,11 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Now
 
-- **Phase**: 0 done
-- **Next step**: Phase 1 (Findability shell), new session
-- **Waiting on Dylan**: nothing blocking Phase 1
+- **Phase**: 1 done (2026-09-23, autopilot)
+- **Next step**: Phase 2 (Automatic sources), new session. `UW_OPENDATA_API_KEY` is empty in `.env.local`, so build the Open Data sync against fixtures and park the live run. No `LEARN_ICS_URL` in `.env.local` either: build the LEARN parser against fixtures and park the live sync (AUTOPILOT.md rules).
+- **Waiting on Dylan**: nothing blocking Phase 2
+- **Autopilot decisions**: `docs/DECISIONS.md`. Parked items: `docs/BLOCKED.md` (none yet).
+- **Scratch checks**: `.scratch/it.ts` (DB acceptance paths) and `.scratch/smoke.ts` (Playwright, every page at 1280px and 390px) run against the hosted project with a throwaway user they create and delete. Run with `set -a; . ./.env.local; set +a; npx tsx --tsconfig tsconfig.json .scratch/smoke.ts` after `npx next start -p 3100`. Gitignored, local only.
 
 ## Project facts (no secrets)
 
@@ -21,6 +23,7 @@ Claude Code reads this first in every session and updates it before stopping.
 - [x] CS 245 midterm date settled: Quest lists Thursday, Oct 29 only
 - [x] SETUP step 1: setup session finished; Phase S and Phase 0 both done
 - [x] Copy `SUPABASE_DB_PASSWORD` from `.env.local` into a password manager (do this now — the CLI has no way to recover a lost DB password, only reset it)
+- [ ] After signing in, open Settings, Term and press "Load Fall 2026 setup" (safe to press again; it only adds what is missing). Then delete the 49 stopgap Google Calendar events only after Phase 4
 - [ ] Sign in once at https://<APP_HOST> to confirm the 6-digit code arrives (Supabase's sender allows 2 emails/hour)
 - [ ] Paste the magic-link email template into the Supabase dashboard (Authentication > Emails > Magic Link) — see "Decisions" below; the CLI can't push it on the free plan
 - [ ] SETUP step 4 during Phase 2, step 5 right after it deploys, then step 3
@@ -70,11 +73,14 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Later
 
-- (nothing yet)
+- Calendar: add `@fullcalendar/luxon3` so the calendar renders in Toronto time even when the device is elsewhere (see DECISIONS.md).
+- A Playwright smoke test that runs in CI would need a test user and a way to sign in without OTP; the local `.scratch/smoke.ts` covers it for now.
 
 ## Session log
 
 Newest first. One entry per session: date, phase, model, what changed, commits, open issues, what Dylan must do next.
+
+- 2026-09-23, Phase 1 (Opus 5.5, autopilot): found the hosted schema was an earlier draft (no `courses.ai_allowed` or `items.flags`) and caught it up with migration `20260923000000_init_drift.sql`, then regenerated types. Built the app shell per DESIGN.md (tokens, Atkinson Hyperlegible and Source Serif fonts, light and dark, 232px rail, icon rail on tablets, mobile top bar with course chips and bottom bar), the idempotent term import (Settings, Term), Today (week number, next exam countdown, needs-you strip, overdue with late policy, 14-day runway list with runway bars and progress, changed recently), Calendar (FullCalendar month, week, list; course and kind filters plus prep and reminder toggles in the URL; remembered view; click to open the drawer or quick add; `t` and arrows), course pages with all eight tabs (Overview, Deadlines, Resources fully; others with empty states), item drawer and `/items/[id]` with edit (adds to `locked_fields`), progress, dismiss, and change history, quick add, links add, edit, pin, reorder, delete, the command palette (Ctrl/Cmd+K, `/`, grouped results, recent items and searches, arrows) and `/search` with filters, alias expansion in `src/lib/search/aliases.ts`, keyboard shortcuts (`g` then a letter, `?`), and placeholder pages for Inbox, Notes, Ask, Library. 45 unit tests. Acceptance: checked through RLS with a throwaway user (import twice changes nothing; STAT 230 M1 Oct 8, CS 246 midterm Nov 10, CS 245 midterm Oct 29; quick-added A1 shows on Today, on the Calendar as "CS 251 A1 (time TBD)", and in CS 251 Deadlines; palette finds it for "a1", "251 a1", "cs251 A1" and finds Odyssey for "odysey"; every page loads at 390px with no horizontal scroll and no console errors). One acceptance line can't be met as written: the CS 245 midterm has no flag in the seed, so it shows no "confirm date" badge (see DECISIONS.md). Next: Phase 2.
 
 - 2026-09-17, Phase 0 (Sonnet, background session, same session as Phase S): scaffolded Next.js 16 into the kit, installed the full stack and shadcn/ui, wrote `src/env.ts`, the Supabase server/browser/admin clients, `proxy.ts` (session refresh, route protection), the 6-digit email OTP login gated on `ALLOWED_EMAIL`, America/Toronto time helpers with DST tests, Vitest/Playwright config, and the CI workflow. Deployed to Vercel; fixed two deploy-blocking issues along the way (SSO deployment protection, wrong framework preset from before `package.json` existed). Commit `phase 0: foundation` pushed to `main`. Confirmed live: production URL redirects `/` to `/login`, the login page renders, `select ... not relrowsecurity` still returns no rows. Open issues: Dylan hasn't yet done a real sign-in to confirm the code email arrives, and still needs to paste the magic-link template into the Supabase dashboard by hand (see Decisions). Next: Phase 1 (Findability shell), new session.
 - 2026-09-17, Phase S (Sonnet, background session): fresh-started from the newer kit zip, created the GitHub repo, reused and migrated the Supabase project, generated app secrets, linked Vercel and pushed all env vars. Commit `phase S: setup` pushed to `main`. Open issue: Dylan still needs to copy `SUPABASE_DB_PASSWORD` into a password manager. Next: Phase 0 (Foundation), same session.
