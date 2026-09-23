@@ -4,11 +4,24 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Now
 
-- **Phase**: 1 done (2026-09-23, autopilot)
-- **Next step**: Phase 2 (Automatic sources), new session. `UW_OPENDATA_API_KEY` is empty in `.env.local`, so build the Open Data sync against fixtures and park the live run. No `LEARN_ICS_URL` in `.env.local` either: build the LEARN parser against fixtures and park the live sync (AUTOPILOT.md rules).
-- **Waiting on Dylan**: nothing blocking Phase 2
-- **Autopilot decisions**: `docs/DECISIONS.md`. Parked items: `docs/BLOCKED.md` (none yet).
-- **Scratch checks**: `.scratch/it.ts` (DB acceptance paths) and `.scratch/smoke.ts` (Playwright, every page at 1280px and 390px) run against the hosted project with a throwaway user they create and delete. Run with `set -a; . ./.env.local; set +a; npx tsx --tsconfig tsconfig.json .scratch/smoke.ts` after `npx next start -p 3100`. Gitignored, local only.
+- **Phase**: 2 done (2026-09-23, autopilot). Live LEARN and Open Data syncs are parked on Dylan's steps (docs/BLOCKED.md); their code is built and tested against fixtures.
+- **Next step**: Phase 3 (Paste inbox and review queue), new session. `ANTHROPIC_API_KEY` is set in `.env.local`. Tests must use recorded fixtures in `tests/fixtures/ai/`. Build the AI switch (`assertAiAllowed`) first (Phase 3 task 11). Sync proposals already exist: `proposals.payload` holds `{source, source_ref, title, changes}` for `update_item` (a sync disagreeing with a locked field) and `{source, source_ref, item}` for `create_item` (LEARN events with no course). The review queue must render and apply both; approving an `update_item` applies `changes` and removes those fields from `locked_fields`.
+- **Waiting on Dylan**: docs/BLOCKED.md (UW Open Data key, LEARN feed URL, scheduled jobs SQL). None block Phase 3.
+- **Autopilot decisions**: `docs/DECISIONS.md`. Parked items: `docs/BLOCKED.md`.
+- **Scratch checks** (gitignored `.scratch/`, run against the hosted project with a throwaway user they create and delete):
+  - `.scratch/it.ts`: Phase 1 DB paths. `.scratch/smoke.ts`: Phase 1 UI at 1280 and 390px.
+  - `.scratch/phase2.ts`: every CS 251 page sync twice against the live pages, merge rules, bad LEARN URL. `.scratch/phase2-smoke.ts`: Sync, Integrations, Updates, Today banner at 390 and 1280px (needs `npx next start -p 3100`).
+  - Run with `set -a; . ./.env.local; set +a; NODE_OPTIONS=--conditions=react-server npx tsx --tsconfig tsconfig.json .scratch/<file>.ts`. The `react-server` condition lets scripts import `server-only` modules.
+- **tests/db/run.sh** was not run this session (no scratch Postgres on this machine). The new migration only changes one function to security definer.
+
+## Phase 2 map (where things live)
+
+- Parsers (pure): `src/lib/sources/cs251-schedule.ts`, `cs251-examinfo.ts`, `cs251-assignments.ts`, `learn-ics.ts`, `open-data.ts`, `page-watch.ts` (normalize, hash, diff), `fetch.ts` (User-Agent, ETag, 10 s timeout, host-only errors).
+- Merge rules (pure): `src/lib/sync/merge.ts`, `items.ts` (`syncItems`, `proposeUnmatched`, `ItemStore`), `cs251.ts`, `summary.ts`. Tests: `tests/lib/sync/` with `memory-store.ts`.
+- Jobs: `src/lib/jobs/queue.ts` (enqueue with dedupe, `processJobs`, backoff), `sync.ts` (handlers `sync.page`, `sync.learn_ics`, `sync.open_data`, each writes `sync_runs`), `schedule.ts` (cadences, Run now), `tokens.ts` (encrypted LEARN URL), `item-store.ts`, `cron-auth.ts`. Encryption: `src/lib/crypto.ts`.
+- Routes: `POST /api/jobs/run`, `POST /api/cron/sync?set=hourly|every_3h|daily` (Bearer `CRON_SECRET`, 202, work in `after()`).
+- UI: Settings, Sync (row per source, Run now, errors, fail streak), Settings, Integrations (LEARN feed field), course Updates tab (item changes and page diffs), Today failing-source banner (three failed runs in a row).
+- Job types added in later phases register in `HANDLERS` in `src/lib/jobs/schedule.ts`.
 
 ## Project facts (no secrets)
 
@@ -26,7 +39,7 @@ Claude Code reads this first in every session and updates it before stopping.
 - [ ] After signing in, open Settings, Term and press "Load Fall 2026 setup" (safe to press again; it only adds what is missing). Then delete the 49 stopgap Google Calendar events only after Phase 4
 - [ ] Sign in once at https://<APP_HOST> to confirm the 6-digit code arrives (Supabase's sender allows 2 emails/hour)
 - [ ] Paste the magic-link email template into the Supabase dashboard (Authentication > Emails > Magic Link) — see "Decisions" below; the CLI can't push it on the free plan
-- [ ] SETUP step 4 during Phase 2, step 5 right after it deploys, then step 3
+- [ ] SETUP step 4 (UW Open Data key), step 5 (scheduled jobs SQL, Phase 2 is deployed), then step 3 (LEARN feed URL in Settings, Integrations). Details and links in docs/BLOCKED.md
 - [x] Quest schedule read on 2026-09-17; sections seeded in the term config
 - [ ] SETUP step 6 before Phase 3
 - [ ] SETUP steps 7 and 8 before Phase 4
@@ -73,12 +86,16 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Later
 
+- CS 251 assignment PDFs (SOURCES.md 2, optional): fetch, store as `assignment_pdf`. Only useful with the assignment header prompt, which can't run for AI-off courses.
+- Sort Settings, Sync rows by course, and say "first snapshot" instead of "page changed" on a page's first run.
 - Calendar: add `@fullcalendar/luxon3` so the calendar renders in Toronto time even when the device is elsewhere (see DECISIONS.md).
 - A Playwright smoke test that runs in CI would need a test user and a way to sign in without OTP; the local `.scratch/smoke.ts` covers it for now.
 
 ## Session log
 
 Newest first. One entry per session: date, phase, model, what changed, commits, open issues, what Dylan must do next.
+
+- 2026-09-23, Phase 2 (Opus 5.5, autopilot): CS 251 schedule, exam info, and assignments parsers match all three expected fixtures exactly. Merge rules as a pure planner with an in-memory store: running every sync twice writes nothing, a moved A2 logs one `due_at` change from `cs251_schedule`, a locked date gets a proposal instead of an overwrite (and isn't repeated), precision never drops, syncs never touch state or progress, dropped items get `source_missing_at`. LEARN feed parser, Open Data mappers (finals, important dates), page watcher with raw diffs, AES-256-GCM helper, job queue with dedupe and backoff, sync handlers writing `sync_runs`, cron and worker routes, Settings Sync and Integrations, Updates tab, Today banner. 83 unit tests. Checked on the hosted project with the live CS 251 pages: A1 to A6, the midterm Nov 12 4:30 to 6:20 pm, and reading week appear with links, A1 due 10:00 pm, the second run adds no items, change-log rows, or snapshots, and a bad LEARN URL shows "Could not reach ...: the connection failed." without the token. Found and fixed: jsonb reorders proposal keys (proposals repeated), and deleting a user with documents failed on the chunk trigger (migration `20260923010000_chunk_trigger_definer.sql`, applied). Production deploy Ready; `/api/jobs/run` answers 202 with the secret. Parked: live LEARN and Open Data syncs, scheduled jobs SQL (docs/BLOCKED.md). Next: Phase 3.
 
 - 2026-09-23, Phase 1 (Opus 5.5, autopilot): found the hosted schema was an earlier draft (no `courses.ai_allowed` or `items.flags`) and caught it up with migration `20260923000000_init_drift.sql`, then regenerated types. Built the app shell per DESIGN.md (tokens, Atkinson Hyperlegible and Source Serif fonts, light and dark, 232px rail, icon rail on tablets, mobile top bar with course chips and bottom bar), the idempotent term import (Settings, Term), Today (week number, next exam countdown, needs-you strip, overdue with late policy, 14-day runway list with runway bars and progress, changed recently), Calendar (FullCalendar month, week, list; course and kind filters plus prep and reminder toggles in the URL; remembered view; click to open the drawer or quick add; `t` and arrows), course pages with all eight tabs (Overview, Deadlines, Resources fully; others with empty states), item drawer and `/items/[id]` with edit (adds to `locked_fields`), progress, dismiss, and change history, quick add, links add, edit, pin, reorder, delete, the command palette (Ctrl/Cmd+K, `/`, grouped results, recent items and searches, arrows) and `/search` with filters, alias expansion in `src/lib/search/aliases.ts`, keyboard shortcuts (`g` then a letter, `?`), and placeholder pages for Inbox, Notes, Ask, Library. 45 unit tests. Acceptance: checked through RLS with a throwaway user (import twice changes nothing; STAT 230 M1 Oct 8, CS 246 midterm Nov 10, CS 245 midterm Oct 29; quick-added A1 shows on Today, on the Calendar as "CS 251 A1 (time TBD)", and in CS 251 Deadlines; palette finds it for "a1", "251 a1", "cs251 A1" and finds Odyssey for "odysey"; every page loads at 390px with no horizontal scroll and no console errors). One acceptance line can't be met as written: the CS 245 midterm has no flag in the seed, so it shows no "confirm date" badge (see DECISIONS.md). Next: Phase 2.
 
