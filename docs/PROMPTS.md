@@ -529,7 +529,9 @@ search_result blocks, one per chunk:
 <question>{question}</question>
 ```
 
-Tool (when scope allows more retrieval):
+As built (`src/lib/ask/`): earlier turns of the thread (last 12 messages, citation markers stripped) come before this turn. Each chunk's `content` is one text block per paragraph, with the chunk heading first when the chunk doesn't start with it, so citations point at a paragraph. The context block also holds `<scope_item>` for item scopes. With no chunks, `cache_control` goes on the context block.
+
+Tool (every scope, limited to the scope's courses with AI on):
 ```json
 {
   "name": "search_library",
