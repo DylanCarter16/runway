@@ -289,7 +289,12 @@ async function recordEventIds(
     .not('gcal_event_id', 'is', null);
 }
 
-export async function calendarSyncJob(admin: Admin, job: Job): Promise<void> {
+/** The gcal.sync handler. apiFor is injectable so scripts can run it against a fake calendar. */
+export function makeCalendarSyncJob(apiFor: (refreshToken: string) => CalendarApi = googleCalendarApi) {
+  return (admin: Admin, job: Job) => calendarSync(admin, job, apiFor);
+}
+
+async function calendarSync(admin: Admin, job: Job, apiFor: (refreshToken: string) => CalendarApi): Promise<void> {
   const userId = job.user_id;
   const conn = await readGoogle(admin, userId);
   if (!conn || conn.status === 'reauth_required' || !googleConfigured()) return;
@@ -298,7 +303,7 @@ export async function calendarSyncJob(admin: Admin, job: Job): Promise<void> {
 
   try {
     await withSyncRun(admin, userId, 'gcal', async () => {
-      const api = googleCalendarApi(conn.refreshToken());
+      const api = apiFor(conn.refreshToken());
       if (!meta.calendar_id) meta.calendar_id = await api.createCalendar(RUNWAY_CALENDAR_NAME, TIME_ZONE);
       const loaded = await desiredEvents(admin, userId);
       const desired = loaded.planned.map(toDesired);
@@ -461,6 +466,6 @@ export async function remindersJob(admin: Admin, job: Job): Promise<void> {
 }
 
 export const GCAL_HANDLERS = {
-  [JOB_GCAL_SYNC]: calendarSyncJob,
+  [JOB_GCAL_SYNC]: makeCalendarSyncJob(),
   [JOB_REMINDERS]: remindersJob,
 };

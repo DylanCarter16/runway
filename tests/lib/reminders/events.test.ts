@@ -210,3 +210,15 @@ describe('planReminderEvent', () => {
     expect(planReminderEvent({ ...r, done_at: '2026-09-28T00:00:00Z' }, 'x')).toBeNull();
   });
 });
+
+describe('reminder offsets', () => {
+  it('parses and formats the Settings text', async () => {
+    const { formatOffset, parseOffsets } = await import('@/lib/reminders/rules');
+    expect(parseOffsets('7d, 3d 1d,3h')).toEqual({ ok: true, minutes: [10080, 4320, 1440, 180] });
+    expect(parseOffsets('')).toEqual({ ok: true, minutes: [] });
+    expect(parseOffsets('5 weeks').ok).toBe(false);
+    expect(parseOffsets('29d').ok).toBe(false);
+    expect(parseOffsets('1d 2d 3d 4d 5d 6d').ok).toBe(false);
+    expect([10080, 180, 30, 0].map(formatOffset)).toEqual(['7d', '3h', '30m', '0m']);
+  });
+});

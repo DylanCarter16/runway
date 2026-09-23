@@ -2,19 +2,23 @@ import { notFound } from 'next/navigation';
 import { AiSwitch } from '@/components/app/ai-switch';
 import { CourseDot } from '@/components/app/course-mark';
 import { LoadTermButton } from '@/components/app/settings-bits';
+import { DisconnectGoogleButton, ReminderRulesForm } from '@/components/app/reminder-controls';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
+import { buttonVariants } from '@/components/ui/button';
 import { TERM_F26 } from '@/config/term-f26';
 import { serverEnv } from '@/env';
 import { createAdminClient } from '@/lib/db/admin';
 import { getAppContext } from '@/lib/db/queries';
 import { pageRunSource } from '@/lib/jobs/sync';
+import { googleStatus, parseOverrides } from '@/lib/jobs/gcal';
 import { learnFeedStatus } from '@/lib/jobs/tokens';
 import type { RunTarget } from '@/lib/jobs/types';
 import { ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
-import { DEFAULT_RULES } from '@/lib/reminders/rules';
+import { resolveRule } from '@/lib/reminders/rules';
 import { runSummary, sourceHealth, type RunRow } from '@/lib/sync/summary';
 import { SETTINGS_SECTIONS } from '@/lib/ui';
 import { formatAgo, formatListDate, fromTorontoLocal } from '@/lib/time';
+import { cn } from '@/lib/utils';
 
 export async function generateMetadata({ params }: PageProps<'/settings/[section]'>) {
   const { section } = await params;
@@ -29,12 +33,6 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
       {children}
     </section>
   );
-}
-
-function minutes(m: number): string {
-  if (m % 1440 === 0) return `${m / 1440}d`;
-  if (m % 60 === 0) return `${m / 60}h`;
-  return `${m}m`;
 }
 
 const CADENCE_LABEL: Record<string, string> = { hourly: 'hourly', every_3h: 'every 3 hours', daily: 'daily' };
@@ -161,8 +159,23 @@ async function AiSpend() {
   );
 }
 
-export default async function SettingsSection({ params }: PageProps<'/settings/[section]'>) {
+const GCAL_RESULT: Record<string, { text: string; bad: boolean }> = {
+  connected: { text: 'Google Calendar connected. The first sync is running.', bad: false },
+  denied: { text: 'Google access was not granted, so nothing changed.', bad: true },
+  expired: { text: 'That sign-in took too long or came from another tab. Connect again.', bad: true },
+  error: { text: 'Connecting to Google failed. Try again; if it keeps failing, check the Google client settings (docs/SETUP.md step 7).', bad: true },
+  not_configured: { text: 'GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not set on the server.', bad: true },
+};
+
+type BridgeRun = { started_at: string; stats: unknown };
+
+function lastBridge(runs: BridgeRun[], kind: string): BridgeRun | undefined {
+  return runs.find((r) => (r.stats as { kind?: string } | null)?.kind === kind);
+}
+
+export default async function SettingsSection({ params, searchParams }: PageProps<'/settings/[section]'>) {
   const { section } = await params;
+  const query = await searchParams;
   if (!SETTINGS_SECTIONS.some(([s]) => s === section)) notFound();
   const { supabase, user, term, courses } = await getAppContext();
   const now = new Date();
@@ -226,11 +239,71 @@ export default async function SettingsSection({ params }: PageProps<'/settings/[
       );
 
     case 'integrations': {
-      const learn = await learnFeedStatus(createAdminClient(), user.id);
+      const [learn, google, { data: bridgeRuns }] = await Promise.all([
+        learnFeedStatus(createAdminClient(), user.id),
+        googleStatus(user.id),
+        supabase.from('sync_runs').select('started_at, stats').eq('source', 'bridge').order('started_at', { ascending: false }).limit(200),
+      ]);
+      const result = typeof query.gcal === 'string' ? GCAL_RESULT[query.gcal] : undefined;
+      const ping = lastBridge(bridgeRuns ?? [], 'ping');
+      const digest = lastBridge(bridgeRuns ?? [], 'digest');
+      const email = lastBridge(bridgeRuns ?? [], 'email');
+      const g = google.meta;
       return (
         <div className="grid gap-6">
           <Block title="Google Calendar">
-            <p className="text-sm text-muted-foreground">Not connected. Calendar sync is not built yet.</p>
+            {result ? (
+              <p role="status" className={cn('text-sm', result.bad ? 'text-late' : 'font-semibold')}>
+                {result.text}
+              </p>
+            ) : null}
+            {!google.configured ? (
+              <p className="text-sm text-muted-foreground">
+                Waiting for the Google client ID and secret (docs/SETUP.md step 7). Deadlines reach Google Calendar once they are set.
+              </p>
+            ) : !google.connected ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Not connected. Connecting creates a calendar named Runway in your Google account; Runway can only touch that calendar.
+                </p>
+                <div>
+                  <a href="/api/gcal/connect" className={cn(buttonVariants(), 'h-11 sm:h-9')}>
+                    Connect Google Calendar
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                {google.status === 'reauth_required' ? (
+                  <p role="alert" className="text-sm font-semibold text-late">
+                    Google access stopped working, so the calendar is not updating. Reconnect to fix it.
+                  </p>
+                ) : null}
+                <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm tabular">
+                  <dt className="text-muted-foreground">Calendar</dt>
+                  <dd>{g.calendar_name ?? 'Runway'}</dd>
+                  <dt className="text-muted-foreground">Connected</dt>
+                  <dd>{g.connected_at ? formatAgo(new Date(g.connected_at), now) : 'yes'}</dd>
+                  <dt className="text-muted-foreground">Last sync</dt>
+                  <dd>
+                    {g.last_sync_at
+                      ? `${formatAgo(new Date(g.last_sync_at), now)}, ${g.last_sync_writes ?? 0} ${g.last_sync_writes === 1 ? 'change' : 'changes'} written`
+                      : 'Not yet'}
+                  </dd>
+                </dl>
+                {g.last_error && google.status !== 'reauth_required' ? <p className="text-sm text-late">{g.last_error}</p> : null}
+                <div className="flex flex-wrap gap-2">
+                  {google.status === 'reauth_required' ? (
+                    <a href="/api/gcal/connect" className={cn(buttonVariants(), 'h-11 sm:h-8')}>
+                      Reconnect Google Calendar
+                    </a>
+                  ) : (
+                    <RunNowButton target={{ kind: 'calendar' }} label="Sync calendar now" />
+                  )}
+                  <DisconnectGoogleButton />
+                </div>
+              </>
+            )}
           </Block>
           <Block title="LEARN feed">
             <p className="text-sm">
@@ -250,39 +323,55 @@ export default async function SettingsSection({ params }: PageProps<'/settings/[
             </p>
           </Block>
           <Block title="Apps Script bridge">
-            <p className="text-sm text-muted-foreground">No ping received yet.</p>
+            <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm tabular">
+              <dt className="text-muted-foreground">Last ping</dt>
+              <dd>{ping ? formatAgo(new Date(ping.started_at), now) : 'None yet'}</dd>
+              <dt className="text-muted-foreground">Last digest</dt>
+              <dd>{digest ? formatAgo(new Date(digest.started_at), now) : 'None yet'}</dd>
+              <dt className="text-muted-foreground">Last email</dt>
+              <dd>{email ? formatAgo(new Date(email.started_at), now) : 'None yet'}</dd>
+            </dl>
+            {ping ? null : (
+              <p className="text-sm text-muted-foreground">
+                Install the bridge from docs/SETUP.md step 8 and run its setup function; the ping shows here.
+              </p>
+            )}
+            <p className="text-sm text-muted-foreground">Piazza emails are received but not read until email ingest is built.</p>
           </Block>
         </div>
       );
     }
 
-    case 'reminders':
+    case 'reminders': {
+      const { data: settings } = await supabase.from('settings').select('study_block_hour, reminder_rules').maybeSingle();
+      const overrides = parseOverrides(settings?.reminder_rules);
+      const NOTES: Partial<Record<string, string>> = {
+        assignment: 'CS 246 keeps 10 runway days unless you change this.',
+        midterm: '3 study blocks in the week before',
+        final: 'Study blocks every other day',
+      };
+      const rows = ITEM_KINDS.map((k) => {
+        const rule = resolveRule(k, null, overrides);
+        return { kind: k, label: KIND_LABEL[k], prepDays: rule.prepDays, reminders: rule.reminders, note: NOTES[k] };
+      });
       return (
-        <Block title="Default reminder rules">
-          <table className="w-full text-sm tabular">
-            <thead>
-              <tr className="border-b border-rule text-left text-muted-foreground">
-                <th className="py-2 pr-3 font-normal">Kind</th>
-                <th className="py-2 pr-3 font-normal">Runway</th>
-                <th className="py-2 font-normal">Reminders before</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ITEM_KINDS.map((k) => (
-                <tr key={k} className="border-b border-rule">
-                  <td className="py-2 pr-3">{KIND_LABEL[k]}</td>
-                  <td className="py-2 pr-3">
-                    {DEFAULT_RULES[k].prepDays ? `${DEFAULT_RULES[k].prepDays} days` : 'none'}
-                    {k === 'assignment' ? ' (CS 246: 10 days)' : ''}
-                  </td>
-                  <td className="py-2">{DEFAULT_RULES[k].reminders.map(minutes).join(', ') || 'none'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-sm text-muted-foreground">Editing these arrives with calendar sync.</p>
-        </Block>
+        <div className="grid gap-6">
+          <Block title="Reminder rules">
+            <p className="text-sm text-muted-foreground">
+              Runway days put a prep block on your calendar that many days before the due date. Reminders count back from the due or start
+              time (date-only items count back from 9:00 on the day). Google allows 5 reminders per event, up to 4 weeks before.
+            </p>
+            <ReminderRulesForm rows={rows} studyBlockHour={settings?.study_block_hour ?? 19} />
+          </Block>
+          <Block title="Digest and weekly sweep">
+            <p className="text-sm text-muted-foreground">
+              The Apps Script bridge emails the digest between 8 and 9 am (its trigger is set in Code.gs). The weekly sweep reminder comes
+              on Sundays at 6:00 pm.
+            </p>
+          </Block>
+        </div>
       );
+    }
 
     case 'ai':
       return (
@@ -330,6 +419,13 @@ export default async function SettingsSection({ params }: PageProps<'/settings/[
           runs: bySource.get('open_data') ?? [],
           target: serverEnv.UW_OPENDATA_API_KEY ? { kind: 'open_data' } : null,
           idle: serverEnv.UW_OPENDATA_API_KEY ? null : 'Waiting for the UW Open Data key (docs/SETUP.md step 4).',
+        },
+        {
+          name: 'Google Calendar',
+          detail: 'Deadlines, prep blocks, and paste reminders on the Runway calendar',
+          runs: bySource.get('gcal') ?? [],
+          target: { kind: 'calendar' },
+          idle: bySource.get('gcal')?.length ? null : 'Connect Google Calendar in Integrations. Run now refreshes the paste reminders either way.',
         },
         ...(pages ?? []).map((p) => ({
           name: `${p.course_id ? `${courseCode.get(p.course_id) ?? ''} ` : ''}${p.label}`,

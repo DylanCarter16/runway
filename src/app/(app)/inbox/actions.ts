@@ -10,7 +10,7 @@ import type { Json } from '@/lib/db/types';
 import { ApprovalError, approvalEditSchema, planApproval, type ApprovalEdit, type ApprovalWrites } from '@/lib/inbox/apply';
 import { enqueueExtract } from '@/lib/jobs/inbox';
 import { runQueuedJobs } from '@/lib/jobs/schedule';
-import { toTorontoDate } from '@/lib/time';
+import { addDaysToDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
 import type { ActionResult } from '../actions';
 
 // Paste box and review queue (SPEC 4.4).
@@ -282,4 +282,22 @@ export async function approveAllForDocument(documentId: string): Promise<ActionR
   }
   revalidatePath('/', 'layout');
   return { ok: true, data: { approved, failed } };
+}
+
+const reminderActionSchema = z.object({ id: z.uuid(), action: z.enum(['done', 'snooze']) });
+
+/** Done closes a paste reminder for good; snooze hides it until 9:00 tomorrow. */
+export async function updateReminder(input: z.infer<typeof reminderActionSchema>): Promise<ActionResult> {
+  await requireUser();
+  const parsed = reminderActionSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Unknown reminder.' };
+  const supabase = await createClient();
+  const patch =
+    parsed.data.action === 'done'
+      ? { done_at: new Date().toISOString() }
+      : { snoozed_until: fromTorontoLocal(addDaysToDate(toTorontoDate(new Date()), 1), '09:00').toISOString() };
+  const { error } = await supabase.from('reminders').update(patch).eq('id', parsed.data.id);
+  if (error) return { ok: false, error: `Could not update the reminder: ${error.message}` };
+  revalidatePath('/', 'layout');
+  return { ok: true, data: null };
 }

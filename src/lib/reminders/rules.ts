@@ -75,3 +75,28 @@ export function resolveRule(
 
 /** Every item kind, as a tuple for zod enums. */
 export const ITEM_KIND_VALUES = Object.keys(DEFAULT_RULES) as [ItemKind, ...ItemKind[]];
+
+/** "7d", "3h", "30m" for one offset in minutes. */
+export function formatOffset(m: number): string {
+  if (m > 0 && m % 1440 === 0) return `${m / 1440}d`;
+  if (m > 0 && m % 60 === 0) return `${m / 60}h`;
+  return `${m}m`;
+}
+
+/** Parses "7d, 3d, 1d, 3h" into minutes. Returns an error message for bad input. */
+export function parseOffsets(text: string): { ok: true; minutes: number[] } | { ok: false; error: string } {
+  const parts = text
+    .split(/[,\s]+/)
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  const minutes: number[] = [];
+  for (const p of parts) {
+    const m = /^(\d{1,5})\s*(d|h|m)$/.exec(p);
+    if (!m) return { ok: false, error: `"${p}" isn't an offset. Use days, hours, or minutes, like 7d, 3h, 30m.` };
+    const value = Number(m[1]) * (m[2] === 'd' ? 1440 : m[2] === 'h' ? 60 : 1);
+    if (value > MAX_REMINDER_MINUTES) return { ok: false, error: `${p} is more than 4 weeks, which Google Calendar doesn't allow.` };
+    minutes.push(value);
+  }
+  if (new Set(minutes).size > MAX_REMINDERS) return { ok: false, error: 'Google Calendar allows at most 5 reminders per event.' };
+  return { ok: true, minutes: cleanReminders(minutes) };
+}

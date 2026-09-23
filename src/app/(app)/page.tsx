@@ -4,6 +4,7 @@ import { EmptyState } from '@/components/app/empty-state';
 import { ItemRow, type RowItem } from '@/components/app/item-row';
 import { QuickActions } from '@/components/app/quick-actions';
 import { countNeedsYou, getAppContext } from '@/lib/db/queries';
+import { googleStatus } from '@/lib/jobs/gcal';
 import { describeChange } from '@/lib/items/changes';
 import { EXAM_KINDS, ROW_FIELDS } from '@/lib/items/labels';
 import { effectiveDue, isDone } from '@/lib/items/runway';
@@ -21,7 +22,7 @@ function firstSentence(text: string): string {
 }
 
 export default async function TodayPage() {
-  const { supabase, term, courses } = await getAppContext();
+  const { supabase, user, term, courses } = await getAppContext();
   const now = new Date();
 
   if (!term) {
@@ -44,7 +45,7 @@ export default async function TodayPage() {
 
   const from = new Date(now.getTime() - 8 * DAY).toISOString();
   const to = new Date(now.getTime() + 15 * DAY).toISOString();
-  const [itemsRes, examRes, changesRes, needs] = await Promise.all([
+  const [itemsRes, examRes, changesRes, needs, google] = await Promise.all([
     supabase
       .from('items')
       .select(ROW_FIELDS)
@@ -68,6 +69,7 @@ export default async function TodayPage() {
       .order('detected_at', { ascending: false })
       .limit(20),
     countNeedsYou(),
+    googleStatus(user.id),
   ]);
 
   const courseById = new Map(courses.map((c) => [c.id, c]));
@@ -119,7 +121,7 @@ export default async function TodayPage() {
           ) : null}
           {needs.pastes ? (
             <Link href="/inbox#paste-reminders" className="text-tie underline-offset-2 hover:underline">
-              {needs.pastes} {needs.pastes === 1 ? 'paste' : 'pastes'} due
+              {needs.pastes} {needs.pastes === 1 ? 'reminder' : 'reminders'} due
             </Link>
           ) : null}
           {needs.failing.length ? (
@@ -140,6 +142,19 @@ export default async function TodayPage() {
             <Link href="/settings/sync" className="text-tie underline-offset-2 hover:underline">
               See the errors in Settings, Sync
             </Link>
+          </p>
+        </section>
+      ) : null}
+
+      {google.status === 'reauth_required' ? (
+        <section role="alert" className="grid gap-1 rounded-md border border-late p-3 text-sm">
+          <p className="font-semibold text-late">Google Calendar stopped updating: Google access expired or was removed.</p>
+          <p>
+            New and changed deadlines won&apos;t reach your phone until you{' '}
+            <a href="/api/gcal/connect" className="text-tie underline-offset-2 hover:underline">
+              reconnect Google Calendar
+            </a>
+            .
           </p>
         </section>
       ) : null}

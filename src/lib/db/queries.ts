@@ -74,7 +74,6 @@ export async function countNeedsYou() {
     supabase
       .from('reminders')
       .select('id', { count: 'exact', head: true })
-      .eq('kind', 'paste')
       .is('done_at', null)
       .lte('remind_at', now)
       .or(`snoozed_until.is.null,snoozed_until.lte.${now}`),
