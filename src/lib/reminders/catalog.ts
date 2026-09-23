@@ -200,7 +200,10 @@ export interface ExistingReminder {
 
 export interface ReminderWrites {
   inserts: ReminderDraft[];
-  updates: { id: string; patch: Partial<Omit<ExistingReminder, 'id' | 'dedupe_key'>> }[];
+  updates: {
+    id: string;
+    patch: Partial<Omit<ExistingReminder, 'id' | 'dedupe_key'>>;
+  }[];
 }
 
 /**
@@ -219,7 +222,10 @@ export function planReminderWrites(existing: ExistingReminder[], drafts: Reminde
     }
     if (row.done_at) continue;
     if (d.done) {
-      writes.updates.push({ id: row.id, patch: { done_at: now.toISOString() } });
+      writes.updates.push({
+        id: row.id,
+        patch: { done_at: now.toISOString() },
+      });
       continue;
     }
     const patch: ReminderWrites['updates'][number]['patch'] = {};
@@ -235,7 +241,10 @@ export function planReminderWrites(existing: ExistingReminder[], drafts: Reminde
   const drafted = new Set(drafts.map((d) => d.dedupe_key));
   for (const row of existing) {
     if (!row.done_at && row.dedupe_key.startsWith('seat:') && !drafted.has(row.dedupe_key)) {
-      writes.updates.push({ id: row.id, patch: { done_at: now.toISOString() } });
+      writes.updates.push({
+        id: row.id,
+        patch: { done_at: now.toISOString() },
+      });
     }
   }
   return writes;

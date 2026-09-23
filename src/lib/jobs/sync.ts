@@ -42,7 +42,7 @@ function userAgent(): string {
 
 type RunStats = Record<string, unknown>;
 
-async function withSyncRun(admin: Admin, userId: string, source: string, fn: () => Promise<RunStats>): Promise<void> {
+export async function withSyncRun(admin: Admin, userId: string, source: string, fn: () => Promise<RunStats>): Promise<void> {
   const { data: run, error } = await admin.from('sync_runs').insert({ user_id: userId, source }).select('id').single();
   if (error) throw new Error(`Could not record the sync run: ${error.message}`);
   try {

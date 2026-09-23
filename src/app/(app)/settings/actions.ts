@@ -17,6 +17,7 @@ const targetSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('all') }),
   z.object({ kind: z.literal('learn_ics') }),
   z.object({ kind: z.literal('open_data') }),
+  z.object({ kind: z.literal('calendar') }),
   z.object({ kind: z.literal('page'), pageId: z.uuid() }),
 ]);
 

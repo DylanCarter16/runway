@@ -2,6 +2,7 @@ import 'server-only';
 import { serverEnv } from '@/env';
 import { enqueue, processJobs, type Admin, type JobHandler } from './queue';
 import type { RunTarget } from './types';
+import { GCAL_HANDLERS, JOB_REMINDERS } from './gcal';
 import { INBOX_HANDLERS } from './inbox';
 import { JOB_SYNC_LEARN, JOB_SYNC_OPEN_DATA, JOB_SYNC_PAGE, SYNC_HANDLERS } from './sync';
 
@@ -9,7 +10,7 @@ import { JOB_SYNC_LEARN, JOB_SYNC_OPEN_DATA, JOB_SYNC_PAGE, SYNC_HANDLERS } from
 
 export type Cadence = 'hourly' | 'every_3h' | 'daily';
 
-export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS };
+export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS, ...GCAL_HANDLERS };
 
 export function runQueuedJobs(admin: Admin) {
   return processJobs(admin, HANDLERS);
@@ -62,6 +63,11 @@ export async function enqueueCadence(admin: Admin, cadence: Cadence): Promise<nu
     if (cadence === 'daily' && serverEnv.UW_OPENDATA_API_KEY) {
       if (await enqueue(admin, openDataJob(userId))) queued++;
     }
+    // Nightly: refresh the paste reminders, then reconcile the whole Google calendar
+    // (the reminders job queues the calendar sync when Google is connected).
+    if (cadence === 'daily') {
+      if (await enqueue(admin, { userId, type: JOB_REMINDERS, dedupeKey: 'reminders:generate' })) queued++;
+    }
   }
   return queued;
 }
@@ -72,6 +78,8 @@ export async function enqueueNow(admin: Admin, userId: string, target: RunTarget
   if (target.kind === 'page') jobs.push(pageJob(userId, target.pageId));
   if (target.kind === 'learn_ics') jobs.push(learnJob(userId));
   if (target.kind === 'open_data') jobs.push(openDataJob(userId));
+  // Reminders first; that job queues the calendar sync when Google is connected.
+  if (target.kind === 'calendar') jobs.push({ userId, type: JOB_REMINDERS, dedupeKey: 'reminders:generate' });
   if (target.kind === 'all') {
     const { data: pages } = await admin.from('watched_pages').select('id').eq('user_id', userId).eq('enabled', true);
     for (const p of pages ?? []) jobs.push(pageJob(userId, p.id));

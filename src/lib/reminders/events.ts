@@ -79,7 +79,10 @@ function shift(minutes: number[], by: number): number[] {
 
 function block(date: string, hour: number): { start: EventTime; end: EventTime } {
   const start = fromTorontoLocal(date, `${String(hour).padStart(2, '0')}:00`);
-  return { start: timed(start), end: timed(new Date(start.getTime() + BLOCK_MINUTES * MINUTE)) };
+  return {
+    start: timed(start),
+    end: timed(new Date(start.getTime() + BLOCK_MINUTES * MINUTE)),
+  };
 }
 
 function describe(item: PlanItem, appUrl: string): string {
@@ -222,9 +225,7 @@ export function planReminderEvent(r: PlanReminder, appUrl: string): PlannedEvent
   const at = new Date(r.snoozed_until && r.snoozed_until > r.remind_at ? r.snoozed_until : r.remind_at);
   const base = appUrl.replace(/\/$/, '');
   const url = r.url?.startsWith('/') ? `${base}${r.url}` : r.url;
-  const lines = [r.where_to_find, url, `Mark it done in Runway: ${base}/inbox#paste-reminders`].filter(
-    (l): l is string => Boolean(l),
-  );
+  const lines = [r.where_to_find, url, `Mark it done in Runway: ${base}/inbox#paste-reminders`].filter((l): l is string => Boolean(l));
   return {
     runwayId: `reminder:${r.id}`,
     owner: { table: 'reminders', id: r.id, main: true },

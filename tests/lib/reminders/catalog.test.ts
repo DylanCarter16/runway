@@ -6,13 +6,51 @@ function input(over: Partial<CatalogInput> = {}): CatalogInput {
     term: { code: '1269', startsOn: '2026-09-09', endsOn: '2026-12-22' },
     classesEndOn: '2026-12-08',
     courses: [
-      { id: 'c-stat', slug: 'stat230', code: 'STAT 230', hasMeetings: true, usesLearn: true, piazzaUrl: 'https://piazza.com/class/<PIAZZA_CLASS_4>' },
-      { id: 'c-251', slug: 'cs251', code: 'CS 251', hasMeetings: true, usesLearn: false, piazzaUrl: 'https://piazza.com/uwaterloo.ca/fall2026/cs251' },
+      {
+        id: 'c-stat',
+        slug: 'stat230',
+        code: 'STAT 230',
+        hasMeetings: true,
+        usesLearn: true,
+        piazzaUrl: 'https://piazza.com/class/<PIAZZA_CLASS_4>',
+      },
+      {
+        id: 'c-251',
+        slug: 'cs251',
+        code: 'CS 251',
+        hasMeetings: true,
+        usesLearn: false,
+        piazzaUrl: 'https://piazza.com/uwaterloo.ca/fall2026/cs251',
+      },
     ],
     exams: [
-      { id: 'e1', courseId: 'c-251', courseCode: 'CS 251', kind: 'midterm', title: 'Midterm', at: '2026-11-12T21:30:00.000Z', seat: null },
-      { id: 'e2', courseId: 'c-stat', courseCode: 'STAT 230', kind: 'midterm', title: 'Midterm 1', at: '2026-10-08T20:30:00.000Z', seat: '12' },
-      { id: 'e0', courseId: 'c-stat', courseCode: 'STAT 230', kind: 'midterm', title: 'Old', at: '2026-09-01T20:30:00.000Z', seat: null },
+      {
+        id: 'e1',
+        courseId: 'c-251',
+        courseCode: 'CS 251',
+        kind: 'midterm',
+        title: 'Midterm',
+        at: '2026-11-12T21:30:00.000Z',
+        seat: null,
+      },
+      {
+        id: 'e2',
+        courseId: 'c-stat',
+        courseCode: 'STAT 230',
+        kind: 'midterm',
+        title: 'Midterm 1',
+        at: '2026-10-08T20:30:00.000Z',
+        seat: '12',
+      },
+      {
+        id: 'e0',
+        courseId: 'c-stat',
+        courseCode: 'STAT 230',
+        kind: 'midterm',
+        title: 'Old',
+        at: '2026-09-01T20:30:00.000Z',
+        seat: null,
+      },
     ],
     finalsImported: false,
     // Wednesday, Sep 23, 2026, noon in Toronto.
@@ -33,13 +71,21 @@ describe('reminderCatalog', () => {
       item_id: 'e1',
       done: false,
     });
-    expect(byKey.get('seat:e2')).toMatchObject({ title: 'Check Odyssey for your STAT 230 midterm 1 seat', done: true });
+    expect(byKey.get('seat:e2')).toMatchObject({
+      title: 'Check Odyssey for your STAT 230 midterm 1 seat',
+      done: true,
+    });
     expect(byKey.has('seat:e0')).toBe(false);
   });
 
   it('adds the next Sunday sweep and LEARN announcement reminders at 18:00', () => {
-    expect(byKey.get('sweep:2026-09-27')).toMatchObject({ remind_at: '2026-09-27T22:00:00.000Z', url: '/inbox' });
-    expect(byKey.get('learn_announcements:stat230:2026-09-27')).toMatchObject({ course_id: 'c-stat' });
+    expect(byKey.get('sweep:2026-09-27')).toMatchObject({
+      remind_at: '2026-09-27T22:00:00.000Z',
+      url: '/inbox',
+    });
+    expect(byKey.get('learn_announcements:stat230:2026-09-27')).toMatchObject({
+      course_id: 'c-stat',
+    });
     expect([...byKey.keys()].some((k) => k.startsWith('learn_announcements:cs251'))).toBe(false);
   });
 
@@ -50,7 +96,10 @@ describe('reminderCatalog', () => {
 
   it('marks the Quest paste done when every course has its sections, and the finals check done once finals arrive', () => {
     expect(byKey.get('quest_schedule:1269')?.done).toBe(true);
-    expect(byKey.get('finals_check:1269')).toMatchObject({ done: false, remind_at: '2026-10-03T13:00:00.000Z' });
+    expect(byKey.get('finals_check:1269')).toMatchObject({
+      done: false,
+      remind_at: '2026-10-03T13:00:00.000Z',
+    });
     const later = reminderCatalog(input({ finalsImported: true }));
     expect(later.find((d) => d.dedupe_key === 'finals_check:1269')?.done).toBe(true);
   });
@@ -92,11 +141,17 @@ describe('planReminderWrites', () => {
   it('writes nothing the second time', () => {
     const first = planReminderWrites([], drafts, now);
     const rows = first.inserts.map((d) => existing({ ...d, id: `r-${d.dedupe_key}`, done_at: null }));
-    expect(planReminderWrites(rows, drafts, now)).toEqual({ inserts: [], updates: [] });
+    expect(planReminderWrites(rows, drafts, now)).toEqual({
+      inserts: [],
+      updates: [],
+    });
   });
 
   it('moves an open seat check with its exam, and closes it when the seat arrives', () => {
-    const moved = existing({ dedupe_key: 'seat:e1', remind_at: '2026-11-01T14:00:00.000Z' });
+    const moved = existing({
+      dedupe_key: 'seat:e1',
+      remind_at: '2026-11-01T14:00:00.000Z',
+    });
     expect(planReminderWrites([moved], drafts, now).updates).toEqual([
       { id: 'r-seat:e1', patch: { remind_at: '2026-11-09T14:00:00.000Z' } },
     ]);
@@ -105,7 +160,11 @@ describe('planReminderWrites', () => {
   });
 
   it('never reopens a reminder Dylan closed, and closes seat checks whose exam is gone', () => {
-    const closed = existing({ dedupe_key: 'seat:e1', remind_at: '2026-11-01T14:00:00.000Z', done_at: '2026-09-20T00:00:00Z' });
+    const closed = existing({
+      dedupe_key: 'seat:e1',
+      remind_at: '2026-11-01T14:00:00.000Z',
+      done_at: '2026-09-20T00:00:00Z',
+    });
     expect(planReminderWrites([closed], drafts, now).updates).toEqual([]);
     const orphan = existing({ dedupe_key: 'seat:gone' });
     expect(planReminderWrites([orphan], drafts, now).updates).toEqual([{ id: 'r-seat:gone', patch: { done_at: now.toISOString() } }]);

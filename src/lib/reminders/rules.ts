@@ -72,3 +72,6 @@ export function resolveRule(
   const reminders = cleanReminders(item.reminder_minutes ?? settings.reminders ?? base.reminders);
   return { prepDays: Math.max(0, prepDays), reminders, studyBlocks: base.studyBlocks };
 }
+
+/** Every item kind, as a tuple for zod enums. */
+export const ITEM_KIND_VALUES = Object.keys(DEFAULT_RULES) as [ItemKind, ...ItemKind[]];

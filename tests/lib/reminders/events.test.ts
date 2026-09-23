@@ -38,7 +38,11 @@ describe('rules', () => {
   it('prefers the item, then Settings, then the course default', () => {
     expect(resolveRule('assignment', 'cs246').prepDays).toBe(10);
     expect(resolveRule('assignment', 'cs251').prepDays).toBe(7);
-    expect(resolveRule('assignment', 'cs251', { assignment: { prepDays: 5, reminders: [60] } })).toMatchObject({
+    expect(
+      resolveRule('assignment', 'cs251', {
+        assignment: { prepDays: 5, reminders: [60] },
+      }),
+    ).toMatchObject({
       prepDays: 5,
       reminders: [60],
     });
@@ -60,22 +64,38 @@ describe('planItemEvents', () => {
     // 7d, 3d, 1d, 3h before the due time, counted from the block's start.
     expect(main.reminders).toEqual([7 * DAY - 15, 3 * DAY - 15, DAY - 15, 180 - 15]);
     expect(main.description).toContain('https://runway.example/items/i1');
-    expect(prep).toMatchObject({ summary: 'Prep: CS 251 A3', start: { date: '2026-10-14' }, end: { date: '2026-10-15' }, transparent: true });
-    expect(start).toMatchObject({ summary: 'Start CS 251 A3', start: { dateTime: '2026-10-14T23:00:00.000Z' } });
+    expect(prep).toMatchObject({
+      summary: 'Prep: CS 251 A3',
+      start: { date: '2026-10-14' },
+      end: { date: '2026-10-15' },
+      transparent: true,
+    });
+    expect(start).toMatchObject({
+      summary: 'Start CS 251 A3',
+      start: { dateTime: '2026-10-14T23:00:00.000Z' },
+    });
   });
 
   it('puts blocks at the study hour on both sides of the DST change', () => {
     const after = planItemEvents(item({ due_at: fromTorontoLocal('2026-11-06', '22:00').toISOString() }), ctx);
     // Oct 30 is still EDT (UTC-4); 19:00 local is 23:00 UTC.
-    expect(after.find((e) => e.runwayId.endsWith(':start'))?.start).toEqual({ dateTime: '2026-10-30T23:00:00.000Z' });
+    expect(after.find((e) => e.runwayId.endsWith(':start'))?.start).toEqual({
+      dateTime: '2026-10-30T23:00:00.000Z',
+    });
     const later = planItemEvents(item({ due_at: fromTorontoLocal('2026-11-12', '22:00').toISOString() }), ctx);
     // Nov 5 is EST (UTC-5); 19:00 local is 00:00 UTC the next day.
-    expect(later.find((e) => e.runwayId.endsWith(':start'))?.start).toEqual({ dateTime: '2026-11-06T00:00:00.000Z' });
+    expect(later.find((e) => e.runwayId.endsWith(':start'))?.start).toEqual({
+      dateTime: '2026-11-06T00:00:00.000Z',
+    });
   });
 
   it('makes date-only items all-day events marked time TBD, with reminders from 9:00', () => {
     const [main] = planItemEvents(
-      item({ due_at: fromTorontoLocal('2026-09-30', null).toISOString(), all_day: true, time_known: false }),
+      item({
+        due_at: fromTorontoLocal('2026-09-30', null).toISOString(),
+        all_day: true,
+        time_known: false,
+      }),
       ctx,
     );
     expect(main.summary).toBe('CS 251 A3 (time TBD)');
@@ -106,11 +126,7 @@ describe('planItemEvents', () => {
       location: 'STC 0010, seat 45',
       reminders: [10 * DAY, 3 * DAY, DAY, 120],
     });
-    expect(blocks.map((b) => b.runwayId)).toEqual([
-      'item:i1:study:2026-11-06',
-      'item:i1:study:2026-11-08',
-      'item:i1:study:2026-11-10',
-    ]);
+    expect(blocks.map((b) => b.runwayId)).toEqual(['item:i1:study:2026-11-06', 'item:i1:study:2026-11-08', 'item:i1:study:2026-11-10']);
     expect(blocks[0].summary).toBe('Study: CS 251 Midterm');
   });
 
@@ -151,7 +167,12 @@ describe('planItemEvents', () => {
       ctx,
     );
     expect(rest).toEqual([]);
-    expect(main).toMatchObject({ start: { date: '2026-10-10' }, end: { date: '2026-10-19' }, transparent: true, reminders: [] });
+    expect(main).toMatchObject({
+      start: { date: '2026-10-10' },
+      end: { date: '2026-10-19' },
+      transparent: true,
+      reminders: [],
+    });
   });
 
   it('does not repeat a course code the title already has', () => {
@@ -174,7 +195,11 @@ describe('planReminderEvent', () => {
 
   it('is a short notifying event at the reminder time, with absolute links', () => {
     const e = planReminderEvent(r, 'https://runway.example')!;
-    expect(e).toMatchObject({ runwayId: 'reminder:r1', start: { dateTime: '2026-09-27T22:00:00.000Z' }, reminders: [0] });
+    expect(e).toMatchObject({
+      runwayId: 'reminder:r1',
+      start: { dateTime: '2026-09-27T22:00:00.000Z' },
+      reminders: [0],
+    });
     expect(e.description).toContain('https://runway.example/inbox');
   });
 
