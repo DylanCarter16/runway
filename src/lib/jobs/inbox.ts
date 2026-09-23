@@ -3,6 +3,7 @@ import type { ClaudeRequest } from '@/lib/ai/client';
 import type { PasteKind } from '@/lib/ai/schemas';
 import { createAdminClient } from '@/lib/db/admin';
 import type { Json } from '@/lib/db/types';
+import { summarizeDiff } from '@/lib/inbox/diff-summary';
 import { processDocument, type ProcessResult } from '@/lib/inbox/process';
 import type { CourseCtx, ItemCtx, PlannedProposal } from '@/lib/inbox/types';
 import { toTorontoDate } from '@/lib/time';
@@ -155,4 +156,53 @@ const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
   if (upErr) throw new Error(`Could not update the document: ${upErr.message}`);
 };
 
-export const INBOX_HANDLERS: Record<string, JobHandler> = { [JOB_EXTRACT]: extractHandler };
+export const JOB_SUMMARIZE_DIFF = 'inbox.summarize_diff';
+
+export function summarizeDiffJob(userId: string, documentId: string) {
+  return { userId, type: JOB_SUMMARIZE_DIFF, payload: { documentId }, dedupeKey: `diff:${documentId}` };
+}
+
+/** Claude's summary of a watched page's change, for AI-on courses only. */
+const summarizeDiffHandler: JobHandler = async (admin: Admin, job: Job) => {
+  const documentId = (job.payload as { documentId?: string }).documentId;
+  if (!documentId) throw new Error('Job has no documentId.');
+  const { data: doc } = await admin
+    .from('documents')
+    .select('id, course_id, source_url, meta')
+    .eq('id', documentId)
+    .eq('user_id', job.user_id)
+    .maybeSingle();
+  const meta = (doc?.meta ?? {}) as { diff?: { added: string[]; removed: string[] } | null; label?: string; summary?: string };
+  if (!doc || !meta.diff || meta.summary) return;
+  const ctx = await loadPlannerContext(admin, job.user_id);
+  if (!ctx.courses.find((c) => c.id === doc.course_id)?.ai_allowed) return;
+  if (!aiConfigured() || overBudget(await monthSpendUsd(admin, job.user_id))) return;
+
+  const result = await summarizeDiff(
+    {
+      userId: job.user_id,
+      documentId: doc.id,
+      courseId: doc.course_id,
+      label: meta.label ?? 'Course page',
+      url: doc.source_url ?? '',
+      diff: meta.diff,
+      courses: ctx.courses,
+      items: ctx.items,
+      today: toTorontoDate(new Date()),
+      term: ctx.term,
+    },
+    liveClaude(admin),
+  );
+  await admin.from('proposals').delete().eq('source_document_id', doc.id).eq('state', 'pending');
+  await insertProposals(admin, job.user_id, { documentId: doc.id }, result.proposals);
+  const { error } = await admin
+    .from('documents')
+    .update({ meta: { ...meta, summary: result.summary, importance: result.importance, proposals: result.proposals.length } as Json })
+    .eq('id', doc.id);
+  if (error) throw new Error(`Could not save the summary: ${error.message}`);
+};
+
+export const INBOX_HANDLERS: Record<string, JobHandler> = {
+  [JOB_EXTRACT]: extractHandler,
+  [JOB_SUMMARIZE_DIFF]: summarizeDiffHandler,
+};

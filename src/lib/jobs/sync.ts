@@ -19,7 +19,8 @@ import { diffPageText, normalizePageText, sha256 } from '@/lib/sources/page-watc
 import { syncCs251Assignments, syncCs251ExamInfo, syncCs251Schedule } from '@/lib/sync/cs251';
 import { emptyStats, proposeUnmatched, syncItems, type SyncStats } from '@/lib/sync/items';
 import { supabaseItemStore } from './item-store';
-import type { Admin, Job } from './queue';
+import { summarizeDiffJob } from './inbox';
+import { enqueue, type Admin, type Job } from './queue';
 import { readLearnFeed, updateLearnFeedMeta } from './tokens';
 
 // Job handlers for the automatic sources (docs/SOURCES.md sections 1 to 4 and 7).
@@ -120,6 +121,7 @@ export async function syncPageJob(admin: Admin, job: Job): Promise<void> {
       const changed = hash !== page.last_hash;
       let snapshot: string | null = null;
       if (changed) snapshot = await storeSnapshot(admin, page, res.body, text, hash);
+      if (snapshot && page.course_id) await queueDiffSummary(admin, job.user_id, page.course_id, snapshot);
 
       let parsed: RunStats = {};
       if (page.parser !== 'diff') parsed = await runPageParser(admin, job.user_id, page, res.body);
@@ -144,6 +146,14 @@ export async function syncPageJob(admin: Admin, job: Job): Promise<void> {
       throw e;
     }
   });
+}
+
+/** AI-on courses get a Claude summary of the change; the job itself checks the switch again. */
+async function queueDiffSummary(admin: Admin, userId: string, courseId: string, documentId: string) {
+  const { data: course } = await admin.from('courses').select('ai_allowed').eq('id', courseId).maybeSingle();
+  const { data: doc } = await admin.from('documents').select('meta').eq('id', documentId).maybeSingle();
+  const hasDiff = Boolean((doc?.meta as { diff?: unknown } | null)?.diff);
+  if (course?.ai_allowed && hasDiff) await enqueue(admin, summarizeDiffJob(userId, documentId));
 }
 
 type PageRow = { id: string; user_id: string; course_id: string | null; url: string; label: string; parser: string };
