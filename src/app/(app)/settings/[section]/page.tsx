@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { NoteStyleForm } from '@/components/app/note-style-form';
-import { DEFAULT_NOTE_STYLE } from '@/lib/ai/prompts';
+import { AskSettingsForm } from '@/components/app/ask-settings-form';
+import { DEFAULT_ANSWER_STYLE, DEFAULT_NOTE_STYLE } from '@/lib/ai/prompts';
+import { DEFAULT_CONTEXT_BUDGET } from '@/lib/ask/session';
 import { AiSwitch } from '@/components/app/ai-switch';
 import { CourseDot } from '@/components/app/course-mark';
 import { LoadTermButton } from '@/components/app/settings-bits';
@@ -376,11 +378,18 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'ai': {
-      const { data: aiSettings } = await supabase.from('settings').select('note_style_prompt').maybeSingle();
+      const { data: aiSettings } = await supabase.from('settings').select('note_style_prompt, answer_style_prompt, ask_context_budget').maybeSingle();
       return (
         <div className="grid gap-6">
           <Block title="Notes">
             <NoteStyleForm style={aiSettings?.note_style_prompt ?? null} fallback={DEFAULT_NOTE_STYLE} />
+          </Block>
+          <Block title="Ask">
+            <AskSettingsForm
+              style={aiSettings?.answer_style_prompt ?? null}
+              budget={aiSettings?.ask_context_budget ?? DEFAULT_CONTEXT_BUDGET}
+              fallback={DEFAULT_ANSWER_STYLE}
+            />
           </Block>
           <Block title="Models">
             <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">

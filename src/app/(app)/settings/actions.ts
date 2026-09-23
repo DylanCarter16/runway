@@ -176,3 +176,26 @@ export async function saveNoteStyle(input: { style: string }): Promise<ActionRes
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };
 }
+
+const askSettingsSchema = z.object({
+  style: z.string().trim().max(1000, 'Keep the style under 1,000 characters.'),
+  budget: z.coerce
+    .number()
+    .int('Use a whole number of tokens.')
+    .min(5000, 'Use at least 5,000 tokens.')
+    .max(200000, 'Use at most 200,000 tokens.'),
+});
+
+/** Settings, AI: Ask's answer style and context budget (SPEC 5). */
+export async function saveAskSettings(input: { style: string; budget: number | string }): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = askSettingsSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the settings.' };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('settings')
+    .upsert({ user_id: user.id, answer_style_prompt: parsed.data.style || null, ask_context_budget: parsed.data.budget }, { onConflict: 'user_id' });
+  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
