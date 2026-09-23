@@ -11,6 +11,7 @@ import {
   type PasteKind,
 } from '@/lib/ai/schemas';
 import { aiAllowed } from '@/lib/ai/switch';
+import { parseGradePaste } from '@/lib/grades/parse';
 import { parseOdyssey } from '@/lib/sources/odyssey';
 import { parseQuestSchedule, type MeetingJson } from '@/lib/sources/quest';
 import {
@@ -19,6 +20,7 @@ import {
   courseByCode,
   draftsToProposals,
   gradesToProposals,
+  marksToProposals,
   odysseyToProposals,
   outlineToProposals,
   questToProposals,
@@ -114,6 +116,12 @@ export async function processDocument(input: ProcessInput, claude: Claude): Prom
     const { proposals, unknownCodes } = odysseyToProposals(rows, courses, items);
     if (unknownCodes.length) notes.push(`Not in this term: ${unknownCodes.join(', ')}.`);
     if (rows.length) return result({ status: 'extracted', kind, proposals, notes });
+  }
+
+  // Marks in plain rows ("A1  18 / 20", "Quiz 2  80 %") need no AI either.
+  if (kind === 'grade_paste' && doc.course_id) {
+    const marks = parseGradePaste(text);
+    if (marks.length) return result({ status: 'extracted', kind, proposals: marksToProposals(marks, doc.course_id, items), notes });
   }
 
   // Everything below may call Claude, so the course switch decides.

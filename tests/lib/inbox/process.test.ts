@@ -150,6 +150,21 @@ describe('paste processing', () => {
     expect(claude).not.toHaveBeenCalled();
   });
 
+  it('proposes CS 251 marks from a grades paste, without Claude, matching the midterm', async () => {
+    const { claude, deps } = replay([]);
+    const raw = readFileSync(path.join(__dirname, '../../fixtures/grades/crowdmark-cs251.txt'), 'utf8');
+    const base = input(IDS.cs251, 'odyssey-line.txt', 'grade_paste');
+    const res = await processDocument({ ...base, doc: { ...base.doc, raw_text: raw } }, claude);
+    expect(res).toMatchObject({ status: 'extracted', kind: 'grade_paste', usedAi: false });
+    expect(res.proposals.map((p) => [p.kind, p.course_id, p.target_item_id, p.payload])).toEqual([
+      ['grade', IDS.cs251, IDS.csMidterm, { label: 'Midterm', score: 41.5, out_of: 50, item_id: IDS.csMidterm }],
+      ['grade', IDS.cs251, null, { label: 'A1', score: 27, out_of: 30, item_id: null }],
+      ['grade', IDS.cs251, null, { label: 'Assignment 2', score: 22, out_of: 30, item_id: null }],
+    ]);
+    expect(claude).not.toHaveBeenCalled();
+    expect(deps.send).not.toHaveBeenCalled();
+  });
+
   it('proposes room and seat for the CS 251 midterm from an Odyssey row, without Claude', async () => {
     const { claude } = replay([]);
     for (const declared of ['odyssey_paste', 'detect'] as const) {

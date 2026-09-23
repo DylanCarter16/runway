@@ -1,4 +1,6 @@
 import { tidyDraft, type GradesResult, type ItemDraft, type OutlineResult, type AnnouncementResult } from '@/lib/ai/schemas';
+import type { ParsedMark } from '@/lib/grades/parse';
+import { titleKey } from '@/lib/items/title-key';
 import type { OdysseyRow } from '@/lib/sources/odyssey';
 import type { QuestCourse } from '@/lib/sources/quest';
 import { daysBetweenDates, fromTorontoLocal, toTorontoDate, toTorontoTime } from '@/lib/time';
@@ -26,19 +28,7 @@ export function courseByCode(courses: CourseCtx[], code: string): CourseCtx | un
   return courses.find((c) => normalizeCode(c.code) === want);
 }
 
-/** "Assignment 3", "A3", and "a3" compare equal; so do "Quiz 2" and "Q2". */
-export function titleKey(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/\(.*?\)/g, ' ')
-    .replace(/\bassignments?\s*#?\s*(\d+)/g, 'a$1')
-    .replace(/\bquiz(?:zes)?\s*#?\s*(\d+)/g, 'q$1')
-    .replace(/\bmidterm\s*(?:exam|test)?\s*#?\s*(\d+)/g, 'mt$1')
-    .replace(/\bmidterm(?:\s*(?:exam|test))?\b/g, 'mt')
-    .replace(/\bfinal(?:\s*exam(?:ination)?)?\b/g, 'final')
-    .replace(/\bworkshop\s*#?\s*(\d+)/g, 'w$1')
-    .replace(/[^a-z0-9]+/g, '');
-}
+export { titleKey };
 
 function similarTitle(a: string, b: string): boolean {
   const x = titleKey(a);
@@ -373,6 +363,23 @@ export function gradesToProposals(result: GradesResult, ctx: DraftContext): Plan
       payload: { label: g.label.trim(), score: g.score, out_of: g.out_of, item_id: item?.id ?? null },
       evidence: g.evidence.slice(0, 200) || null,
       confidence: null,
+    };
+  });
+}
+
+/** Marks read by the rule-based parser, matched to the course's items by title. */
+export function marksToProposals(marks: ParsedMark[], courseId: string, items: ItemCtx[]): PlannedProposal[] {
+  const courseItems = items.filter((i) => i.course_id === courseId && i.state === 'active');
+  return marks.map((m) => {
+    const key = titleKey(m.label);
+    const item = courseItems.find((i) => titleKey(i.title) === key);
+    return {
+      course_id: courseId,
+      kind: 'grade' as const,
+      target_item_id: item?.id ?? null,
+      payload: { label: m.label, score: m.score, out_of: m.out_of, item_id: item?.id ?? null },
+      evidence: m.raw.slice(0, 200),
+      confidence: 1,
     };
   });
 }

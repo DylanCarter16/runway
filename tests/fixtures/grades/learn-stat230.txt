@@ -1,0 +1,9 @@
+Grade Item	Points	Weight Achieved	Grade	Comments
+Workshops
+Workshop 1	9 / 10	0.9 / 1	90 %
+Workshop 2	- / 10	- / 1	
+Quizzes
+Quiz 1	16 / 20	3 / 3.75	80 %	Nice work on Q3
+Midterm 1			72 %
+Subtotal		4.8 / 5	
+Final Calculated Grade			77 %

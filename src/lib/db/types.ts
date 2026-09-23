@@ -384,6 +384,7 @@ export type Database = {
       }
       grades: {
         Row: {
+          component: string | null
           course_id: string
           created_at: string
           id: string
@@ -398,6 +399,7 @@ export type Database = {
           weight_percent: number | null
         }
         Insert: {
+          component?: string | null
           course_id: string
           created_at?: string
           id?: string
@@ -412,6 +414,7 @@ export type Database = {
           weight_percent?: number | null
         }
         Update: {
+          component?: string | null
           course_id?: string
           created_at?: string
           id?: string
