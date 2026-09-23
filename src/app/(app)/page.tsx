@@ -5,7 +5,7 @@ import { ItemRow, type RowItem } from '@/components/app/item-row';
 import { QuickActions } from '@/components/app/quick-actions';
 import { countNeedsYou, getAppContext } from '@/lib/db/queries';
 import { describeChange } from '@/lib/items/changes';
-import { EXAM_KINDS, ROW_FIELDS, sourceLabel } from '@/lib/items/labels';
+import { EXAM_KINDS, ROW_FIELDS } from '@/lib/items/labels';
 import { effectiveDue, isDone } from '@/lib/items/runway';
 import { formatAgo, formatCountdown, formatHeadingDate, formatListDate, termWeek, toTorontoDate } from '@/lib/time';
 import { cn } from '@/lib/utils';
@@ -124,9 +124,23 @@ export default async function TodayPage() {
           ) : null}
           {needs.failing.length ? (
             <Link href="/settings/sync" className="text-late underline-offset-2 hover:underline">
-              {needs.failing.map(sourceLabel).join(', ')} failing
+              {needs.failing.length} {needs.failing.length === 1 ? 'source' : 'sources'} failing
             </Link>
           ) : null}
+        </section>
+      ) : null}
+
+      {needs.failing.length ? (
+        <section role="alert" className="grid gap-1 rounded-md border border-late p-3 text-sm">
+          <p className="font-semibold text-late">
+            {needs.failing.join(', ')} {needs.failing.length === 1 ? 'has' : 'have'} failed three times in a row.
+          </p>
+          <p>
+            Dates from {needs.failing.length === 1 ? 'it' : 'them'} may be out of date.{' '}
+            <Link href="/settings/sync" className="text-tie underline-offset-2 hover:underline">
+              See the errors in Settings, Sync
+            </Link>
+          </p>
         </section>
       ) : null}
 

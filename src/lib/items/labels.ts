@@ -45,6 +45,7 @@ export const SOURCE_LABEL: Record<string, string> = {
   crowdmark_email: 'Crowdmark email',
   note: 'Lecture notes',
   page_diff: 'Page change',
+  page_watch: 'Watched page',
 };
 
 /** Flags that mean the date still needs a human check. */

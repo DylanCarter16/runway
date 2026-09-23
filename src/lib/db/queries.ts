@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from './server';
+import { sourceLabel } from '@/lib/items/labels';
 import type { Tables } from './types';
 
 export type Course = Tables<'courses'>;
@@ -87,9 +88,21 @@ export async function countNeedsYou() {
     if (list.length < 3) list.push(run.ok === false);
     bySource.set(run.source, list);
   }
-  const failing = [...bySource.entries()]
+  const failingSources = [...bySource.entries()]
     .filter(([, fails]) => fails.length === 3 && fails.every(Boolean))
     .map(([source]) => source);
 
+  // Plain diff pages record runs as page_watch:<page id>; name them by their page.
+  let failing: string[] = failingSources.map(sourceLabel);
+  const pageIds = failingSources.filter((s) => s.startsWith('page_watch:')).map((s) => s.slice('page_watch:'.length));
+  if (pageIds.length) {
+    const { data: pages } = await supabase.from('watched_pages').select('id, label, course_id, courses(code)').in('id', pageIds);
+    const names = new Map(
+      (pages ?? []).map((p) => [`page_watch:${p.id}`, `${(p.courses as { code: string } | null)?.code ?? ''} ${p.label} page`.trim()]),
+    );
+    failing = failingSources.map((s) => names.get(s) ?? sourceLabel(s));
+  }
+
+  /** failing holds display names of sources whose last three runs failed. */
   return { proposals: proposals.count ?? 0, pastes: reminders.count ?? 0, failing };
 }
