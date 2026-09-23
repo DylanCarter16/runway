@@ -1,5 +1,5 @@
 import 'server-only';
-import type { ClaudeRequest } from '@/lib/ai/client';
+import { callClaude, type AiDeps, type ClaudeRequest } from '@/lib/ai/client';
 import type { PasteKind } from '@/lib/ai/schemas';
 import { createAdminClient } from '@/lib/db/admin';
 import type { Json } from '@/lib/db/types';
@@ -7,7 +7,7 @@ import { summarizeDiff } from '@/lib/inbox/diff-summary';
 import { processDocument, type ProcessResult } from '@/lib/inbox/process';
 import type { CourseCtx, ItemCtx, PlannedProposal } from '@/lib/inbox/types';
 import { toTorontoDate } from '@/lib/time';
-import { aiConfigured, liveClaude, monthSpendUsd, overBudget } from './ai';
+import { aiConfigured, liveAiDeps, liveClaude, monthSpendUsd, overBudget } from './ai';
 import { enqueue, type Admin, type Job, type JobHandler } from './queue';
 
 // The paste pipeline's job: classify and extract one stored document, then
@@ -82,7 +82,13 @@ export async function insertProposals(
   if (error) throw new Error(`Could not save proposals: ${error.message}`);
 }
 
-const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
+/** Claude for the extract job: the live SDK, or recorded answers in checks. */
+export interface ExtractAi {
+  deps(admin: Admin): AiDeps;
+  configured(): boolean;
+}
+
+const extractHandler = (ai: ExtractAi): JobHandler => async (admin: Admin, job: Job) => {
   const documentId = (job.payload as { documentId?: string }).documentId;
   if (!documentId) throw new Error('Job has no documentId.');
   const { data: doc, error } = await admin
@@ -109,13 +115,13 @@ const extractHandler: JobHandler = async (admin: Admin, job: Job) => {
 
   // Budget and configuration are checked at the moment Claude would be called,
   // so rule-based pastes and AI-off courses never depend on them.
-  const claudeLive = liveClaude(admin);
+  const deps = ai.deps(admin);
   const claude = async <T>(req: ClaudeRequest<T>) => {
-    if (!aiConfigured()) throw new AiUnavailable('Claude is not set up yet (no API key), so this was stored without extraction.');
+    if (!ai.configured()) throw new AiUnavailable('Claude is not set up yet (no API key), so this was stored without extraction.');
     if (overBudget(await monthSpendUsd(admin, job.user_id))) {
       throw new AiUnavailable('This month\'s AI budget is spent, so this was stored without extraction.');
     }
-    return claudeLive(req);
+    return callClaude(deps, req);
   };
 
   let result: ProcessResult;
@@ -222,7 +228,11 @@ const summarizeDiffHandler: JobHandler = async (admin: Admin, job: Job) => {
   if (error) throw new Error(`Could not save the summary: ${error.message}`);
 };
 
+export function makeExtractHandler(ai: ExtractAi): JobHandler {
+  return extractHandler(ai);
+}
+
 export const INBOX_HANDLERS: Record<string, JobHandler> = {
-  [JOB_EXTRACT]: extractHandler,
+  [JOB_EXTRACT]: extractHandler({ deps: liveAiDeps, configured: aiConfigured }),
   [JOB_SUMMARIZE_DIFF]: summarizeDiffHandler,
 };

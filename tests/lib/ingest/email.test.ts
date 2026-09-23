@@ -45,12 +45,12 @@ const QUIZ2: ItemCtx = {
   course_id: IDS.stat230,
   kind: 'quiz',
   title: 'Quiz 2',
-  // Fri Oct 30, 2026, local midnight (EDT), date only.
-  due_at: '2026-10-30T04:00:00.000Z',
-  starts_at: null,
-  ends_at: null,
-  all_day: true,
-  time_known: false,
+  // Fri Oct 30, 2026, 3:30 to 4:20 pm EDT, as seeded.
+  due_at: '2026-10-30T19:30:00.000Z',
+  starts_at: '2026-10-30T19:30:00.000Z',
+  ends_at: '2026-10-30T20:20:00.000Z',
+  all_day: false,
+  time_known: true,
   location: null,
   seat: null,
   weight_percent: null,
@@ -173,8 +173,9 @@ describe('Piazza email extraction', () => {
     expect(p).toMatchObject({ kind: 'update_item', target_item_id: QUIZ2_ID, course_id: IDS.stat230 });
     const payload = p.payload as UpdateItemPayload;
     expect(payload.source).toBe('piazza_email');
-    expect(payload.changes).toMatchObject({ due_at: '2026-11-06T05:00:00.000Z', time_known: false });
-    expect(payload.before).toMatchObject({ due_at: '2026-10-30T04:00:00.000Z' });
+    // Nov 6 is after the DST change: 3:30 pm EST is 20:30 UTC.
+    expect(payload.changes).toMatchObject({ due_at: '2026-11-06T20:30:00.000Z', starts_at: '2026-11-06T20:30:00.000Z', ends_at: '2026-11-06T21:20:00.000Z', time_known: true });
+    expect(payload.before).toMatchObject({ due_at: '2026-10-30T19:30:00.000Z' });
   });
 
   it('marks a student question as noise with no proposals', async () => {
