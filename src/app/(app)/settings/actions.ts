@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/db/admin';
 import { createClient, requireUser } from '@/lib/db/server';
 import type { ItemKind } from '@/config/term-f26';
 import type { Json } from '@/lib/db/types';
+import { fileWaitingEmails } from '@/lib/jobs/email';
 import { disconnectGoogle } from '@/lib/jobs/gcal';
 import { enqueueNow, runQueuedJobs, runWorkerNow } from '@/lib/jobs/schedule';
 import { cleanReminders, ITEM_KIND_VALUES, resolveRule, type RuleOverrides } from '@/lib/reminders/rules';
@@ -198,4 +199,39 @@ export async function saveAskSettings(input: { style: string; budget: number | s
   if (error) return { ok: false, error: `Could not save: ${error.message}` };
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };
+}
+
+const piazzaMapSchema = z.object({
+  map: z.record(z.string().regex(/^[a-z0-9]{8,24}$/), z.string().max(40)),
+});
+
+/**
+ * Settings, Courses: which course each Piazza class belongs to (SETUP step 9).
+ * Emails that arrived before their class was mapped move to the course and get read.
+ */
+export async function savePiazzaMap(input: { map: Record<string, string> }): Promise<ActionResult<{ moved: number }>> {
+  const user = await requireUser();
+  const parsed = piazzaMapSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'Check the Piazza classes.' };
+  const supabase = await createClient();
+  const { data: courses } = await supabase.from('courses').select('slug').eq('archived', false);
+  const slugs = new Set((courses ?? []).map((c) => c.slug));
+  const map: Record<string, string> = {};
+  for (const [nid, slug] of Object.entries(parsed.data.map)) {
+    if (!slug) continue;
+    if (!slugs.has(slug)) return { ok: false, error: `No course named ${slug}.` };
+    map[nid] = slug;
+  }
+  const { error } = await supabase.from('settings').upsert({ user_id: user.id, piazza_map: map }, { onConflict: 'user_id' });
+  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  const admin = createAdminClient();
+  let moved = 0;
+  try {
+    moved = await fileWaitingEmails(admin, user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Saved, but waiting emails could not be filed.' };
+  }
+  if (moved) after(runWorkerNow);
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: { moved } };
 }

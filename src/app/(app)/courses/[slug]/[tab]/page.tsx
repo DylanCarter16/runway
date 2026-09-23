@@ -74,6 +74,37 @@ function PasteUpdate({ doc, now, at }: { doc: { id: string; title: string; kind:
   );
 }
 
+/** A Piazza email: the summary when AI read it, else subject and sender, with a link to the post. */
+function EmailUpdate({ doc, now, at }: { doc: { id: string; title: string; source_url: string | null; meta: unknown }; now: Date; at: string }) {
+  const meta = (doc.meta ?? {}) as { summary?: string | null; from?: string };
+  const sender = meta.from?.replace(/\s*<[^>]*>\s*$/, '').replace(/^"|"$/g, '').trim();
+  return (
+    <li className="grid gap-1 py-2">
+      <span>
+        Piazza:{' '}
+        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+          {doc.title}
+        </Link>
+        {doc.source_url ? (
+          <>
+            {', '}
+            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
+              open post
+            </a>
+          </>
+        ) : null}{' '}
+        <span className="text-muted-foreground">{formatAgo(new Date(at), now)}</span>
+      </span>
+      {sender ? <span className="text-muted-foreground">From {sender}</span> : null}
+      {meta.summary ? <span>{meta.summary}</span> : null}
+    </li>
+  );
+}
+
+/** Piazza posts Claude judged to have nothing to act on (student questions, social posts). */
+const isNoise = (doc: { kind: string; meta: unknown }) =>
+  doc.kind === 'piazza_email' && (doc.meta as { importance?: string } | null)?.importance === 'noise';
+
 export default async function CourseTabPage({ params, searchParams }: PageProps<'/courses/[slug]/[tab]'>) {
   const { slug, tab } = await params;
   const sp = await searchParams;
@@ -162,10 +193,22 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
           .order('captured_at', { ascending: false })
           .limit(80),
       ]);
+      const showNoise = sp.noise === '1';
+      const hidden = (snapshots ?? []).filter(isNoise).length;
       const feed: UpdateEntry[] = [
         ...(changes ?? []).map((c) => ({ type: 'change' as const, at: c.detected_at, change: c })),
-        ...(snapshots ?? []).map((d) => ({ type: 'page' as const, at: d.captured_at, doc: d })),
+        ...(snapshots ?? []).filter((d) => showNoise || !isNoise(d)).map((d) => ({ type: 'page' as const, at: d.captured_at, doc: d })),
       ].sort((a, b) => b.at.localeCompare(a.at));
+      const noiseToggle = hidden ? (
+        <p className="text-sm">
+          <Link
+            href={showNoise ? `/courses/${course.slug}/updates` : `/courses/${course.slug}/updates?noise=1`}
+            className="text-tie underline-offset-2 hover:underline"
+          >
+            {showNoise ? 'Hide Piazza posts with nothing to act on' : `Show ${hidden} hidden Piazza ${hidden === 1 ? 'post' : 'posts'}`}
+          </Link>
+        </p>
+      ) : null;
       if (!feed.length) {
         return (
           <EmptyState
@@ -176,27 +219,32 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
               </Link>
             }
           >
-            Date changes, page edits, and pasted announcements show up here.
+            Date changes, page edits, Piazza posts, and pasted announcements show up here.
           </EmptyState>
         );
       }
       return (
-        <ul className="divide-y divide-rule text-sm">
-          {feed.map((e) =>
-            e.type === 'change' ? (
-              <li key={e.change.id} className="py-2">
-                <Link href={`/items/${e.change.item_id}`} className="underline-offset-2 hover:underline">
-                  {describeChange(titles.get(e.change.item_id) ?? 'An item', e.change)}.
-                </Link>{' '}
-                <span className="text-muted-foreground">{formatAgo(new Date(e.at), now)}</span>
-              </li>
-            ) : e.doc.kind === 'page_snapshot' ? (
-              <PageUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
-            ) : (
-              <PasteUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
-            ),
-          )}
-        </ul>
+        <div className="grid gap-2">
+          {noiseToggle}
+          <ul className="divide-y divide-rule text-sm">
+            {feed.map((e) =>
+              e.type === 'change' ? (
+                <li key={e.change.id} className="py-2">
+                  <Link href={`/items/${e.change.item_id}`} className="underline-offset-2 hover:underline">
+                    {describeChange(titles.get(e.change.item_id) ?? 'An item', e.change)}.
+                  </Link>{' '}
+                  <span className="text-muted-foreground">{formatAgo(new Date(e.at), now)}</span>
+                </li>
+              ) : e.doc.kind === 'page_snapshot' ? (
+                <PageUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
+              ) : e.doc.kind === 'piazza_email' ? (
+                <EmailUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
+              ) : (
+                <PasteUpdate key={e.doc.id} doc={e.doc} at={e.at} now={now} />
+              ),
+            )}
+          </ul>
+        </div>
       );
     }
 

@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { NoteStyleForm } from '@/components/app/note-style-form';
+import { PiazzaMapForm, type PiazzaClassRow } from '@/components/app/piazza-map-form';
 import { AskSettingsForm } from '@/components/app/ask-settings-form';
 import { DEFAULT_ANSWER_STYLE, DEFAULT_NOTE_STYLE } from '@/lib/ai/prompts';
 import { DEFAULT_CONTEXT_BUDGET } from '@/lib/ask/session';
@@ -220,7 +222,19 @@ export default async function SettingsSection({ params, searchParams }: PageProp
       );
     }
 
-    case 'courses':
+    case 'courses': {
+      const [{ data: settings }, { data: emails }] = await Promise.all([
+        supabase.from('settings').select('piazza_map').maybeSingle(),
+        supabase.from('documents').select('course_id, class_id:meta->>class_id').eq('kind', 'piazza_email').limit(5000),
+      ]);
+      const piazzaMap = Object.fromEntries(
+        Object.entries((settings?.piazza_map ?? {}) as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string'),
+      );
+      const nids = [...new Set([...TERM_F26.piazzaClasses.map((c) => c.nid), ...(emails ?? []).map((e) => e.class_id).filter((n): n is string => !!n)])];
+      const piazzaClasses: PiazzaClassRow[] = nids.map((nid) => {
+        const mine = (emails ?? []).filter((e) => e.class_id === nid);
+        return { nid, url: `https://piazza.com/class/${nid}`, emails: mine.length, waiting: mine.filter((e) => !e.course_id).length };
+      });
       return (
         <div className="grid gap-6">
           {courses.length ? null : <p className="text-sm text-muted-foreground">Load the Fall 2026 setup in Term first.</p>}
@@ -239,14 +253,31 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               <AiSwitch courseId={c.id} code={c.code} on={c.ai_allowed} policy={c.ai_policy} />
             </Block>
           ))}
+          {courses.length ? (
+            <Block title="Piazza classes">
+              <p className="max-w-prose text-sm text-muted-foreground">
+                Piazza emails find their course through the class link inside them. Open each class to see which course it is, then pick it
+                here. Emails from a class with no course are stored and wait; nothing from them is read until you pick one.
+              </p>
+              <PiazzaMapForm classes={piazzaClasses} courses={courses.map((c) => ({ slug: c.slug, code: c.code }))} map={piazzaMap} />
+            </Block>
+          ) : null}
         </div>
       );
+    }
 
     case 'integrations': {
-      const [learn, google, { data: bridgeRuns }] = await Promise.all([
+      const [learn, google, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
         learnFeedStatus(createAdminClient(), user.id),
         googleStatus(user.id),
         supabase.from('sync_runs').select('started_at, stats').eq('source', 'bridge').order('started_at', { ascending: false }).limit(200),
+        supabase
+          .from('documents')
+          .select('id, title, captured_at, course_id')
+          .eq('kind', 'piazza_email')
+          .order('captured_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
       const result = typeof query.gcal === 'string' ? GCAL_RESULT[query.gcal] : undefined;
       const ping = lastBridge(bridgeRuns ?? [], 'ping');
@@ -332,15 +363,39 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               <dd>{ping ? formatAgo(new Date(ping.started_at), now) : 'None yet'}</dd>
               <dt className="text-muted-foreground">Last digest</dt>
               <dd>{digest ? formatAgo(new Date(digest.started_at), now) : 'None yet'}</dd>
+              <dt className="text-muted-foreground">Last email check</dt>
+              <dd>
+                {email
+                  ? `${formatAgo(new Date(email.started_at), now)}, ${Number((email.stats as { stored?: number }).stored ?? 0)} new`
+                  : 'None yet'}
+              </dd>
               <dt className="text-muted-foreground">Last email</dt>
-              <dd>{email ? formatAgo(new Date(email.started_at), now) : 'None yet'}</dd>
+              <dd>
+                {newestEmail ? (
+                  <>
+                    <Link href={`/library/${newestEmail.id}`} className="text-tie underline-offset-2 hover:underline">
+                      {newestEmail.title}
+                    </Link>
+                    , sent {formatAgo(new Date(newestEmail.captured_at), now)}
+                    {newestEmail.course_id ? null : ' (no course yet)'}
+                  </>
+                ) : (
+                  'None yet'
+                )}
+              </dd>
             </dl>
             {ping ? null : (
               <p className="text-sm text-muted-foreground">
                 Install the bridge from docs/SETUP.md step 8 and run its setup function; the ping shows here.
               </p>
             )}
-            <p className="text-sm text-muted-foreground">Piazza emails are received but not read until email ingest is built.</p>
+            <p className="text-sm text-muted-foreground">
+              Piazza emails are stored as they arrive and filed by class. Pick the course for each class in{' '}
+              <Link href="/settings/courses" className="text-tie underline-offset-2 hover:underline">
+                Courses
+              </Link>
+              .
+            </p>
           </Block>
         </div>
       );

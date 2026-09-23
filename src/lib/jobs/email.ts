@@ -1,5 +1,6 @@
 import 'server-only';
 import type { Json } from '@/lib/db/types';
+import { rebuildDocumentChunks } from '@/lib/notes/store';
 import { ingestEmailBatch, type EmailBatch, type EmailStore, type IngestResult } from '@/lib/sources/email';
 import { extractJob } from './inbox';
 import { enqueue, type Admin } from './queue';
@@ -29,6 +30,8 @@ export function supabaseEmailStore(admin: Admin, userId: string): EmailStore {
         .single();
       if (error?.code === '23505') return null;
       if (error) throw new Error(`Could not store an email: ${error.message}`);
+      // Chunks make the email findable in Ask; they follow the document's course.
+      await rebuildDocumentChunks(admin, { id: data.id, user_id: userId, course_id: row.course_id, kind: row.kind, source_ref: row.source_ref, raw_text: row.raw_text });
       return data;
     },
   };
