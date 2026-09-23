@@ -1,4 +1,5 @@
 import { addDaysToDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
+import { isLectureDay, type DateRange, type MeetingRow } from '@/lib/notes/lecture-days';
 import { eventLabel } from './events';
 
 // The paste reminder catalog (docs/SOURCES.md section 11), generated from the term,
@@ -6,9 +7,9 @@ import { eventLabel } from './events';
 // dedupe_key, so running it again changes nothing.
 //
 // Generated here: quest_schedule, piazza_resources, learn_announcements, seat,
-// finals_check, sweep. The ones triggered by an email or an announcement (outline,
-// cs246_assignment, crowdmark, grades) arrive with email ingest in Phase 7, and the
-// lecture-note reminders with Notes in Phase 5.
+// finals_check, sweep, and lecture notes. The ones triggered by an email or an
+// announcement (outline, cs246_assignment, crowdmark, grades) arrive with email
+// ingest in Phase 7.
 
 export const ODYSSEY_URL = 'https://odyssey.uwaterloo.ca/teaching/schedule';
 export const QUEST_URL = 'https://quest.pecs.uwaterloo.ca/';
@@ -19,6 +20,8 @@ const FINALS_CHECK_ON = '2026-10-03';
 
 /** Weekly reminders are generated this many days ahead, so the next Sunday always exists. */
 const HORIZON_DAYS = 8;
+/** Lecture-note reminders from this many days back can still close when the notes arrive. */
+const NOTE_LOOKBACK_DAYS = 7;
 
 export interface ReminderDraft {
   dedupe_key: string;
@@ -32,6 +35,8 @@ export interface ReminderDraft {
   item_id: string | null;
   /** The thing it asks for is already in Runway: mark it done. */
   done: boolean;
+  /** A past day: close the reminder if it exists, but never create it. */
+  closeOnly?: boolean;
 }
 
 export interface CatalogCourse {
@@ -43,6 +48,8 @@ export interface CatalogCourse {
   usesLearn: boolean;
   /** The course's Piazza link, if it has one. */
   piazzaUrl: string | null;
+  /** courses.meetings: LEC rows give the lecture days. */
+  meetings?: MeetingRow[];
 }
 
 export interface CatalogExam {
@@ -64,6 +71,10 @@ export interface CatalogInput {
   exams: CatalogExam[];
   /** True when the UW Open Data sync has imported at least one final. */
   finalsImported: boolean;
+  /** Breaks (reading week): no lectures, so no note reminders. */
+  breaks?: DateRange[];
+  /** Notes already saved, as "<course id>|<lecture date>". */
+  notesOn?: string[];
   now: Date;
 }
 
@@ -150,6 +161,30 @@ export function reminderCatalog(input: CatalogInput): ReminderDraft[] {
     });
   }
 
+  // Lecture notes: one reminder per lecture day at 21:00 listing that day's courses.
+  // Days from the past week are included only to close reminders once the notes arrive.
+  const saved = new Set(input.notesOn ?? []);
+  for (let i = -NOTE_LOOKBACK_DAYS; i <= HORIZON_DAYS; i++) {
+    const day = addDaysToDate(today, i);
+    if (day < term.startsOn || day > input.classesEndOn) continue;
+    const lecturing = courses.filter((c) => c.meetings?.length && isLectureDay(c.meetings, day, input.breaks ?? []));
+    if (!lecturing.length) continue;
+    const codes = lecturing.map((c) => c.code).join(', ');
+    out.push({
+      ...base,
+      course_id: lecturing.length === 1 ? lecturing[0].id : null,
+      dedupe_key: `notes:${day}`,
+      kind: 'paste',
+      paste_kind: 'lecture_notes',
+      title: `Paste today's lecture notes: ${codes}`,
+      where_to_find: "Your own notes. Add anything said about dates; Runway links date changes to the note.",
+      url: '/notes/new',
+      remind_at: at(day, '21:00'),
+      done: lecturing.every((c) => saved.has(`${c.id}|${day}`)),
+      closeOnly: day < today,
+    });
+  }
+
   for (const exam of input.exams) {
     const examAt = new Date(exam.at);
     if (examAt <= now) continue;
@@ -217,7 +252,7 @@ export function planReminderWrites(existing: ExistingReminder[], drafts: Reminde
   for (const d of drafts) {
     const row = byKey.get(d.dedupe_key);
     if (!row) {
-      if (!d.done) writes.inserts.push(d);
+      if (!d.done && !d.closeOnly) writes.inserts.push(d);
       continue;
     }
     if (row.done_at) continue;

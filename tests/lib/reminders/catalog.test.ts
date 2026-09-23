@@ -170,3 +170,48 @@ describe('planReminderWrites', () => {
     expect(planReminderWrites([orphan], drafts, now).updates).toEqual([{ id: 'r-seat:gone', patch: { done_at: now.toISOString() } }]);
   });
 });
+
+describe('lecture-note reminders', () => {
+  const MWF = [{ component: 'LEC', days: ['Mon', 'Wed', 'Fri'], starts_on: '2026-09-09', ends_on: '2026-12-08' }];
+  const TTh = [{ component: 'LEC', days: ['Tue', 'Thu'], starts_on: '2026-09-09', ends_on: '2026-12-08' }];
+  const withMeetings = (over: Partial<CatalogInput> = {}) => {
+    const base = input(over);
+    return { ...base, courses: [{ ...base.courses[0], meetings: MWF }, { ...base.courses[1], meetings: TTh }] };
+  };
+  const now = new Date('2026-09-23T16:00:00Z');
+
+  it('makes one reminder per lecture day at 21:00 listing the courses lecturing that day', () => {
+    const notes = reminderCatalog(withMeetings()).filter((d) => d.paste_kind === 'lecture_notes');
+    const today = notes.find((d) => d.dedupe_key === 'notes:2026-09-23')!;
+    expect(today).toMatchObject({ title: "Paste today's lecture notes: STAT 230", url: '/notes/new', course_id: 'c-stat', done: false, closeOnly: false });
+    expect(today.remind_at).toBe('2026-09-24T01:00:00.000Z');
+    expect(notes.find((d) => d.dedupe_key === 'notes:2026-09-24')?.title).toBe("Paste today's lecture notes: CS 251");
+    // No lectures on weekends, and none during reading week.
+    expect(notes.some((d) => d.dedupe_key === 'notes:2026-09-26')).toBe(false);
+    const reading = reminderCatalog(withMeetings({ now: new Date('2026-10-12T16:00:00Z'), breaks: [{ from: '2026-10-12', to: '2026-10-16' }] }));
+    expect(reading.some((d) => /^notes:2026-10-1[2-6]$/.test(d.dedupe_key))).toBe(false);
+  });
+
+  it('closes the day once its notes are saved, and never creates past days', () => {
+    const drafts = reminderCatalog(withMeetings({ notesOn: ['c-stat|2026-09-23'] }));
+    expect(drafts.find((d) => d.dedupe_key === 'notes:2026-09-23')?.done).toBe(true);
+    const writes = planReminderWrites([], drafts, now);
+    expect(writes.inserts.some((d) => d.dedupe_key === 'notes:2026-09-22')).toBe(false);
+    expect(writes.inserts.some((d) => d.dedupe_key === 'notes:2026-09-23')).toBe(false);
+    expect(writes.inserts.some((d) => d.dedupe_key === 'notes:2026-09-24')).toBe(true);
+    const past = drafts.find((d) => d.dedupe_key === 'notes:2026-09-22')!;
+    const yesterday: ExistingReminder = {
+      id: 'r-notes:2026-09-22',
+      dedupe_key: past.dedupe_key,
+      title: past.title,
+      where_to_find: past.where_to_find,
+      url: past.url,
+      remind_at: past.remind_at,
+      course_id: past.course_id,
+      item_id: null,
+      done_at: null,
+    };
+    const late = reminderCatalog(withMeetings({ notesOn: ['c-251|2026-09-22'] }));
+    expect(planReminderWrites([yesterday], late, now).updates).toEqual([{ id: 'r-notes:2026-09-22', patch: { done_at: now.toISOString() } }]);
+  });
+});

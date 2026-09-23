@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/db/admin';
 import type { Json } from '@/lib/db/types';
 import { CalendarGoneError, exchangeGoogleCode, GoogleReauthError, googleCalendarApi, googleConfigured } from '@/lib/gcal/google';
 import { applyDiff, diffCalendar, RUNWAY_CALENDAR_NAME, toDesired, totalWrites, type CalendarApi, type RemoteEvent } from '@/lib/gcal/sync';
+import { breakRanges, type MeetingRow } from '@/lib/notes/lecture-days';
 import { planReminderWrites, reminderCatalog } from '@/lib/reminders/catalog';
 import { planItemEvents, planReminderEvent, type PlannedEvent } from '@/lib/reminders/events';
 import { ITEM_KIND_VALUES, type RuleOverrides } from '@/lib/reminders/rules';
@@ -362,7 +363,8 @@ export async function generateReminders(admin: Admin, userId: string, now = new 
     .maybeSingle();
   if (!term) return 0;
 
-  const [coursesRes, linksRes, examsRes, finalsRes, existingRes] = await Promise.all([
+  const since = new Date(now.getTime() - 8 * 86_400_000).toISOString().slice(0, 10);
+  const [coursesRes, linksRes, examsRes, finalsRes, existingRes, breaksRes, notesRes] = await Promise.all([
     admin.from('courses').select('id, slug, code, meetings, external_ids').eq('user_id', userId).eq('term_id', term.id),
     admin.from('links').select('course_id, url').eq('user_id', userId).ilike('url', '%piazza.com%'),
     admin
@@ -377,8 +379,10 @@ export async function generateReminders(admin: Admin, userId: string, now = new 
       .from('reminders')
       .select('id, dedupe_key, title, where_to_find, url, remind_at, course_id, item_id, done_at')
       .eq('user_id', userId),
+    admin.from('items').select('due_at, starts_at, ends_at').eq('user_id', userId).eq('kind', 'break').eq('state', 'active'),
+    admin.from('notes').select('course_id, lecture_on').eq('user_id', userId).gte('lecture_on', since),
   ]);
-  for (const r of [coursesRes, linksRes, examsRes, existingRes])
+  for (const r of [coursesRes, linksRes, examsRes, existingRes, breaksRes, notesRes])
     if (r.error) throw new Error(`Could not load reminder data: ${r.error.message}`);
 
   const courses = coursesRes.data ?? [];
@@ -404,7 +408,10 @@ export async function generateReminders(admin: Admin, userId: string, now = new 
       hasMeetings: Array.isArray(c.meetings) && c.meetings.length > 0,
       usesLearn: (((c.external_ids ?? {}) as { learn_names?: string[] }).learn_names ?? []).length > 0,
       piazzaUrl: (linksRes.data ?? []).find((l) => l.course_id === c.id)?.url ?? null,
+      meetings: (Array.isArray(c.meetings) ? c.meetings : []) as MeetingRow[],
     })),
+    breaks: breakRanges(breaksRes.data ?? []),
+    notesOn: (notesRes.data ?? []).filter((n) => n.course_id && n.lecture_on).map((n) => `${n.course_id}|${n.lecture_on}`),
     exams: (examsRes.data ?? []).map((e) => ({
       id: e.id,
       courseId: e.course_id,
