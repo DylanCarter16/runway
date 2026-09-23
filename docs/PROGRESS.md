@@ -4,8 +4,8 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Now
 
-- **Phase**: 7 built (2026-09-23, autopilot). Email ingest: `POST /api/ingest/email` stores each new Piazza email as a `piazza_email` document (Gmail ids already stored are skipped), files it by Piazza class through the mapping in Settings, Courses, queues extraction (Claude only for AI-on courses, purpose `extract_piazza`), and chunks it for Ask. Updates lists Piazza posts (summary, sender, post link; noise hidden behind a toggle); Settings, Integrations shows the last email. Live emails wait on the Apps Script bridge and Piazza settings (docs/BLOCKED.md). The optional Microsoft Graph spike was not attempted (needs a UW login with Duo; parked).
-- **Next step**: Phase 8 (extras, one per session). Take the Grades tab first; it needs no clicks. Then hybrid search, the Odyssey userscript, PWA, data export, ICS feed, MCP endpoint, in any order.
+- **Phase**: 8 in progress (extras, one per session). Done: **Grades tab** (2026-09-23, autopilot). Phases 1 to 7 are built; live pieces wait on docs/BLOCKED.md.
+- **Next step**: the next Phase 8 extra. Left: hybrid search for Ask (Opus; needs a Voyage AI key, so build it behind the settings flag against fixtures and park the live key), Odyssey userscript with `POST /api/ingest/odyssey`, PWA, data export (Settings, Data), read-only ICS feed, read-only MCP endpoint. No click needed for PWA, data export, ICS feed, or the userscript, so take those first.
 - **Production**: https://<APP_HOST>/login answered 200 after the Phase 7 pushes; the push to `main` auto-deploys (the autopilot can't run `npx vercel deploy --prod`).
 - **Waiting on Dylan**: docs/BLOCKED.md (UW Open Data key, LEARN feed URL, scheduled jobs SQL, a workspace-scoped Anthropic key, connect Google Calendar, Apps Script bridge, Piazza settings and class mapping, optional Microsoft Graph).
 - **Autopilot decisions**: `docs/DECISIONS.md`. Parked items: `docs/BLOCKED.md`.
@@ -14,10 +14,18 @@ Claude Code reads this first in every session and updates it before stopping.
   - `.scratch/phase2.ts`: every CS 251 page sync twice against the live pages, merge rules, bad LEARN URL. `.scratch/phase2-smoke.ts`: Sync, Integrations, Updates, Today banner at 390 and 1280px.
   - `.scratch/phase3.ts`: the Phase 3 acceptance checks through the real UI (Odyssey paste, Already saved, AI-off paste, Quest paste, outline proposals replayed from the fixture, Edit then approve, Today, Calendar, bulk approve, AI switch dialog) plus page loads at 390 and 1280px. `.scratch/record-ai.ts` re-records `tests/fixtures/ai/*.response.json` from the live API once the key works.
   - `.scratch/phase4.ts`: Phase 4 against the hosted database with a fake Google calendar (triggers, reminders twice, first sync then no writes, quick add, move, submit, dismiss, digest). `.scratch/phase4-smoke.ts`: Integrations, Reminders, Sync, Inbox, and Today at 390 and 1280px, saving a rule, Mark done, and the reconnect banner.
+  - `.scratch/phase8-grades.ts`: Grades tab through the UI (55 checks): CS 251 Crowdmark paste from the tab link makes 3 grade proposals without Claude, Approve all writes them and marks the midterm graded, average 82.4%, final calculator, add, reassign, and remove a mark, pages at 390 and 1280px. It inserts the CS 251 midterm itself (it comes from the exam info sync, not the seed).
   - `.scratch/phase7.ts`: Phase 7 on the hosted project (72 checks): the fixture batch twice through `ingestEmails`, extraction with recorded answers through `makeExtractHandler`, approving the Quiz 2 move, filing a waiting email, route 401s and one empty signed batch (its contact row is deleted), UI at 390 and 1280px.
   - UI scripts need `npx next start -p 3100` (after `npm run build`). Run with `set -a; . ./.env.local; set +a; NODE_OPTIONS=--conditions=react-server npx tsx --tsconfig tsconfig.json .scratch/<file>.ts`. The `react-server` condition lets scripts import `server-only` modules.
 - **Stale servers**: a `next start -p 3100` left running by an earlier session serves an old build and makes UI checks fail with 500s. Check `netstat -ano | grep :3100` before starting one, and stop it when done.
 - **tests/db/run.sh** was not run (no scratch Postgres on this machine). Phase 4 added migration `20260923070049_calendar_sync_triggers.sql` (applied to the hosted project; `.scratch/phase4.ts` checks its behaviour there).
+
+## Phase 8 map (where things live)
+
+- Grades, pure and tested (`tests/lib/grades/grades.test.ts`, fixtures `tests/fixtures/grades/`): `src/lib/grades/parse.ts` (`parseGradePaste`: "x / y" rows, percent-only rows only when nothing but numbers follows, skips headers and totals, so an outline pasted as grades reads nothing), `scheme.ts` (`guessComponent`, `courseStanding` with best k of n, `neededOnFinal`, `formatPercent`). `titleKey` moved to `src/lib/items/title-key.ts` (plan.ts re-exports it).
+- Pipeline: `processDocument` runs the parser for declared kind `grade_paste` with a course, before the AI switch; `marksToProposals` in `plan.ts` links marks to same-named items. Approval is unchanged (`apply.ts` case `grade`).
+- UI: `src/app/(app)/courses/[slug]/[tab]/grades.tsx` (server), `components/app/grades-controls.tsx` (`MarkControls`, `AddMarkForm`, `FinalCalculator`), actions `addGrade`, `setGradeComponent`, `deleteGrade` in `src/app/(app)/courses/actions.ts`. "Paste grades" opens `/inbox?course=<slug>&kind=grade_paste`.
+- DB: `grades.component` (migration `20260923152932_grade_component.sql`, applied; types regenerated).
 
 ## Phase 7 map (where things live)
 
@@ -139,6 +147,8 @@ Claude Code reads this first in every session and updates it before stopping.
 
 ## Later
 
+- Grades: model scheme rules that are prose now (STAT 230 better midterm 25%, CS 251 dropped clickers, CS 246 tutorial sets replacing final weight).
+- Grades: show "Guess: <component>" in the per-mark picker instead of "Guess from the name".
 - Piazza: when a class's mapping changes from one course to another, emails already filed stay under the old course.
 - Piazza: the Library and review queue could show the email's sender and post link as they do in Updates.
 - Ask: scroll a cited note to the cited passage (heading anchors in the note view).
@@ -157,6 +167,8 @@ Claude Code reads this first in every session and updates it before stopping.
 ## Session log
 
 Newest first. One entry per session: date, phase, model, what changed, commits, open issues, what Dylan must do next.
+
+- 2026-09-23, Phase 8 Grades tab (Opus 5.5, autopilot): marks by grading-scheme component (percent, points earned, notes, source with a link to the paste, date), running average over the marked weight, "What you need on the final" (target and "Expected on the rest", sentence plus a 50 to 90% table, out-of-reach and already-there cases), add a mark by hand, pick the component a mark counts toward, remove a mark. A rule-based grade paste parser runs before the AI switch, so the AI-off CS courses can paste marks too; STAT 230 uses it first and falls back to Claude only when it finds nothing. Migration `20260923152932` adds `grades.component` (applied). 228 unit tests. `.scratch/phase8-grades.ts`: 55 checks through the UI on the hosted project, including no `ai_calls` row for the CS 251 paste, and every Grades tab at 390 and 1280px with no horizontal scroll or console errors. Next: another Phase 8 extra.
 
 - 2026-09-23, Phase 7 (Opus 5.5, autopilot): built against fixtures instead of parking it on the bridge (DECISIONS.md). `POST /api/ingest/email` verifies the signature, validates the batch, skips Gmail ids it has stored, stores each new message as a `piazza_email` document (raw text and HTML as sent; from, date, subject, class id, post URL in meta), chunks it for Ask, and queues extraction. The class id in the email's links picks the course through `settings.piazza_map`; unmapped emails wait and are filed when Dylan saves the mapping in Settings, Courses. STAT 230 emails go through the Piazza prompt (purpose `extract_piazza`); AI-off courses are stored and listed only. Updates shows Piazza posts with summary, sender, and post link, noise hidden behind a toggle; Integrations shows the last email. 215 unit tests. Acceptance: the signed fixture batch makes 4 documents and the Quiz 2 update proposal, and sending it again stores nothing (route test and hosted check); a bad signature and a 6-minute-old timestamp get 401 (route test and local production build); the STAT 230 "Quiz 2 moved to Nov 6" email proposes the move (3:30 pm EST, across the DST change) and approving it writes source `piazza_email`; the CS 251 email is stored, listed in CS 251 Updates, and never reaches Claude (no request, no `ai_calls` row). `.scratch/phase7.ts`: 72 checks on the hosted project, pages at 390 and 1280px with no horizontal scroll or console errors. Not attempted: the optional Microsoft Graph spike (needs a UW login with Duo; parked). Found and fixed: a stale `next start` from an earlier session was holding port 3100. Next: Phase 8.
 
