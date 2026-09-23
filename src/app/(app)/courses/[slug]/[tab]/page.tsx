@@ -15,6 +15,7 @@ import { formatAgo } from '@/lib/time';
 import { COURSE_TABS } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 import { CourseDeadlines } from './deadlines';
+import { CourseGrades } from './grades';
 import { CourseOverview } from './overview';
 import { askPageData } from '../../../ask/data';
 
@@ -249,18 +250,7 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
     }
 
     case 'grades':
-      return (
-        <EmptyState
-          title={`No marks for ${course.code} yet.`}
-          action={
-            <Link href="/inbox" className={cn(buttonVariants({ variant: 'outline' }), 'h-11 sm:h-9')}>
-              Paste grades
-            </Link>
-          }
-        >
-          Paste a grades page from LEARN or Crowdmark to track your running average.
-        </EmptyState>
-      );
+      return <CourseGrades course={course} />;
 
     case 'library': {
       const { courses } = await getAppContext();
