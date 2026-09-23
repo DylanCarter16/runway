@@ -11,7 +11,7 @@ import type { Admin } from './queue';
 
 let client: Anthropic | null = null;
 
-function anthropic(): Anthropic {
+export function anthropic(): Anthropic {
   if (!serverEnv.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set, so Claude is unavailable.');
   client ??= new Anthropic({
     apiKey: serverEnv.ANTHROPIC_API_KEY,
