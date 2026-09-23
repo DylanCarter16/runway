@@ -119,6 +119,14 @@ export const diffSummaryResult = z.object({
   items: z.array(itemDraft),
 });
 
+export const noteMetaResult = z.object({
+  title: z.string(),
+  topics: z.array(z.string()),
+  summary: z.string(),
+  open_questions: z.array(z.string()),
+  items: z.array(itemDraft),
+});
+
 export type ClassifyResult = z.infer<typeof classifyResult>;
 export type OutlineResult = z.infer<typeof outlineResult>;
 export type AnnouncementResult = z.infer<typeof announcementResult>;
@@ -126,6 +134,7 @@ export type QuestResult = z.infer<typeof questResult>;
 export type ItemsResult = z.infer<typeof itemsResult>;
 export type GradesResult = z.infer<typeof gradesResult>;
 export type DiffSummaryResult = z.infer<typeof diffSummaryResult>;
+export type NoteMetaResult = z.infer<typeof noteMetaResult>;
 
 /** JSON Schema for output_config.format, without the $schema key. */
 export function jsonSchema(schema: z.ZodType): Record<string, unknown> {

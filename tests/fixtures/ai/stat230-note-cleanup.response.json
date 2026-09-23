@@ -1,0 +1,26 @@
+[
+  {
+    "purpose": "synthetic",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_note_1",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "# Conditional probability\n\n**Definition:** P(A | B) = P(A ∩ B) / P(B), provided P(B) > 0.\n\n$$P(A \\mid B) = \\frac{P(A \\cap B)}{P(B)}$$\n\n## Independent events\n\nA and B are independent (indep) if and only if $P(A \\cap B) = P(A)P(B)$.\n\n- Mutually exclusive is NOT the same as independent!\n- If P(A) > 0 and P(B) > 0, mutually exclusive (mut excl) events can't be independent.\n\n## Bayes' rule\n\n$$P(B \\mid A) = \\frac{P(A \\mid B)P(B)}{P(A)}$$\n\nExample: a test for a disease with sensitivity (sens) 0.95, specificity (spec) 0.9, and prevalence 0.01 gives P(D | +) ≈ 0.088.\n\n## Simulation in R (shown in lecture)\n\n```r\nset.seed(230)\nx <- rbinom(10000, 1, 0.01)\nmean(x)\n```\n\nSomething about the law of total probability and a partition. [?]\n\n## Announcement\n\nMidterm 2 moved to Nov 26, same time.\n\n## Questions\n\n- Does independence of A and B imply independence of A^c and B^c?"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 1100,
+        "output_tokens": 520,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      }
+    }
+  }
+]

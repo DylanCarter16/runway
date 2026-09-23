@@ -65,11 +65,8 @@ function textOf(message: Anthropic.Message): string {
     .join('');
 }
 
-export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promise<ClaudeResult<T>> {
-  if (!req.clearance?.courseId) throw new ClaudeError('callClaude needs a clearance from assertAiAllowed().');
-  const model = modelFor(req.purpose);
-  const started = Date.now();
-  const row: AiCallRow = {
+function emptyRow(req: { purpose: Purpose; userId: string; requestRef?: string | null }, model: string): AiCallRow {
+  return {
     user_id: req.userId,
     purpose: req.purpose,
     model,
@@ -84,18 +81,21 @@ export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promis
     request_ref: req.requestRef ?? null,
     raw_output: null,
   };
+}
 
+/** Sends one request, fills the usage columns, and logs the row however it ends. */
+async function run<R>(
+  deps: AiDeps,
+  req: { purpose: Purpose; clearance: AiClearance; userId: string; requestRef?: string | null },
+  params: (model: string) => Anthropic.MessageCreateParamsNonStreaming,
+  read: (message: Anthropic.Message, text: string, row: AiCallRow, model: string) => R,
+): Promise<R> {
+  if (!req.clearance?.courseId) throw new ClaudeError('callClaude needs a clearance from assertAiAllowed().');
+  const model = modelFor(req.purpose);
+  const started = Date.now();
+  const row = emptyRow(req, model);
   try {
-    const message = await deps.send({
-      model,
-      max_tokens: req.maxTokens ?? 16000,
-      system: req.system,
-      messages: [{ role: 'user', content: req.user }],
-      output_config: {
-        effort: req.effort ?? 'medium',
-        format: { type: 'json_schema', schema: jsonSchema(req.schema) },
-      },
-    });
+    const message = await deps.send(params(model));
     const usage = message.usage;
     row.input_tokens = usage.input_tokens;
     row.output_tokens = usage.output_tokens;
@@ -107,20 +107,9 @@ export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promis
 
     if (message.stop_reason === 'refusal') throw new ClaudeError('Claude declined this request.');
     if (message.stop_reason === 'max_tokens') throw new ClaudeError('The answer was cut off at the token limit.');
-
-    let json: unknown;
-    try {
-      json = parseJson(text);
-    } catch {
-      throw new ClaudeError('Claude returned text that is not JSON.');
-    }
-    row.raw_output = json;
-    const parsed = req.schema.safeParse(json);
-    if (!parsed.success) {
-      throw new ClaudeError(`Claude's answer did not match the schema: ${parsed.error.issues[0]?.message ?? 'unknown issue'}`);
-    }
+    const result = read(message, text, row, model);
     row.ok = true;
-    return { data: parsed.data, model, costUsd: row.cost_usd ?? 0 };
+    return result;
   } catch (e) {
     row.error = (e instanceof Error ? e.message : String(e)).slice(0, 1000);
     throw e;
@@ -128,4 +117,62 @@ export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promis
     row.duration_ms = Date.now() - started;
     await deps.log(row).catch(() => undefined);
   }
+}
+
+export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promise<ClaudeResult<T>> {
+  return run(
+    deps,
+    req,
+    (model) => ({
+      model,
+      max_tokens: req.maxTokens ?? 16000,
+      system: req.system,
+      messages: [{ role: 'user', content: req.user }],
+      output_config: {
+        effort: req.effort ?? 'medium',
+        format: { type: 'json_schema', schema: jsonSchema(req.schema) },
+      },
+    }),
+    (_message, text, row, model) => {
+      let json: unknown;
+      try {
+        json = parseJson(text);
+      } catch {
+        throw new ClaudeError('Claude returned text that is not JSON.');
+      }
+      row.raw_output = json;
+      const parsed = req.schema.safeParse(json);
+      if (!parsed.success) {
+        throw new ClaudeError(`Claude's answer did not match the schema: ${parsed.error.issues[0]?.message ?? 'unknown issue'}`);
+      }
+      return { data: parsed.data, model, costUsd: row.cost_usd ?? 0 };
+    },
+  );
+}
+
+export type TextRequest = Omit<ClaudeRequest<never>, 'schema'>;
+
+export interface TextResult {
+  text: string;
+  model: string;
+  costUsd: number;
+}
+
+/** Plain text output (note cleanup): same clearance, model choice, and logging as callClaude. */
+export async function callClaudeText(deps: AiDeps, req: TextRequest): Promise<TextResult> {
+  return run(
+    deps,
+    req,
+    (model) => ({
+      model,
+      max_tokens: req.maxTokens ?? 16000,
+      system: req.system,
+      messages: [{ role: 'user', content: req.user }],
+      output_config: { effort: req.effort ?? 'medium' },
+    }),
+    (_message, text, _row, model) => {
+      if (!text.trim()) throw new ClaudeError('Claude returned an empty answer.');
+      return { text, model, costUsd: _row.cost_usd ?? 0 };
+    },
+  );
 }

@@ -1,0 +1,25 @@
+stat 230 - lec 12 conditonal prob
+
+def: P(A|B) = P(A n B) / P(B) provided P(B) > 0
+$$P(A \mid B) = \frac{P(A \cap B)}{P(B)}$$
+
+indep events: A and B are indep iff $P(A \cap B) = P(A)P(B)$
+- mutualy exclusive is NOT the same as indep!!
+- if P(A)>0 and P(B)>0, mut excl events cant be indep
+
+bayes rule
+$$P(B \mid A) = \frac{P(A \mid B)P(B)}{P(A)}$$
+
+example: test for disease, sens 0.95, spec 0.9, prevalance 0.01 -> P(D|+) approx 0.088
+
+sim in R (prof showed this):
+```
+set.seed(230)
+x <- rbinom(10000, 1, 0.01)
+mean(x)
+```
+
+something about the law of total prob and a partition?? missed it
+
+announcment: midterm 2 moved to nov 26 same time
+q: does indep of A,B imply indep of A^c, B^c?

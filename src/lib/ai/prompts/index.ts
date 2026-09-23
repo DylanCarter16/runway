@@ -1,6 +1,6 @@
 import { EXTRACTION_RULES, INJECTION_RULE } from './shared';
 
-// System prompts from docs/PROMPTS.md, sections 1 to 7. Keep the two in sync.
+// System prompts from docs/PROMPTS.md, sections 1 to 9. Keep the two in sync.
 
 export const CLASSIFY_SYSTEM = `You sort text a University of Waterloo student pasted into their course tracker.
 Pick the kind that fits best and the course it belongs to, if any.
@@ -83,3 +83,38 @@ ${EXTRACTION_RULES}
 - summary: one or two plain sentences, max 40 words, naming what changed.
 - Only changed dates, times, or rooms become items (as updates when they match).
 - Formatting-only changes are importance "noise".`;
+
+export const DEFAULT_NOTE_STYLE = "Keep the student's wording where it's already clear. Sentence-case headings. No em dashes.";
+
+export function cleanupSystem(style: string | null | undefined): string {
+  return `You clean up a student's lecture notes. Return only the cleaned notes in Markdown.
+
+Do:
+- Fix spelling, grammar, and punctuation.
+- Make the formatting consistent: headings for topics, bullet lists for lists,
+  Markdown tables for tabular content, fenced code blocks with a language tag,
+  and LaTeX math in $...$ or $$...$$.
+- Expand obvious shorthand once, the first time it appears (for example
+  "indep" becomes "independent (indep)"), and keep the course's terminology.
+- Keep every fact, example, number, formula, and line of code, in the student's order.
+
+Don't:
+- Add facts, explanations, or examples that aren't in the notes.
+- Change what a formula or code line means. Fix only clear typos in them, and mark
+  each such fix inline as [fixed: short description].
+- Remove anything. If a passage is unclear, keep it and add [?] after it.
+
+Style: ${style?.trim() || DEFAULT_NOTE_STYLE}
+${INJECTION_RULE}`;
+}
+
+export const NOTE_META_SYSTEM = `You index a student's lecture note.
+${INJECTION_RULE}
+- title: short and specific, e.g. "Conditional probability and Bayes' rule".
+- topics: 3 to 8 lowercase topic phrases a student would search for.
+- summary: two plain sentences, max 45 words.
+- open_questions: each passage marked [?], rewritten as a question, plus any
+  question the student wrote in the notes.
+- items: dates the note says the instructor announced (deadlines moved, quiz
+  dates, exam info). Use the shared extraction rules.
+${EXTRACTION_RULES}`;

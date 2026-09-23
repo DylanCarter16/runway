@@ -1,0 +1,26 @@
+[
+  {
+    "purpose": "synthetic",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_note_2",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"title\": \"Conditional probability, independence, and Bayes' rule\", \"topics\": [\"conditional probability\", \"independence\", \"mutually exclusive events\", \"bayes' rule\", \"law of total probability\", \"simulation in r\"], \"summary\": \"Defines conditional probability and independent events, and why mutually exclusive events with positive probability can't be independent. Applies Bayes' rule to a disease test and simulates it in R.\", \"open_questions\": [\"What did the lecture say about the law of total probability and a partition?\", \"Does independence of A and B imply independence of A^c and B^c?\"], \"items\": [{\"action\": \"update\", \"match_item_id\": \"00000000-0000-4000-8000-00000000a002\", \"course_slug\": \"stat230\", \"kind\": \"midterm\", \"title\": \"Midterm 2\", \"date\": \"2026-11-26\", \"time\": null, \"end_time\": null, \"location\": null, \"seat\": null, \"weight_percent\": null, \"evidence\": \"Midterm 2 moved to Nov 26, same time.\", \"confidence\": 0.85}]}"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 1400,
+        "output_tokens": 260,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0
+      }
+    }
+  }
+]
