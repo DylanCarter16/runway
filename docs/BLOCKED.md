@@ -34,6 +34,18 @@ Items parked during autopilot runs (docs/AUTOPILOT.md). Each needs one human ste
 
 ## Phase 4: Apps Script bridge
 - Needed: docs/SETUP.md step 8 at https://script.google.com: new project "Runway bridge", paste `scripts/apps-script/Code.gs`, set time zone America/Toronto, add Script properties `RUNWAY_URL` = `https://<APP_HOST>`, `RUNWAY_SECRET` = the `INGEST_WEBHOOK_SECRET` value from `.env.local`, `DIGEST_TO` = your email, then run `setup` and approve.
-- Why: the morning digest email, and (from Phase 7) Piazza emails. Settings, Integrations shows the ping when it works.
-- Done so far: `POST /api/ingest/ping`, `GET /api/digest`, and the stub `POST /api/ingest/email` verify the HMAC signature and reject anything over 5 minutes old (checked: bad signature, old timestamp, and no headers all get 401; signed requests get 200 and 202). The digest content is tested with fixtures.
+- Why: the morning digest email and Piazza emails (Phase 7 is built and waiting on this). Settings, Integrations shows the ping, the last email check, and the last email when it works.
+- Done so far: `POST /api/ingest/ping`, `GET /api/digest`, and `POST /api/ingest/email` (real since Phase 7) verify the HMAC signature and reject anything over 5 minutes old (checked: bad signature, old timestamp, and no headers all get 401; signed requests get 200 and 202). The digest content is tested with fixtures.
 - Time: 15 minutes.
+
+## Phase 7: Piazza email settings and class mapping
+- Needed: (1) docs/SETUP.md step 9 (and step 0.2): in Piazza account settings (https://piazza.com/account_settings) add your Gmail and make it the preferred address; in each of the four classes set email notifications to Real Time, at least for instructor posts. (2) After the bridge is installed (entry above), open https://<APP_HOST>/settings/courses, and under "Piazza classes" pick the course for each class link (open each link to see which course it is), then press "Save Piazza classes".
+- Why: Piazza posts arrive every 15 minutes, show in each course's Updates with a link to the post, and for STAT 230 (AI on) a moved date becomes a proposal in the Inbox. Emails from a class with no course are stored and wait; saving the mapping files them.
+- Done so far: `POST /api/ingest/email` stores each new message as a `piazza_email` document (Gmail ids already stored are skipped), queues extraction, and chunks it for Ask; the Piazza prompt path, the mapping form, Updates entries (noise hidden behind a toggle), and the last email in Settings, Integrations. Checked with fixtures (`tests/lib/ingest/`) and on the hosted project with a throwaway user (`.scratch/phase7.ts`, 72 checks). Not checked live: a real Piazza email's format; if its links don't contain `/class/<id>`, emails stay without a course (Settings, Courses shows "waiting for a course").
+- Time: 10 minutes.
+
+## Phase 7 (optional): Microsoft Graph for Crowdmark emails
+- Needed: only if you want Crowdmark emails from your UW inbox read automatically: docs/SETUP.md step 10 (an Entra app with delegated `Mail.Read`, which UW may require admin consent for). Then ask a local session to run the 1-hour spike in PHASES.md Phase 7 task 5.
+- Why: Crowdmark assessment links and due dates would arrive without a paste. Without it, the paste reminder for Crowdmark stays the way in.
+- Done so far: nothing; the spike needs a UW Microsoft login with Duo.
+- Time: 30 minutes, and it may not be allowed by UW.
