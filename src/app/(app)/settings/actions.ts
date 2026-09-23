@@ -13,6 +13,7 @@ import { enqueueNow, runQueuedJobs, runWorkerNow } from '@/lib/jobs/schedule';
 import { cleanReminders, ITEM_KIND_VALUES, resolveRule, type RuleOverrides } from '@/lib/reminders/rules';
 import type { RunTarget } from '@/lib/jobs/types';
 import { createFeedToken, deleteFeedToken } from '@/lib/jobs/feed';
+import { createMcpToken, deleteMcpToken } from '@/lib/jobs/mcp';
 import { createOdysseyToken, deleteOdysseyToken } from '@/lib/jobs/odyssey';
 import { deleteLearnFeedUrl, saveLearnFeedUrl } from '@/lib/jobs/tokens';
 import { termDatedFilter } from '@/lib/term/range';
@@ -106,6 +107,29 @@ export async function turnOffFeed(): Promise<ActionResult> {
     await deleteFeedToken(createAdminClient(), user.id);
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not turn off the feed.' };
+  }
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+/** Turns the MCP connector on, or replaces its token (the old URL stops working). */
+export async function makeMcpLink(): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await createMcpToken(createAdminClient(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not make the connector link.' };
+  }
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+export async function turnOffMcp(): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await deleteMcpToken(createAdminClient(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not turn off the connector.' };
   }
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };

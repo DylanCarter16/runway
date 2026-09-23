@@ -11,6 +11,7 @@ import { LoadTermButton } from '@/components/app/settings-bits';
 import { DisconnectGoogleButton, ReminderRulesForm } from '@/components/app/reminder-controls';
 import { DeleteTermButton } from '@/components/app/data-controls';
 import { FeedControls } from '@/components/app/feed-controls';
+import { McpControls } from '@/components/app/mcp-controls';
 import { OdysseyControls } from '@/components/app/odyssey-controls';
 import { InstallApp } from '@/components/app/pwa';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
@@ -22,6 +23,7 @@ import { getAppContext } from '@/lib/db/queries';
 import { pageRunSource } from '@/lib/jobs/sync';
 import { googleStatus, parseOverrides } from '@/lib/jobs/gcal';
 import { feedStatus } from '@/lib/jobs/feed';
+import { mcpStatus } from '@/lib/jobs/mcp';
 import { odysseyScriptStatus } from '@/lib/jobs/odyssey';
 import { learnFeedStatus } from '@/lib/jobs/tokens';
 import { ODYSSEY_PAGE } from '@/lib/sources/odyssey-script';
@@ -276,11 +278,12 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'integrations': {
-      const [learn, google, feed, odyssey, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
+      const [learn, google, feed, odyssey, mcp, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
         learnFeedStatus(createAdminClient(), user.id),
         googleStatus(user.id),
         feedStatus(createAdminClient(), user.id),
         odysseyScriptStatus(createAdminClient(), user.id),
+        mcpStatus(createAdminClient(), user.id),
         supabase.from('sync_runs').select('started_at, stats').eq('source', 'bridge').order('started_at', { ascending: false }).limit(200),
         supabase
           .from('documents')
@@ -423,6 +426,33 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               <OdysseyControls appUrl={serverEnv.APP_URL} token={odyssey.token} />
             ) : (
               <p className="text-sm text-muted-foreground">Waiting for TOKEN_ENCRYPTION_KEY, which stores the token.</p>
+            )}
+          </Block>
+          <Block title="Claude connector (MCP)">
+            <p className="text-sm text-muted-foreground">
+              Lets a Claude chat read Runway: what&apos;s due, rooms and weights, and search. It can read notes only from courses with AI
+              on. It can&apos;t change anything.
+            </p>
+            <ol className="ml-5 list-decimal text-sm">
+              <li>Make the connector link below and copy it.</li>
+              <li>
+                In Claude, open Settings, Connectors, Add custom connector. Name it Runway and paste the link. In Claude Code, run{' '}
+                <code className="font-mono text-xs">claude mcp add --transport http runway &lt;link&gt;</code>.
+              </li>
+              <li>Ask things like &quot;What&apos;s due this week?&quot; or &quot;Where is my STAT 230 midterm?&quot;</li>
+            </ol>
+            {mcp.on ? (
+              <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm tabular">
+                <dt className="text-muted-foreground">Made</dt>
+                <dd>{mcp.createdAt ? formatAgo(new Date(mcp.createdAt), now) : 'yes'}</dd>
+                <dt className="text-muted-foreground">Last used</dt>
+                <dd>{mcp.lastUsedAt ? formatAgo(new Date(mcp.lastUsedAt), now) : 'Not yet'}</dd>
+              </dl>
+            ) : null}
+            {serverEnv.TOKEN_ENCRYPTION_KEY ? (
+              <McpControls url={mcp.url} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Waiting for TOKEN_ENCRYPTION_KEY, which stores the link.</p>
             )}
           </Block>
           <Block title="LEARN feed">
