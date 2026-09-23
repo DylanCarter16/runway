@@ -1,0 +1,54 @@
+[
+  {
+    "purpose": "ask",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_ask_uncovered_1",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        { "type": "text", "text": "I'll check your notes for this first.", "citations": null },
+        {
+          "type": "tool_use",
+          "id": "toolu_fixture_mgf",
+          "name": "search_library",
+          "input": { "query": "moment generating function", "course_slug": "stat230" }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 410,
+        "output_tokens": 58,
+        "cache_creation_input_tokens": 1480,
+        "cache_read_input_tokens": 0
+      }
+    }
+  },
+  {
+    "purpose": "ask",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_ask_uncovered_2",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "Your notes don't cover moment generating functions yet.\n\n## General knowledge (not from your notes)\n\nThe moment generating function of a random variable $X$ is $M_X(t) = E[e^{tX}]$. Its $k$th derivative at $t = 0$ gives $E[X^k]$, so it packs every moment into one function. Two variables with the same MGF near 0 have the same distribution.",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 520,
+        "output_tokens": 96,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 1480
+      }
+    }
+  }
+]

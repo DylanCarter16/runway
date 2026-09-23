@@ -1,0 +1,72 @@
+[
+  {
+    "purpose": "ask",
+    "model": "claude-sonnet-5",
+    "message": {
+      "id": "msg_fixture_ask_independence",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-sonnet-5",
+      "content": [
+        {
+          "type": "text",
+          "text": "They describe different things. Independent events don't change each other's chances, so $P(A \\cap B) = P(A)P(B)$.",
+          "citations": [
+            {
+              "type": "search_result_location",
+              "source": "chunk:{{Two events}}",
+              "title": "{{title}}",
+              "cited_text": "{{text}}",
+              "search_result_index": 0,
+              "start_block_index": 0,
+              "end_block_index": 1
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": " Mutually exclusive events can't happen together, so $P(A \\cap B) = 0$.",
+          "citations": [
+            {
+              "type": "search_result_location",
+              "source": "chunk:{{Mutually exclusive means}}",
+              "title": "{{title}}",
+              "cited_text": "{{text}}",
+              "search_result_index": 0,
+              "start_block_index": 0,
+              "end_block_index": 1
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\n\nWhen both events have positive probability, mutually exclusive events are never independent: knowing $A$ happened tells you $B$ didn't.",
+          "citations": [
+            {
+              "type": "search_result_location",
+              "source": "chunk:{{can't be independent}}",
+              "title": "{{title}}",
+              "cited_text": "{{text}}",
+              "search_result_index": 0,
+              "start_block_index": 0,
+              "end_block_index": 1
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "\n\nExample from your notes: on one die, even and odd are mutually exclusive and dependent. On two dice, \"first die even\" and \"second die even\" are independent.",
+          "citations": null
+        }
+      ],
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 420,
+        "output_tokens": 162,
+        "cache_creation_input_tokens": 1480,
+        "cache_read_input_tokens": 0
+      }
+    }
+  }
+]

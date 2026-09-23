@@ -65,7 +65,7 @@ function textOf(message: Anthropic.Message): string {
     .join('');
 }
 
-function emptyRow(req: { purpose: Purpose; userId: string; requestRef?: string | null }, model: string): AiCallRow {
+export function emptyRow(req: { purpose: Purpose; userId: string; requestRef?: string | null }, model: string): AiCallRow {
   return {
     user_id: req.userId,
     purpose: req.purpose,

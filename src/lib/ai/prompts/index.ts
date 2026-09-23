@@ -1,6 +1,6 @@
 import { EXTRACTION_RULES, INJECTION_RULE } from './shared';
 
-// System prompts from docs/PROMPTS.md, sections 1 to 9. Keep the two in sync.
+// System prompts from docs/PROMPTS.md, sections 1 to 10. Keep the two in sync.
 
 export const CLASSIFY_SYSTEM = `You sort text a University of Waterloo student pasted into their course tracker.
 Pick the kind that fits best and the course it belongs to, if any.
@@ -118,3 +118,72 @@ ${INJECTION_RULE}
 - items: dates the note says the instructor announced (deadlines moved, quiz
   dates, exam info). Use the shared extraction rules.
 ${EXTRACTION_RULES}`;
+
+export const DEFAULT_ANSWER_STYLE = 'Write plainly and briefly, in short sentences. No em dashes. Skip filler and closing summaries.';
+
+export const GENERAL_KNOWLEDGE_HEADING = 'General knowledge (not from your notes)';
+
+export function askSystem(policy: string | null | undefined, style: string | null | undefined): string {
+  return `You are a study helper for one University of Waterloo student. You answer questions
+about their courses using the sources provided: their lecture notes, course pages,
+outlines, announcements, and assignment text.
+
+Answering:
+- Base the answer on the sources and cite them.
+- If the sources don't cover the question, say that in one sentence first. Then give
+  a general explanation under the heading "${GENERAL_KNOWLEDGE_HEADING}".
+- If the sources disagree, say which says what and which is newer.
+- Use LaTeX for math and fenced code blocks for code.
+- Use headings only when the answer has several parts.
+- If the search_library tool is available and the sources look incomplete, search
+  before answering. Use at most 3 searches.
+
+Assignments and exams:
+- Course AI policy for this scope: ${policy?.trim() || 'unknown'}.
+- Follow that policy. If it's unknown, or it limits AI help on graded work, explain
+  the concepts and point to the relevant notes instead of writing answers to graded
+  questions.
+
+Style: ${style?.trim() || DEFAULT_ANSWER_STYLE}
+${INJECTION_RULE}`;
+}
+
+export const SEARCH_LIBRARY_TOOL = {
+  name: 'search_library',
+  description: "Search the student's notes and stored course documents. Returns matching passages as search results.",
+  input_schema: {
+    type: 'object' as const,
+    additionalProperties: false,
+    required: ['query', 'course_slug'],
+    properties: {
+      query: { type: 'string', description: 'Keywords, not a full question' },
+      course_slug: { type: ['string', 'null'] },
+    },
+  },
+};
+
+export const QUICK_PROMPTS = [
+  {
+    key: 'explain',
+    label: 'Explain this simply',
+    text: (topic?: string | null) =>
+      `Explain ${topic?.trim() || 'this'} simply, as if I missed the lecture. Start with the core idea, then one example from my notes.`,
+  },
+  {
+    key: 'quiz',
+    label: 'Quiz me on this',
+    text: () =>
+      'Write 5 practice questions on this material: mix short answer and multiple choice. Put all answers at the end under "Answers", each with the note it comes from.',
+  },
+  {
+    key: 'midterm',
+    label: "What's on the midterm?",
+    text: () =>
+      'What does the midterm cover, according to the outline, announcements, and schedule? List topics in lecture order and cite where each comes from.',
+  },
+  {
+    key: 'week',
+    label: 'Summarize this week',
+    text: () => 'Summarize what we covered this week, lecture by lecture, in a few bullets each.',
+  },
+] as const;
