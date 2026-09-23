@@ -13,6 +13,7 @@ import { enqueueNow, runQueuedJobs, runWorkerNow } from '@/lib/jobs/schedule';
 import { cleanReminders, ITEM_KIND_VALUES, resolveRule, type RuleOverrides } from '@/lib/reminders/rules';
 import type { RunTarget } from '@/lib/jobs/types';
 import { createFeedToken, deleteFeedToken } from '@/lib/jobs/feed';
+import { createOdysseyToken, deleteOdysseyToken } from '@/lib/jobs/odyssey';
 import { deleteLearnFeedUrl, saveLearnFeedUrl } from '@/lib/jobs/tokens';
 import { termDatedFilter } from '@/lib/term/range';
 import type { ActionResult } from '../actions';
@@ -105,6 +106,29 @@ export async function turnOffFeed(): Promise<ActionResult> {
     await deleteFeedToken(createAdminClient(), user.id);
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Could not turn off the feed.' };
+  }
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+/** Turns the Odyssey userscript on, or replaces its token (scripts with the old one stop working). */
+export async function makeOdysseyToken(): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await createOdysseyToken(createAdminClient(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not make the userscript token.' };
+  }
+  revalidatePath('/settings', 'layout');
+  return { ok: true, data: null };
+}
+
+export async function turnOffOdysseyScript(): Promise<ActionResult> {
+  const user = await requireUser();
+  try {
+    await deleteOdysseyToken(createAdminClient(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not turn off the userscript.' };
   }
   revalidatePath('/settings', 'layout');
   return { ok: true, data: null };

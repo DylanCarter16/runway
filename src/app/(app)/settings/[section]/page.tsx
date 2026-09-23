@@ -11,6 +11,7 @@ import { LoadTermButton } from '@/components/app/settings-bits';
 import { DisconnectGoogleButton, ReminderRulesForm } from '@/components/app/reminder-controls';
 import { DeleteTermButton } from '@/components/app/data-controls';
 import { FeedControls } from '@/components/app/feed-controls';
+import { OdysseyControls } from '@/components/app/odyssey-controls';
 import { InstallApp } from '@/components/app/pwa';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
 import { buttonVariants } from '@/components/ui/button';
@@ -21,7 +22,9 @@ import { getAppContext } from '@/lib/db/queries';
 import { pageRunSource } from '@/lib/jobs/sync';
 import { googleStatus, parseOverrides } from '@/lib/jobs/gcal';
 import { feedStatus } from '@/lib/jobs/feed';
+import { odysseyScriptStatus } from '@/lib/jobs/odyssey';
 import { learnFeedStatus } from '@/lib/jobs/tokens';
+import { ODYSSEY_PAGE } from '@/lib/sources/odyssey-script';
 import { webcalUrl } from '@/lib/ics/feed';
 import type { RunTarget } from '@/lib/jobs/types';
 import { ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
@@ -273,10 +276,11 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'integrations': {
-      const [learn, google, feed, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
+      const [learn, google, feed, odyssey, { data: bridgeRuns }, { data: newestEmail }] = await Promise.all([
         learnFeedStatus(createAdminClient(), user.id),
         googleStatus(user.id),
         feedStatus(createAdminClient(), user.id),
+        odysseyScriptStatus(createAdminClient(), user.id),
         supabase.from('sync_runs').select('started_at, stats').eq('source', 'bridge').order('started_at', { ascending: false }).limit(200),
         supabase
           .from('documents')
@@ -371,6 +375,54 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               <FeedControls url={feed.url} webcal={feed.url ? webcalUrl(feed.url) : null} />
             ) : (
               <p className="text-sm text-muted-foreground">Waiting for TOKEN_ENCRYPTION_KEY, which stores the link.</p>
+            )}
+          </Block>
+          <Block title="Odyssey userscript">
+            <p className="text-sm text-muted-foreground">
+              Sends exam rows (date, time, room, seat) from Odyssey to your Inbox whenever you open your exam schedule there. It runs in your
+              own signed-in browser; Runway never signs in to Odyssey.
+            </p>
+            <ol className="ml-5 list-decimal text-sm">
+              <li>Install Tampermonkey (or another userscript manager) in the browser you use for Odyssey.</li>
+              <li>Download the userscript and open it with Tampermonkey (Dashboard, Utilities, Import from file), or make a new script and paste it.</li>
+              <li>
+                Open{' '}
+                <a href={ODYSSEY_PAGE} target="_blank" rel="noreferrer" className="text-tie underline-offset-2 hover:underline">
+                  your Odyssey exam schedule
+                </a>
+                . A box in the corner says what was sent. New rooms and seats show up in the Inbox to approve.
+              </li>
+            </ol>
+            {odyssey.on ? (
+              <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm tabular">
+                <dt className="text-muted-foreground">Turned on</dt>
+                <dd>{odyssey.createdAt ? formatAgo(new Date(odyssey.createdAt), now) : 'yes'}</dd>
+                <dt className="text-muted-foreground">Last sent</dt>
+                <dd>
+                  {odyssey.lastSentAt ? (
+                    <>
+                      {formatAgo(new Date(odyssey.lastSentAt), now)}, {odyssey.lastRows ?? 0} {odyssey.lastRows === 1 ? 'row' : 'rows'}
+                      {odyssey.lastDocumentId ? (
+                        <>
+                          {' '}
+                          (
+                          <Link href={`/library/${odyssey.lastDocumentId}`} className="text-tie underline-offset-2 hover:underline">
+                            see them
+                          </Link>
+                          )
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    'Not yet'
+                  )}
+                </dd>
+              </dl>
+            ) : null}
+            {serverEnv.TOKEN_ENCRYPTION_KEY ? (
+              <OdysseyControls appUrl={serverEnv.APP_URL} token={odyssey.token} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Waiting for TOKEN_ENCRYPTION_KEY, which stores the token.</p>
             )}
           </Block>
           <Block title="LEARN feed">
