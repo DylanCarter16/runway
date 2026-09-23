@@ -15,6 +15,7 @@ import {
   mapImportantDates,
   mapTerm,
 } from '@/lib/sources/open-data';
+import { rebuildDocumentChunks } from '@/lib/notes/store';
 import { diffPageText, normalizePageText, sha256 } from '@/lib/sources/page-watch';
 import { syncCs251Assignments, syncCs251ExamInfo, syncCs251Schedule } from '@/lib/sync/cs251';
 import { emptyStats, proposeUnmatched, syncItems, type SyncStats } from '@/lib/sync/items';
@@ -189,6 +190,14 @@ async function storeSnapshot(admin: Admin, page: PageRow, html: string, text: st
   // The page went back to text stored earlier: that snapshot already exists.
   if (error?.code === '23505') return null;
   if (error) throw new Error(`Could not store the page snapshot: ${error.message}`);
+  await rebuildDocumentChunks(admin, {
+    id: data.id,
+    user_id: page.user_id,
+    course_id: page.course_id,
+    kind: 'page_snapshot',
+    raw_text: text,
+    source_ref: page.url,
+  }).catch((e) => console.error(e));
   return data.id;
 }
 

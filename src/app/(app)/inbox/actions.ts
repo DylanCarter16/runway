@@ -9,6 +9,7 @@ import { createClient, requireUser } from '@/lib/db/server';
 import type { Json } from '@/lib/db/types';
 import { ApprovalError, approvalEditSchema, planApproval, type ApprovalEdit, type ApprovalWrites } from '@/lib/inbox/apply';
 import { enqueueExtract } from '@/lib/jobs/inbox';
+import { rebuildDocumentChunks } from '@/lib/notes/store';
 import { createNote } from '../notes/actions';
 import { runQueuedJobs } from '@/lib/jobs/schedule';
 import { addDaysToDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
@@ -97,6 +98,14 @@ export async function pasteText(input: PasteInput): Promise<ActionResult<PasteOu
     .select('id')
     .single();
   if (error) return { ok: false, error: `Could not save the paste: ${error.message}` };
+  await rebuildDocumentChunks(supabase, {
+    id: saved.id,
+    user_id: user.id,
+    course_id: courseId,
+    kind: 'other',
+    raw_text: text,
+    source_ref: null,
+  }).catch((e) => console.error(e));
 
   try {
     startWorker(await enqueueExtract(user.id, saved.id));
