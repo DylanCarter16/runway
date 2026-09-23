@@ -2,13 +2,14 @@ import 'server-only';
 import { serverEnv } from '@/env';
 import { enqueue, processJobs, type Admin, type JobHandler } from './queue';
 import type { RunTarget } from './types';
+import { INBOX_HANDLERS } from './inbox';
 import { JOB_SYNC_LEARN, JOB_SYNC_OPEN_DATA, JOB_SYNC_PAGE, SYNC_HANDLERS } from './sync';
 
 // What each cron cadence runs (docs/SOURCES.md, Summary table), and the "Run now" entry point.
 
 export type Cadence = 'hourly' | 'every_3h' | 'daily';
 
-export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS };
+export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS };
 
 export function runQueuedJobs(admin: Admin) {
   return processJobs(admin, HANDLERS);
