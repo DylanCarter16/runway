@@ -151,7 +151,7 @@ HTML comments on course pages hold old policies and last term's dates. Every par
 - https://odyssey.uwaterloo.ca/teaching/schedule shows finals and midterms that use Odyssey. The same data appears in Portal under Academics. Seats are assigned only a few days before each exam.
 - It sits behind WatIAM and Duo, so Runway never fetches it.
 - Flow: a check reminder before each exam (repeating daily until the item has a seat). Dylan pastes the row, and a rule-based parser (the rows are a table) proposes an update with room and seat. No AI involved.
-- Phase 8 option: a Tampermonkey userscript that reads the table while Dylan is signed in and posts rows to `POST /api/ingest/odyssey` with a personal token.
+- Phase 8 (built): a Tampermonkey userscript (Settings, Integrations, "Odyssey userscript") reads the tables while Dylan is signed in and posts the cells to `POST /api/ingest/odyssey` with a personal token. The server stores them as an Odyssey paste and runs the same parser.
 
 ## 9. Quest class schedule (paste)
 
