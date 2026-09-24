@@ -80,6 +80,7 @@ Header: course code and title, next deadline with countdown, and a row of big li
   - Quest schedules and Odyssey rows are tables, so rule-based parsers handle them without AI. Claude is a fallback only for rows about AI-on courses.
   - Lecture notes go to the Notes flow (4.5). Everything else becomes a document, then an extraction job.
   - Pasting the same text twice shows "Already saved" with a link, and creates nothing.
+  - **Files** (Phase 9): drop, pick, or paste PDFs, images, and screenshots into the box. Originals go to the private `library` bucket under `<user_id>/` unchanged (name, size, and type kept; 50 MB cap on the free plan). Text PDFs are read with unpdf; scanned or handwritten pages and photos go to Claude vision 3 pages per call, for AI-on courses only. AI-off courses store the file and each page says why it wasn't read. Nothing is truncated: a page too large to send is stored, skipped, and named. The same file twice shows "Already stored"; pages stored before for the course (a re-exported notebook) are skipped. Uploaded text is chunked for Ask and found by search. With kind "Lecture notes", a file becomes a note (4.5).
 - **Review queue**: proposal cards, newest first, sorted by confidence within a source. Each card shows what will happen ("Create CS 251 A3, due Nov 9, time not set" or a before/after for updates), the evidence quote, the source link, and actions: Approve, Edit then approve, Dismiss. Bulk approve is allowed for one source document at a time, behind a confirm dialog.
   - Duplicate check: a create proposal that matches an existing item (same course and kind, similar title, date within 3 days) is shown as an update instead.
   - Course info proposals (policies, office hours, staff, grading scheme, meeting times) show the field and new value. Approving writes it to the course.
@@ -98,6 +99,8 @@ Header: course code and title, next deadline with countdown, and a row of big li
   - Dates mentioned in the notes ("midterm moved to Nov 19") appear as proposals in the review queue, linked from the note.
   - Rendering: KaTeX for math, fenced code with syntax highlighting, tables. Reading font per DESIGN.md.
 - **Notes list** (`/notes`): all notes, filter by course, search box, sorted by lecture date.
+- **Running notes** (Phase 9): Dylan keeps one document per course and pastes all of it after each lecture. The full paste is stored as a `note_source` document; the note holds only what is new since the course's last paste (appended paragraphs, paragraphs added to earlier sections, and edited paragraphs marked "Revised since your last paste"). Moved or re-pasted text is skipped. The note page says what was decided ("2 new paragraphs, 4 lines skipped") with "Undo: keep the whole paste as one note". A paste with nothing new makes no note and offers the same undo. The first paste for a course becomes the note whole.
+- **Notes from files**: the note form takes a PDF or photos. Pages already stored for the course are skipped, so a re-exported GoodNotes notebook adds only its new pages; for AI-on courses the transcription is the cleaned copy and the original names the file and pages; the same undo keeps every page.
 - Cleanup never adds facts. It fixes spelling, grammar, and formatting; keeps every fact, formula, and code line; and marks unclear passages with `[?]`. The style prompt is editable in Settings > AI.
 
 ### 4.6 Ask (`/ask`)
@@ -120,6 +123,8 @@ Header: course code and title, next deadline with countdown, and a row of big li
 ### 4.8 Library (`/library`)
 - Every stored document with filters for kind, course, and date, plus full-text search.
 - Detail page: title, kind, course, captured time, source link, raw text, the original file when stored, proposals and items it produced, and for page snapshots a diff against the previous snapshot.
+- Files: name, type, size, pages, "Open the original" (a signed link), what was read and how (PDF text or Claude), each page's text, skipped pages with the reason, "Try the failed pages again", and for PDFs with unread pages "Extract pages" (a page range).
+- **Textbooks**: added from a course's Resources tab with "It's a textbook". Stored and listed under Files, Textbooks; nothing is read until Extract pages asks for a chapter.
 
 ### 4.9 Item detail (drawer and `/items/[id]`)
 Title, course, kind, dates (with "time not set" when unknown), location and seat, weight, progress, source with link and last sync time, change history, related notes and documents, the course's late policy and submission checklist, and actions: mark started or submitted, edit, change reminders, dismiss, open source, ask about this.
