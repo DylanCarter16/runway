@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 import { AskThreads } from '@/components/app/ask-threads';
 import { AskView } from '@/components/app/ask-view';
+import { CourseFiles, type CourseFileRow } from '@/components/app/course-files';
 import { EmptyState } from '@/components/app/empty-state';
 import { LibraryList, readLibraryFilters } from '@/components/app/library-list';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
@@ -39,13 +40,13 @@ function PageUpdate({ doc, now, at }: { doc: { id: string; title: string; source
     <li className="grid gap-1 py-2">
       <span>
         {diff ? `${label} page changed.` : `Started watching the ${label} page.`}{' '}
-        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+        <Link href={`/library/${doc.id}`} className="text-link underline-offset-2 hover:underline">
           Saved copy
         </Link>
         {doc.source_url ? (
           <>
             {', '}
-            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
+            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">
               open page
             </a>
           </>
@@ -65,7 +66,7 @@ function PasteUpdate({ doc, now, at }: { doc: { id: string; title: string; kind:
     <li className="grid gap-1 py-2">
       <span>
         {documentKindLabel(doc.kind)} pasted:{' '}
-        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+        <Link href={`/library/${doc.id}`} className="text-link underline-offset-2 hover:underline">
           {doc.title}
         </Link>{' '}
         <span className="text-muted-foreground">{formatAgo(new Date(at), now)}</span>
@@ -83,13 +84,13 @@ function EmailUpdate({ doc, now, at }: { doc: { id: string; title: string; sourc
     <li className="grid gap-1 py-2">
       <span>
         Piazza:{' '}
-        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+        <Link href={`/library/${doc.id}`} className="text-link underline-offset-2 hover:underline">
           {doc.title}
         </Link>
         {doc.source_url ? (
           <>
             {', '}
-            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
+            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">
               open post
             </a>
           </>
@@ -128,12 +129,25 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
       );
 
     case 'resources': {
-      const { data } = await supabase
-        .from('links')
-        .select('id, course_id, label, url, category, where_to_find, pinned, sort_order')
-        .eq('course_id', course.id)
-        .order('sort_order');
-      return <LinksManager courseId={course.id} links={(data ?? []) as LinkRow[]} />;
+      const [{ data }, { data: files }] = await Promise.all([
+        supabase.from('links').select('id, course_id, label, url, category, where_to_find, pinned, sort_order').eq('course_id', course.id).order('sort_order'),
+        supabase
+          .from('documents')
+          .select('id, kind, title, file_name, file_size, meta')
+          .eq('course_id', course.id)
+          .in('kind', ['textbook', 'upload'])
+          .order('captured_at', { ascending: false }),
+      ]);
+      const fileRows: CourseFileRow[] = (files ?? []).map((f) => {
+        const meta = (f.meta ?? {}) as { summary?: string; page_count?: number };
+        return { id: f.id, kind: f.kind, title: f.title, file_name: f.file_name, file_size: f.file_size, summary: meta.summary ?? null, page_count: meta.page_count ?? null };
+      });
+      return (
+        <div className="grid gap-8">
+          <LinksManager courseId={course.id} links={(data ?? []) as LinkRow[]} />
+          <CourseFiles courseId={course.id} courseCode={course.code} aiOn={course.ai_allowed} files={fileRows} />
+        </div>
+      );
     }
 
     case 'notes':
@@ -204,7 +218,7 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
         <p className="text-sm">
           <Link
             href={showNoise ? `/courses/${course.slug}/updates` : `/courses/${course.slug}/updates?noise=1`}
-            className="text-tie underline-offset-2 hover:underline"
+            className="text-link underline-offset-2 hover:underline"
           >
             {showNoise ? 'Hide Piazza posts with nothing to act on' : `Show ${hidden} hidden Piazza ${hidden === 1 ? 'post' : 'posts'}`}
           </Link>

@@ -71,8 +71,12 @@ function parseClient(): z.infer<typeof clientSchema> {
   return result.data;
 }
 
-/** Server-only. Never import this into a 'use client' file. */
-export const serverEnv = parseServer();
+/**
+ * Server-only. Never import this into a 'use client' file. In the browser (where this module
+ * loads for clientEnv, e.g. through src/lib/db/browser.ts) there are no server variables to
+ * parse, so it is empty there instead of throwing.
+ */
+export const serverEnv = typeof window === 'undefined' ? parseServer() : ({} as z.infer<typeof serverSchema>);
 
 /** Safe to import anywhere: only holds NEXT_PUBLIC_* values. */
 export const clientEnv = parseClient();

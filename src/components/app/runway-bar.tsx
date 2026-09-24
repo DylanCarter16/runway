@@ -55,7 +55,7 @@ export function RunwayBar({
         <div className={cn('absolute inset-y-0 left-0 rounded-full', fill)} style={{ width: pct }} />
         {state.status !== 'overdue' ? (
           <div
-            className="absolute top-1/2 h-2.5 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-tie"
+            className="absolute top-1/2 h-2.5 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-mark"
             style={{ left: pct }}
           />
         ) : null}

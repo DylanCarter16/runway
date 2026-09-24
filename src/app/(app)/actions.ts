@@ -38,7 +38,7 @@ export async function loadTermSetup() {
   try {
     const result = await importTerm(supabase, TERM_F26, user.id);
     refreshAll();
-    return ok(result.created);
+    return ok({ created: result.created, updated: result.updated });
   } catch (e) {
     return err(e instanceof Error ? e.message : 'Loading the term failed.');
   }

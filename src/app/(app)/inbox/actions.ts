@@ -27,7 +27,8 @@ export type PasteInput = z.infer<typeof pasteSchema>;
 
 export type PasteOutcome =
   | { status: 'duplicate'; href: string; label: string }
-  | { status: 'note'; href: string }
+  | { status: 'note'; href: string; decision: string | null }
+  | { status: 'nothing_new'; documentId: string; decision: string }
   | { status: 'saved'; documentId: string; href: string; extracting: boolean };
 
 function sha256(text: string): string {
@@ -81,7 +82,9 @@ export async function pasteText(input: PasteInput): Promise<ActionResult<PasteOu
     if (!courseId) return { ok: false, error: 'Pick a course for lecture notes.' };
     const res = await createNote({ courseId, lectureOn: toTorontoDate(new Date()), text });
     if (!res.ok) return res;
-    return { ok: true, data: { status: 'note', href: `/notes/${res.data.id}` } };
+    const r = res.data;
+    if (r.status === 'nothing_new') return { ok: true, data: { status: 'nothing_new', documentId: r.documentId, decision: r.decision } };
+    return { ok: true, data: { status: 'note', href: `/notes/${r.id}`, decision: r.status === 'saved' ? r.decision : null } };
   }
 
   const { data: saved, error } = await supabase
@@ -155,6 +158,7 @@ export async function saveDocumentAsNote(documentId: string): Promise<ActionResu
   if (!doc.course_id) return { ok: false, error: 'Pick a course for lecture notes.' };
   const res = await createNote({ courseId: doc.course_id, lectureOn: toTorontoDate(new Date(doc.captured_at)), text: doc.raw_text });
   if (!res.ok) return res;
+  if (res.data.status === 'nothing_new') return { ok: false, error: `${res.data.decision} No note was made.` };
   revalidatePath('/', 'layout');
   return { ok: true, data: { href: `/notes/${res.data.id}` } };
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 import { CourseChip } from '@/components/app/course-mark';
+import { IncrementalBanner } from '@/components/app/incremental-banner';
 import { noteTitle } from '@/components/app/notes-list';
 import { NoteView } from '@/components/app/note-view';
 import { getAppContext } from '@/lib/db/queries';
@@ -25,7 +26,7 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
   const [{ data: note }, { data: proposals }] = await Promise.all([
     supabase
       .from('notes')
-      .select('id, course_id, lecture_on, title, original_md, cleaned_md, edited_md, cleanup_status, cleanup_error, cleanup_model, cleanup_instruction, cleaned_at, topics, summary, open_questions, created_at')
+      .select('id, course_id, lecture_on, title, original_md, cleaned_md, edited_md, cleanup_status, cleanup_error, cleanup_model, cleanup_instruction, cleaned_at, topics, summary, open_questions, created_at, source_document_id, incremental')
       .eq('id', id)
       .maybeSingle(),
     supabase.from('proposals').select('id, state').eq('source_note_id', id),
@@ -36,6 +37,7 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
   const pending = (proposals ?? []).filter((p) => p.state === 'pending').length;
   const approved = (proposals ?? []).filter((p) => p.state === 'approved').length;
   const questions = aiOn ? note.open_questions : [];
+  const cut = note.incremental as { kind?: 'text' | 'file'; mode?: 'new' | 'whole'; summary?: string } | null;
   const now = new Date();
 
   return (
@@ -85,6 +87,10 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
         </aside>
       ) : null}
 
+      {cut?.mode === 'new' && cut.summary ? (
+        <IncrementalBanner noteId={note.id} summary={cut.summary} documentId={note.source_document_id} isFile={cut.kind === 'file'} />
+      ) : null}
+
       <NoteView
         noteId={note.id}
         original={note.original_md}
@@ -106,7 +112,7 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
               <li key={q} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className={cn('max-w-[68ch]', q === FORMULA_WARNING && 'text-soon')}>{q}</span>
                 {q === FORMULA_WARNING ? null : (
-                  <Link href={askHref(note.id, q)} className="text-sm text-tie underline-offset-2 hover:underline">
+                  <Link href={askHref(note.id, q)} className="text-sm text-link underline-offset-2 hover:underline">
                     Ask about this
                   </Link>
                 )}
@@ -123,7 +129,7 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
           </h3>
           {pending ? (
             <p>
-              <Link href="/inbox" className="text-tie underline underline-offset-2">
+              <Link href="/inbox" className="text-link underline underline-offset-2">
                 {pending === 1 ? '1 date change waits' : `${pending} date changes wait`} for review in the Inbox
               </Link>
               .

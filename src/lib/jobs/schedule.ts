@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/db/admin';
 import { enqueue, processJobs, type Admin, type JobHandler } from './queue';
 import type { RunTarget } from './types';
 import { EMBEDDING_HANDLERS, embedJob, hybridSearchOn } from './embeddings';
+import { FILE_HANDLERS } from './files';
 import { GCAL_HANDLERS, JOB_REMINDERS } from './gcal';
 import { INBOX_HANDLERS } from './inbox';
 import { NOTE_HANDLERS } from './notes';
@@ -13,7 +14,7 @@ import { JOB_SYNC_LEARN, JOB_SYNC_OPEN_DATA, JOB_SYNC_PAGE, SYNC_HANDLERS } from
 
 export type Cadence = 'hourly' | 'every_3h' | 'daily';
 
-export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS, ...GCAL_HANDLERS, ...NOTE_HANDLERS, ...EMBEDDING_HANDLERS };
+export const HANDLERS: Record<string, JobHandler> = { ...SYNC_HANDLERS, ...INBOX_HANDLERS, ...GCAL_HANDLERS, ...NOTE_HANDLERS, ...EMBEDDING_HANDLERS, ...FILE_HANDLERS };
 
 export function runQueuedJobs(admin: Admin) {
   return processJobs(admin, HANDLERS);

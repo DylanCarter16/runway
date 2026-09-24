@@ -33,6 +33,9 @@ export const DOCUMENT_KIND_LABEL: Record<string, string> = {
   grade_paste: 'Grades',
   resource: 'Resource',
   other: 'Other',
+  upload: 'File',
+  textbook: 'Textbook',
+  note_source: 'Running notes paste',
 };
 
 export function documentKindLabel(kind: string): string {

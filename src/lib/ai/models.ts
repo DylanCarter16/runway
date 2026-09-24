@@ -14,6 +14,8 @@ export type Purpose =
   | 'summarize_diff'
   | 'cleanup'
   | 'note_meta'
+  /** Reads scanned or handwritten pages and photos (Phase 9). Uses MODEL_CLEANUP. */
+  | 'transcribe'
   | 'ask'
   | 'ask_deep'
   /** Voyage AI embeddings for hybrid search (not a Claude model; see src/lib/ai/embed.ts). */
@@ -30,7 +32,7 @@ export const DEFAULT_MODELS = {
 type ModelVar = keyof typeof DEFAULT_MODELS;
 
 function modelVar(purpose: Purpose): ModelVar {
-  if (purpose === 'cleanup') return 'MODEL_CLEANUP';
+  if (purpose === 'cleanup' || purpose === 'transcribe') return 'MODEL_CLEANUP';
   if (purpose === 'ask') return 'MODEL_ASK';
   if (purpose === 'ask_deep') return 'MODEL_ASK_DEEP';
   return 'MODEL_EXTRACT';

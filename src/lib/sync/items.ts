@@ -63,7 +63,7 @@ export interface SyncItemsOptions {
 }
 
 /** Stable JSON with sorted keys: jsonb stores object keys in its own order. */
-function canonical(v: unknown): string {
+export function canonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
   if (v && typeof v === 'object') {
     const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);

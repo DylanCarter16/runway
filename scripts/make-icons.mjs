@@ -5,8 +5,9 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
 
-const TIE = '#B8135F';
-const WHITE = '#FFFFFF';
+// Waterloo black and gold (docs/DESIGN.md).
+const BG = '#000000';
+const GOLD = '#FED34C';
 
 /**
  * The runway bar from DESIGN.md: a track, most of its prep window filled, and the "now" tick.
@@ -17,10 +18,10 @@ function svg({ pad, radius }) {
   const s = inner / 512;
   const t = (n) => pad + n * s;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="${radius}" fill="${TIE}"/>
-  <rect x="${t(96)}" y="${t(236)}" width="${320 * s}" height="${40 * s}" rx="${20 * s}" fill="none" stroke="${WHITE}" stroke-width="${14 * s}"/>
-  <rect x="${t(96)}" y="${t(236)}" width="${216 * s}" height="${40 * s}" rx="${20 * s}" fill="${WHITE}"/>
-  <rect x="${t(322)}" y="${t(176)}" width="${16 * s}" height="${160 * s}" rx="${8 * s}" fill="${WHITE}"/>
+  <rect width="512" height="512" rx="${radius}" fill="${BG}"/>
+  <rect x="${t(96)}" y="${t(236)}" width="${320 * s}" height="${40 * s}" rx="${20 * s}" fill="none" stroke="${GOLD}" stroke-width="${14 * s}"/>
+  <rect x="${t(96)}" y="${t(236)}" width="${216 * s}" height="${40 * s}" rx="${20 * s}" fill="${GOLD}"/>
+  <rect x="${t(322)}" y="${t(176)}" width="${16 * s}" height="${160 * s}" rx="${8 * s}" fill="${GOLD}"/>
 </svg>`;
 }
 

@@ -1,0 +1,110 @@
+[
+  {
+    "purpose": "recorded 2026-09-24 from stat230-notebook-scanned.pdf",
+    "model": "claude-sonnet-5",
+    "message": {
+      "model": "claude-sonnet-5",
+      "id": "msg_011CfNpCk6KnCES45afDWQ15",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"pages\":[{\"page\":1,\"markdown\":\"# Lecture 9 - Conditional probability\\nOct 5, 2026\\n\\nDef: $P(A|B) = P(A \\\\cap B) / P(B)$, when $P(B) > 0$\\n\\nread as: prob of A given B\\n\\nEx: roll a fair die. A = even, B = at least 4\\n\\n$P(A \\\\cap B) = 2/6$, $P(B) = 3/6$\\n\\nso $P(A|B) = 2/3$\\n\\nNote: $P(A|B)$ is not $P(B|A)$ in general!\",\"blank\":false},{\"page\":2,\"markdown\":\"# Multiplication rule\\n$P(A \\\\cap B) = P(A) P(B|A)$\\n\\nEx: 2 cards, no replacement\\n\\n$P(\\\\text{both aces}) = 4/52 \\\\times 3/51 = 1/221$\\n\\nChain: $P(A \\\\cap B \\\\cap C) = P(A) P(B|A) P(C|A \\\\cap B)$\\n\\n(sketch: Venn diagram, A and B overlap)\\n\\n[Diagram: Venn diagram of two overlapping circles labeled A and B]\",\"blank\":false},{\"page\":3,\"markdown\":\"# Law of total probability\\nIf B1, ..., Bk partition S then\\n\\n$P(A) = \\\\text{sum of } P(A|B_i) P(B_i)$\\n\\nEx: 3 machines make 50%, 30%, 20% of parts\\n\\ndefect rates 1%, 2%, 3%\\n\\n$P(\\\\text{defect}) = .005 + .006 + .006 = .017$\",\"blank\":false}]}"
+        }
+      ],
+      "container": null,
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5547,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 566,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global"
+      },
+      "diagnostics": null
+    }
+  },
+  {
+    "purpose": "recorded 2026-09-24 from stat230-notebook-scanned.pdf",
+    "model": "claude-sonnet-5",
+    "message": {
+      "model": "claude-sonnet-5",
+      "id": "msg_011CfNpDEfXpopDHbQoWMB3P",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"pages\":[{\"page\":4,\"markdown\":\"# Lecture 10 - Bayes' theorem\\nOct 7, 2026\\n\\n$$P(B_j|A) = \\\\frac{P(A|B_j)P(B_j)}{\\\\sum P(A|B_i)P(B_i)}$$\\n\\nsame machines: part is defective,\\nprob it came from machine 3?\\n\\n$= .006 / .017 = 0.353$ (about 35%)\\n\\nprior 20% -> posterior 35%\",\"blank\":false},{\"page\":5,\"markdown\":\"# Independence\\n\\nA, B independent iff $P(A \\\\cap B) = P(A)P(B)$\\n\\nequivalently $P(A|B) = P(A)$\\n\\nmutually exclusive is NOT independent\\n(unless one has prob 0)\\n\\nEx: two coin flips, H on 1st and H on 2nd are indep\",\"blank\":false},{\"page\":6,\"markdown\":\"# Lecture 11 - Discrete random variables\\nOct 9, 2026\\n\\n$X: S \\\\to \\\\mathbb{R}$, a function on outcomes\\n\\nprob function $f(x) = P(X = x)$\\n\\n$f(x) \\\\geq 0$ and $\\\\sum f(x) = 1$\\n\\ncdf $F(x) = P(X \\\\leq x)$, non-decreasing\",\"blank\":false}]}"
+        }
+      ],
+      "container": null,
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 5547,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 466,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global"
+      },
+      "diagnostics": null
+    }
+  },
+  {
+    "purpose": "recorded 2026-09-24 from stat230-notebook-scanned.pdf",
+    "model": "claude-sonnet-5",
+    "message": {
+      "model": "claude-sonnet-5",
+      "id": "msg_011CfNpDkfLEjq5JTkBppniA",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"pages\":[{\"page\":7,\"markdown\":\"# Binomial distribution\\n\\n$X \\\\sim Bin(n, p)$: number of successes in n indep trials\\n\\n$f(x) = \\\\binom{n}{x} p^x (1-p)^{(n-x)}$, $x = 0..n$\\n\\nEx: n = 10, p = 0.3, $P(X=2) = 45(.09)(.7^8) = 0.233$\\n\\nMidterm 1 is Thursday Oct 8 - ch 1 to 4\\n\\nQuiz 2 Fri Oct 30 in tutorial (UTD 105)\",\"blank\":false}]}"
+        }
+      ],
+      "container": null,
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 2408,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 220,
+        "output_tokens_details": {
+          "thinking_tokens": 0
+        },
+        "service_tier": "standard",
+        "inference_geo": "global"
+      },
+      "diagnostics": null
+    }
+  }
+]

@@ -24,7 +24,7 @@ export function SettingsNav() {
             aria-current={active ? 'page' : undefined}
             className={cn(
               'relative flex min-h-11 shrink-0 items-center px-3 text-sm text-muted-foreground hover:text-foreground',
-              active && 'font-semibold text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-tie',
+              active && 'font-semibold text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-mark',
             )}
           >
             {label}
@@ -83,13 +83,12 @@ export function LoadTermButton() {
                 toast.error(result.error);
                 return;
               }
-              const c = result.data;
+              const { created: c, updated: u } = result.data;
               const added = c.courses + c.links + c.pages + c.items;
-              setSummary(
-                added
-                  ? `Added ${c.courses} courses, ${c.items} items, ${c.links} links, and ${c.pages} watched pages.`
-                  : 'Already up to date. Nothing changed.',
-              );
+              const parts = [];
+              if (added) parts.push(`Added ${c.courses} courses, ${c.items} items, ${c.links} links, and ${c.pages} watched pages.`);
+              if (u.items || u.courses) parts.push(`Updated ${u.items} items and the class times of ${u.courses} courses.`);
+              setSummary(parts.length ? parts.join(' ') : 'Already up to date. Nothing changed.');
               toast.success('Loaded');
             })
           }

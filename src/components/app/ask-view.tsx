@@ -41,7 +41,7 @@ function Sources({ message }: { message: AskMessageView }) {
         {message.citations.map((c) => (
           <li key={c.n} id={`src-${message.id}-${c.n}`} className="grid gap-1 text-sm target:bg-tie/10">
             <p className="flex gap-2">
-              <span className="font-semibold text-tie">[{c.n}]</span>
+              <span className="font-semibold text-link">[{c.n}]</span>
               <Link href={c.href} className="font-semibold underline-offset-2 hover:underline">
                 {c.title}
               </Link>
@@ -173,7 +173,7 @@ export function AskView({
       {!options.courses.length ? (
         <p role="status" className="border-l-4 border-soon bg-sheet p-3 text-sm">
           No course has AI turned on, so Ask has nothing to use. Courses whose outline allows AI can be turned on in{' '}
-          <Link href="/settings/courses" className="text-tie underline">
+          <Link href="/settings/courses" className="text-link underline">
             Settings, Courses
           </Link>
           .
@@ -217,7 +217,7 @@ export function AskView({
           <p>{banner.policy ?? "Runway doesn't have this course's AI policy. Check the outline before using AI on this."}</p>
           <p className="text-muted-foreground">Ask explains the concepts and points to your notes. It won&apos;t write answers to graded questions.</p>
           {banner.outlineUrl ? (
-            <a href={banner.outlineUrl} target="_blank" rel="noopener noreferrer" className="text-tie underline">
+            <a href={banner.outlineUrl} target="_blank" rel="noopener noreferrer" className="text-link underline">
               Open the outline
             </a>
           ) : null}
@@ -325,7 +325,7 @@ export function AskView({
             {busy ? 'Answering…' : 'Ask'}
           </Button>
           {threadId && !navigate ? (
-            <Link href={`/ask/${threadId}`} className="text-sm text-tie underline">
+            <Link href={`/ask/${threadId}`} className="text-sm text-link underline">
               Open this thread
             </Link>
           ) : null}

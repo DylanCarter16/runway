@@ -74,7 +74,7 @@ function SyncRow({ name, detail, url, runs, target, idle, now }: SyncRowProps & 
       <div className="grid gap-0.5 text-sm">
         <span className="font-semibold">
           {url ? (
-            <a href={url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">
               {name}
             </a>
           ) : (
@@ -393,7 +393,7 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               <li>Download the userscript and open it with Tampermonkey (Dashboard, Utilities, Import from file), or make a new script and paste it.</li>
               <li>
                 Open{' '}
-                <a href={ODYSSEY_PAGE} target="_blank" rel="noreferrer" className="text-tie underline-offset-2 hover:underline">
+                <a href={ODYSSEY_PAGE} target="_blank" rel="noreferrer" className="text-link underline-offset-2 hover:underline">
                   your Odyssey exam schedule
                 </a>
                 . A box in the corner says what was sent. New rooms and seats show up in the Inbox to approve.
@@ -412,7 +412,7 @@ export default async function SettingsSection({ params, searchParams }: PageProp
                         <>
                           {' '}
                           (
-                          <Link href={`/library/${odyssey.lastDocumentId}`} className="text-tie underline-offset-2 hover:underline">
+                          <Link href={`/library/${odyssey.lastDocumentId}`} className="text-link underline-offset-2 hover:underline">
                             see them
                           </Link>
                           )
@@ -491,7 +491,7 @@ export default async function SettingsSection({ params, searchParams }: PageProp
               <dd>
                 {newestEmail ? (
                   <>
-                    <Link href={`/library/${newestEmail.id}`} className="text-tie underline-offset-2 hover:underline">
+                    <Link href={`/library/${newestEmail.id}`} className="text-link underline-offset-2 hover:underline">
                       {newestEmail.title}
                     </Link>
                     , sent {formatAgo(new Date(newestEmail.captured_at), now)}
@@ -509,7 +509,7 @@ export default async function SettingsSection({ params, searchParams }: PageProp
             )}
             <p className="text-sm text-muted-foreground">
               Piazza emails are stored as they arrive and filed by class. Pick the course for each class in{' '}
-              <Link href="/settings/courses" className="text-tie underline-offset-2 hover:underline">
+              <Link href="/settings/courses" className="text-link underline-offset-2 hover:underline">
                 Courses
               </Link>
               .

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
+import { FileSection } from '@/components/app/file-section';
 import { DiffLines, type PageDiff } from '@/components/app/page-diff';
 import { getAppContext } from '@/lib/db/queries';
 import { describeProposal } from '@/lib/inbox/describe';
@@ -54,13 +55,15 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
           {[course?.code ?? 'No course', documentKindLabel(doc.kind), `captured ${formatListDate(at)}, ${formatTime(at)}`].join(', ')}
         </p>
         {doc.source_url ? (
-          <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-sm break-all text-tie underline-offset-2 hover:underline">
+          <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-sm break-all text-link underline-offset-2 hover:underline">
             {doc.source_url}
           </a>
         ) : null}
       </header>
 
-      {meta.status || meta.summary || meta.notes?.length ? (
+      {doc.storage_path ? <FileSection supabase={supabase} doc={doc} aiOn={Boolean(course?.ai_allowed)} /> : null}
+
+      {!doc.storage_path && (meta.status || meta.summary || meta.notes?.length) ? (
         <section className="grid gap-1 text-sm">
           <h3 className="text-base font-semibold">What Runway did</h3>
           {meta.status ? <p>{STATUS_LABEL[meta.status] ?? meta.status}</p> : null}
@@ -84,7 +87,7 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
                 <span>{describeProposal(p.kind, p.payload, p.course_id ? (codeOf.get(p.course_id) ?? null) : null).headline}</span>
                 <span className="text-muted-foreground">
                   {p.state === 'pending' ? (
-                    <Link href="/inbox#review" className="text-tie underline underline-offset-2">
+                    <Link href="/inbox#review" className="text-link underline underline-offset-2">
                       {STATE_LABEL.pending}
                     </Link>
                   ) : (
@@ -105,7 +108,7 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
               const when = i.due_at ?? i.starts_at;
               return (
                 <li key={i.id} className="py-2">
-                  <Link href={`/items/${i.id}`} className="text-tie underline-offset-2 hover:underline">
+                  <Link href={`/items/${i.id}`} className="text-link underline-offset-2 hover:underline">
                     {i.title}
                   </Link>
                   <span className="text-muted-foreground">, {when ? formatWhen(new Date(when), i.time_known) : 'no date yet'}</span>
@@ -123,12 +126,14 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
         </section>
       ) : null}
 
-      <section className="grid gap-2">
-        <h3 className="text-base font-semibold">{doc.kind === 'page_snapshot' ? 'Page text' : 'Stored text, exactly as received'}</h3>
-        <pre className="max-w-[68ch] overflow-x-auto rounded-md border border-rule bg-sheet p-4 font-serif text-[18px] leading-[1.65] whitespace-pre-wrap">
-          {doc.raw_text}
-        </pre>
-      </section>
+      {doc.storage_path ? null : (
+        <section className="grid gap-2">
+          <h3 className="text-base font-semibold">{doc.kind === 'page_snapshot' ? 'Page text' : 'Stored text, exactly as received'}</h3>
+          <pre className="max-w-[68ch] overflow-x-auto rounded-md border border-rule bg-sheet p-4 font-serif text-[18px] leading-[1.65] whitespace-pre-wrap">
+            {doc.raw_text}
+          </pre>
+        </section>
+      )}
     </article>
   );
 }

@@ -21,7 +21,7 @@ export function Markdown({ children, className }: { children: string; className?
             // Ask citation markers point at the sources list under the answer.
             href?.startsWith('#src-') ? (
               <sup>
-                <a href={href} className="px-0.5 font-sans text-xs font-semibold text-tie no-underline hover:underline" aria-label={`Source ${String(c)}`}>
+                <a href={href} className="px-0.5 font-sans text-xs font-semibold text-link no-underline hover:underline" aria-label={`Source ${String(c)}`}>
                   [{c}]
                 </a>
               </sup>

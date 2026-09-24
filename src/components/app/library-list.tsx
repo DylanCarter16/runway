@@ -113,7 +113,7 @@ export async function LibraryList({
           Filter
         </Button>
         {filtered ? (
-          <Link href={action} className="flex h-11 items-center text-sm text-tie underline-offset-2 hover:underline sm:h-9">
+          <Link href={action} className="flex h-11 items-center text-sm text-link underline-offset-2 hover:underline sm:h-9">
             Clear filters
           </Link>
         ) : null}
@@ -126,7 +126,7 @@ export async function LibraryList({
             const meta = (d.meta ?? {}) as { summary?: string | null };
             return (
               <li key={d.id} className="py-2">
-                <Link href={`/library/${d.id}`} className="font-semibold text-tie underline-offset-2 hover:underline">
+                <Link href={`/library/${d.id}`} className="font-semibold text-link underline-offset-2 hover:underline">
                   {d.title}
                 </Link>
                 <span className="block text-muted-foreground">
@@ -145,7 +145,7 @@ export async function LibraryList({
         <EmptyState
           title={fixedCourse ? `No documents for ${fixedCourse.code} yet.` : 'Nothing stored yet.'}
           action={
-            <Link href="/inbox" className="text-sm text-tie underline underline-offset-2">
+            <Link href="/inbox" className="text-sm text-link underline underline-offset-2">
               Paste something
             </Link>
           }

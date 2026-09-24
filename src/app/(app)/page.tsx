@@ -115,12 +115,12 @@ export default async function TodayPage() {
         <section aria-label="Needs you" className="flex flex-wrap items-center gap-x-4 gap-y-1 border-y border-rule py-3 text-sm">
           <span className="font-semibold">Needs you:</span>
           {needs.proposals ? (
-            <Link href="/inbox" className="text-tie underline-offset-2 hover:underline">
+            <Link href="/inbox" className="text-link underline-offset-2 hover:underline">
               {needs.proposals} {needs.proposals === 1 ? 'change' : 'changes'} to review
             </Link>
           ) : null}
           {needs.pastes ? (
-            <Link href="/inbox#paste-reminders" className="text-tie underline-offset-2 hover:underline">
+            <Link href="/inbox#paste-reminders" className="text-link underline-offset-2 hover:underline">
               {needs.pastes} {needs.pastes === 1 ? 'reminder' : 'reminders'} due
             </Link>
           ) : null}
@@ -139,7 +139,7 @@ export default async function TodayPage() {
           </p>
           <p>
             Dates from {needs.failing.length === 1 ? 'it' : 'them'} may be out of date.{' '}
-            <Link href="/settings/sync" className="text-tie underline-offset-2 hover:underline">
+            <Link href="/settings/sync" className="text-link underline-offset-2 hover:underline">
               See the errors in Settings, Sync
             </Link>
           </p>
@@ -151,7 +151,7 @@ export default async function TodayPage() {
           <p className="font-semibold text-late">Google Calendar stopped updating: Google access expired or was removed.</p>
           <p>
             New and changed deadlines won&apos;t reach your phone until you{' '}
-            <a href="/api/gcal/connect" className="text-tie underline-offset-2 hover:underline">
+            <a href="/api/gcal/connect" className="text-link underline-offset-2 hover:underline">
               reconnect Google Calendar
             </a>
             .

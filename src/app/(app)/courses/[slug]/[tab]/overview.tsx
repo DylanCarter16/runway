@@ -79,7 +79,7 @@ export async function CourseOverview({ course }: { course: Course }) {
         <Section title="Next exam">
           {nextExam ? (
             <p className="text-sm tabular">
-              <OpenItemButton id={nextExam.id} className="font-semibold text-tie underline-offset-2 hover:underline">
+              <OpenItemButton id={nextExam.id} className="font-semibold text-link underline-offset-2 hover:underline">
                 {nextExam.title}
               </OpenItemButton>
               , {formatWhen(new Date(nextExam.due_at ?? nextExam.starts_at!), nextExam.time_known)},{' '}
@@ -111,13 +111,13 @@ export async function CourseOverview({ course }: { course: Course }) {
                   style={{ width: `${assessments.length ? ((assessments.length - undated.length) / assessments.length) * 100 : 0}%` }}
                 />
               </span>
-              {undated.length ? <span className="text-tie group-open:hidden">Show undated</span> : null}
+              {undated.length ? <span className="text-link group-open:hidden">Show undated</span> : null}
             </summary>
             {undated.length ? (
               <ul className="mt-2 grid gap-1 text-sm">
                 {undated.map((i) => (
                   <li key={i.id}>
-                    <OpenItemButton id={i.id} className="min-h-11 text-tie underline-offset-2 hover:underline">
+                    <OpenItemButton id={i.id} className="min-h-11 text-link underline-offset-2 hover:underline">
                       {i.title}
                     </OpenItemButton>
                     {i.flags.includes('date_tba') ? <span className="text-muted-foreground">, date TBA</span> : null}
@@ -170,7 +170,7 @@ export async function CourseOverview({ course }: { course: Course }) {
             <ul className="grid gap-1 text-sm">
               {checklist.map((c) => (
                 <li key={c} className="flex gap-2">
-                  <input type="checkbox" className="mt-1 size-4 accent-(--tie)" aria-label={c} />
+                  <input type="checkbox" className="mt-1 size-4 accent-(--mark)" aria-label={c} />
                   <span>{c}</span>
                 </li>
               ))}
@@ -199,7 +199,7 @@ export async function CourseOverview({ course }: { course: Course }) {
                   <span className="font-semibold">{s.name}</span>, {s.role}
                   {s.office ? `, ${s.office}` : ''}
                   {s.email ? (
-                    <a href={`mailto:${s.email}`} className="block text-tie underline-offset-2 hover:underline">
+                    <a href={`mailto:${s.email}`} className="block text-link underline-offset-2 hover:underline">
                       {s.email}
                     </a>
                   ) : null}

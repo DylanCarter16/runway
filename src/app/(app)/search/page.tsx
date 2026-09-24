@@ -107,7 +107,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
               {group.map((h) => {
                 const c = h.courseId ? courseById.get(h.courseId) : null;
                 const meta = [c?.code, h.kind, h.type !== 'link' && h.at ? formatListDate(new Date(h.at)) : null].filter(Boolean).join(', ');
-                const title = <span className="font-semibold text-tie underline-offset-2 hover:underline">{h.title}</span>;
+                const title = <span className="font-semibold text-link underline-offset-2 hover:underline">{h.title}</span>;
                 return (
                   <li key={`${h.type}-${h.id}`} className="grid gap-0.5 py-2 text-sm">
                     <span className="flex items-center gap-2">

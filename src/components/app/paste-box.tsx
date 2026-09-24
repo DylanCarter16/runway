@@ -9,12 +9,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { getPasteStatus, pasteText, saveDocumentAsNote, type PasteInput } from '@/app/(app)/inbox/actions';
 import type { CourseLite } from '@/lib/db/queries';
 import { PASTE_KINDS } from '@/lib/inbox/kinds';
+import { toTorontoDate } from '@/lib/time';
 import { selectClass } from '@/lib/ui';
+import { FileDropArea, filesFromClipboard, useFileUploads } from './file-drop';
+import { NothingNew } from './nothing-new';
 import { useShell } from './shell-provider';
 
 type Outcome =
   | { type: 'duplicate'; href: string; label: string }
-  | { type: 'note'; href: string }
+  | { type: 'note'; href: string; decision: string | null }
+  | { type: 'nothing_new'; documentId: string; decision: string }
   | { type: 'working'; href: string }
   | { type: 'done'; href: string; proposals: number; notes: string[]; documentId: string; suggestNote: boolean; failed: boolean }
   | { type: 'stored'; href: string; courseCode: string | null };
@@ -33,6 +37,25 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
   const [isPending, startTransition] = useTransition();
   const polling = useRef<number | null>(null);
   const area = useRef<HTMLTextAreaElement>(null);
+  const courseId = course && course !== 'none' ? course : null;
+  const { uploads, addFiles } = useFileUploads({
+    courseId,
+    purpose: kind === 'lecture_notes' ? 'note' : 'library',
+    lectureOn: kind === 'lecture_notes' ? toTorontoDate(new Date()) : null,
+  });
+  const uploadBlocked = !course ? 'Pick a course (or No course) to add files.' : kind === 'lecture_notes' && !courseId ? 'Pick a course for lecture notes.' : null;
+
+  function addPastedFiles(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const files = filesFromClipboard(e);
+    if (!files.length) return;
+    e.preventDefault();
+    if (uploadBlocked) {
+      setError(uploadBlocked);
+      return;
+    }
+    setError(null);
+    void addFiles(files);
+  }
 
   useEffect(() => () => {
     if (polling.current) window.clearTimeout(polling.current);
@@ -81,8 +104,12 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
       }
       setText('');
       if (data.status === 'note') {
-        setOutcome({ type: 'note', href: data.href });
+        setOutcome({ type: 'note', href: data.href, decision: data.decision });
         toast.success('Note saved');
+        return;
+      }
+      if (data.status === 'nothing_new') {
+        setOutcome({ type: 'nothing_new', documentId: data.documentId, decision: data.decision });
         return;
       }
       if (data.extracting) {
@@ -122,9 +149,11 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
         rows={8}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Paste anything: an outline, an announcement, your Quest schedule, an Odyssey exam row, grades..."
+        onPaste={addPastedFiles}
+        placeholder="Paste anything: an outline, an announcement, your Quest schedule, an Odyssey exam row, grades, a screenshot..."
         className="min-h-40 font-serif text-[16px]"
       />
+      <FileDropArea addFiles={addFiles} uploads={uploads} disabledReason={uploadBlocked} hint="Drop PDFs, images, or screenshots here. Lecture notes kind makes a note from them." />
       <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
         <div className="grid gap-1.5">
           <label htmlFor="paste-course" className="text-sm font-semibold">
@@ -169,7 +198,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
         {outcome?.type === 'duplicate' ? (
           <p>
             Already saved:{' '}
-            <Link href={outcome.href} className="text-tie underline underline-offset-2">
+            <Link href={outcome.href} className="text-link underline underline-offset-2">
               {outcome.label}
             </Link>
             . Nothing new was created.
@@ -177,17 +206,20 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
         ) : null}
         {outcome?.type === 'note' ? (
           <p>
-            Saved as a lecture note.{' '}
-            <Link href={outcome.href} className="text-tie underline underline-offset-2">
+            {outcome.decision ? `Saved the new material as a lecture note: ${outcome.decision}.` : 'Saved as a lecture note.'}{' '}
+            <Link href={outcome.href} className="text-link underline underline-offset-2">
               Open notes
             </Link>
           </p>
+        ) : null}
+        {outcome?.type === 'nothing_new' ? (
+          <NothingNew documentId={outcome.documentId} decision={outcome.decision} />
         ) : null}
         {outcome?.type === 'working' ? <p className="text-muted-foreground">Saved. Reading it now...</p> : null}
         {outcome?.type === 'stored' ? (
           <p>
             Saved to the{' '}
-            <Link href={outcome.href} className="text-tie underline underline-offset-2">
+            <Link href={outcome.href} className="text-link underline underline-offset-2">
               Library
             </Link>
             .{' '}
@@ -206,7 +238,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
                   : outcome.suggestNote
                     ? 'Saved. This looks like lecture notes.'
                     : 'Saved. Nothing new to review.'}{' '}
-              <Link href={outcome.href} className="text-tie underline underline-offset-2">
+              <Link href={outcome.href} className="text-link underline underline-offset-2">
                 Open in Library
               </Link>
             </p>

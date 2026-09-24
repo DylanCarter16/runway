@@ -1,5 +1,5 @@
 import type { SeedCourse, SeedItem, SeedLink, SeedMeeting, SeedPage, SeedTerm } from '@/config/term-f26';
-import type { TablesInsert } from '@/lib/db/types';
+import type { TablesInsert, TablesUpdate } from '@/lib/db/types';
 import { addDaysToDate, fromTorontoLocal } from '@/lib/time';
 
 // Pure mappers from the term config to table rows. The importer in ./import.ts writes them.
@@ -138,10 +138,59 @@ export function itemRow(
     all_day: !timeKnown,
     time_known: timeKnown,
     weight_percent: item.weightPercent ?? null,
+    location: item.location ?? null,
     flags: item.flags ?? [],
     source: 'seed',
     source_ref: item.sourceRef,
     source_url: ctx.sourceUrl,
     last_change_source: 'seed',
   };
+}
+
+/** Item fields the term config owns. Reloading the setup brings these up to date. */
+const SEED_FIELDS = [
+  'kind',
+  'title',
+  'description',
+  'due_at',
+  'starts_at',
+  'ends_at',
+  'all_day',
+  'time_known',
+  'weight_percent',
+  'location',
+  'flags',
+  'source_url',
+] as const;
+
+/** Moved together: locking any of them (an edit or an approved proposal) keeps all of them. */
+const TIMING: readonly string[] = ['due_at', 'starts_at', 'ends_at', 'all_day', 'time_known'];
+
+type SeedField = (typeof SEED_FIELDS)[number];
+export type SeededItem = Pick<TablesInsert<'items'>, SeedField> & { locked_fields: string[] };
+
+function sameValue(field: SeedField, a: unknown, b: unknown): boolean {
+  if (field.endsWith('_at')) {
+    return (a ? new Date(a as string).getTime() : null) === (b ? new Date(b as string).getTime() : null);
+  }
+  if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
+  return (a ?? null) === (b ?? null);
+}
+
+/**
+ * The update that brings an already-loaded seed item in line with the term config, or null
+ * when nothing differs. Fields in locked_fields (Dylan's edits and approved proposals) are
+ * left alone, and a locked timing field keeps the whole timing group.
+ */
+export function seedItemPatch(existing: SeededItem, next: TablesInsert<'items'>): TablesUpdate<'items'> | null {
+  const locked = new Set(existing.locked_fields);
+  const timingLocked = TIMING.some((f) => locked.has(f));
+  const patch: Record<string, unknown> = {};
+  for (const field of SEED_FIELDS) {
+    if (locked.has(field)) continue;
+    if (timingLocked && TIMING.includes(field)) continue;
+    if (!sameValue(field, existing[field], next[field])) patch[field] = next[field] ?? null;
+  }
+  if (Object.keys(patch).length === 0) return null;
+  return { ...(patch as TablesUpdate<'items'>), last_change_source: 'seed' };
 }
