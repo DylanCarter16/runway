@@ -143,7 +143,8 @@ export async function createFileNote(admin: Admin, doc: FileDoc, file: FinishedF
       user_id: doc.user_id,
       course_id: doc.course_id,
       lecture_on: lectureOn,
-      title: doc.meta.note_title || null,
+      // Without a title the note would be named after its first line, the Markdown header.
+      title: doc.meta.note_title || (doc.file_name ?? doc.title).replace(/\.[a-z0-9]+$/i, ''),
       original_md: content.original_md,
       cleaned_md: content.cleaned_md,
       cleanup_status: content.cleaned_md ? 'done' : 'pending',
