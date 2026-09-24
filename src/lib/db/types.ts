@@ -323,12 +323,75 @@ export type Database = {
           },
         ]
       }
+      document_pages: {
+        Row: {
+          created_at: string
+          document_id: string
+          fingerprint: string | null
+          id: string
+          method: string | null
+          page: number
+          reason: string | null
+          same_as: string | null
+          status: string
+          text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          fingerprint?: string | null
+          id?: string
+          method?: string | null
+          page: number
+          reason?: string | null
+          same_as?: string | null
+          status?: string
+          text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          fingerprint?: string | null
+          id?: string
+          method?: string | null
+          page?: number
+          reason?: string | null
+          same_as?: string | null
+          status?: string
+          text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_pages_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_pages_same_as_fkey"
+            columns: ["same_as"]
+            isOneToOne: false
+            referencedRelation: "document_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           captured_at: string
           content_hash: string
           course_id: string | null
           created_at: string
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
           id: string
           kind: string
           meta: Json
@@ -347,6 +410,9 @@ export type Database = {
           content_hash: string
           course_id?: string | null
           created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
           id?: string
           kind: string
           meta?: Json
@@ -365,6 +431,9 @@ export type Database = {
           content_hash?: string
           course_id?: string | null
           created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
           id?: string
           kind?: string
           meta?: Json
@@ -766,10 +835,12 @@ export type Database = {
           created_at: string
           edited_md: string | null
           id: string
+          incremental: Json | null
           lecture_on: string | null
           open_questions: string[]
           original_md: string
           search: unknown
+          source_document_id: string | null
           summary: string | null
           title: string | null
           topics: string[]
@@ -788,10 +859,12 @@ export type Database = {
           created_at?: string
           edited_md?: string | null
           id?: string
+          incremental?: Json | null
           lecture_on?: string | null
           open_questions?: string[]
           original_md: string
           search?: unknown
+          source_document_id?: string | null
           summary?: string | null
           title?: string | null
           topics?: string[]
@@ -810,10 +883,12 @@ export type Database = {
           created_at?: string
           edited_md?: string | null
           id?: string
+          incremental?: Json | null
           lecture_on?: string | null
           open_questions?: string[]
           original_md?: string
           search?: unknown
+          source_document_id?: string | null
           summary?: string | null
           title?: string | null
           topics?: string[]
@@ -826,6 +901,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
         ]
@@ -1208,6 +1290,7 @@ export type Database = {
         }[]
       }
       requeue_stale_jobs: { Args: { p_stale?: string }; Returns: number }
+      runway_call: { Args: { path: string }; Returns: number }
       search_all: {
         Args: { p_course_id?: string; p_limit?: number; q: string }
         Returns: {

@@ -99,14 +99,16 @@ function lineCount(block: string): number {
  */
 export function planIncremental(previous: string | null, next: string, earlier: Iterable<string> = []): IncrementalPlan {
   const nextBlocks = splitBlocks(next);
-  const hadPrevious = previous !== null && previous.trim() !== '';
+  const earlierTexts = [...earlier].filter((t) => t.trim());
+  // Notes stored before running pastes were kept still count as what was there before.
+  const hadPrevious = (previous ?? '').trim() !== '' || earlierTexts.length > 0;
   if (!hadPrevious) {
     const blocks = nextBlocks.map((text) => ({ text, status: 'new' as const }));
     return finish(false, blocks);
   }
 
-  const prevBlocks = splitBlocks(previous);
-  const seen = new Set<string>([...prevBlocks.map(blockKey), ...[...earlier].flatMap((t) => splitBlocks(t).map(blockKey))]);
+  const prevBlocks = splitBlocks(previous ?? '');
+  const seen = new Set<string>([...prevBlocks.map(blockKey), ...earlierTexts.flatMap((t) => splitBlocks(t).map(blockKey))]);
   const changes = diffArrays(prevBlocks.map(blockKey), nextBlocks.map(blockKey));
 
   // Walk the diff, keeping new-paste order. Removed runs next to added runs are candidate revisions.

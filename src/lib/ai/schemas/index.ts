@@ -127,6 +127,18 @@ export const noteMetaResult = z.object({
   items: z.array(itemDraft),
 });
 
+export const transcribeResult = z.object({
+  pages: z.array(
+    z.object({
+      // Plain number: .int() adds bounds the API rejects. transcribePages rounds it.
+      page: z.number(),
+      markdown: z.string(),
+      blank: z.boolean(),
+    }),
+  ),
+});
+
+export type TranscribeResult = z.infer<typeof transcribeResult>;
 export type ClassifyResult = z.infer<typeof classifyResult>;
 export type OutlineResult = z.infer<typeof outlineResult>;
 export type AnnouncementResult = z.infer<typeof announcementResult>;

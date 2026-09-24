@@ -1,0 +1,79 @@
+{
+  "title": "STAT 230 lecture notebook (GoodNotes export, scanned style)",
+  "pages": [
+    {
+      "heading": "Lecture 9 - Conditional probability",
+      "lines": [
+        "Oct 5, 2026",
+        "Def: P(A|B) = P(A n B) / P(B), when P(B) > 0",
+        "read as: prob of A given B",
+        "Ex: roll a fair die. A = even, B = at least 4",
+        "P(A n B) = 2/6, P(B) = 3/6",
+        "so P(A|B) = 2/3",
+        "Note: P(A|B) is not P(B|A) in general!"
+      ]
+    },
+    {
+      "heading": "Multiplication rule",
+      "lines": [
+        "P(A n B) = P(A) P(B|A)",
+        "Ex: 2 cards, no replacement",
+        "P(both aces) = 4/52 x 3/51 = 1/221",
+        "Chain: P(A n B n C) = P(A) P(B|A) P(C|A n B)",
+        "(sketch: Venn diagram, A and B overlap)"
+      ],
+      "venn": true
+    },
+    {
+      "heading": "Law of total probability",
+      "lines": [
+        "If B1, ..., Bk partition S then",
+        "P(A) = sum of P(A|Bi) P(Bi)",
+        "Ex: 3 machines make 50%, 30%, 20% of parts",
+        "defect rates 1%, 2%, 3%",
+        "P(defect) = .005 + .006 + .006 = .017"
+      ]
+    },
+    {
+      "heading": "Lecture 10 - Bayes' theorem",
+      "lines": [
+        "Oct 7, 2026",
+        "P(Bj|A) = P(A|Bj) P(Bj) / sum of P(A|Bi) P(Bi)",
+        "same machines: part is defective,",
+        "prob it came from machine 3?",
+        "= .006 / .017 = 0.353 (about 35%)",
+        "prior 20% -> posterior 35%"
+      ]
+    },
+    {
+      "heading": "Independence",
+      "lines": [
+        "A, B independent iff P(A n B) = P(A) P(B)",
+        "equivalently P(A|B) = P(A)",
+        "mutually exclusive is NOT independent",
+        "(unless one has prob 0)",
+        "Ex: two coin flips, H on 1st and H on 2nd are indep"
+      ]
+    },
+    {
+      "heading": "Lecture 11 - Discrete random variables",
+      "lines": [
+        "Oct 9, 2026",
+        "X : S -> R, a function on outcomes",
+        "prob function f(x) = P(X = x)",
+        "f(x) >= 0 and sum of f(x) = 1",
+        "cdf F(x) = P(X <= x), non-decreasing"
+      ]
+    },
+    {
+      "heading": "Binomial distribution",
+      "lines": [
+        "X ~ Bin(n, p): number of successes in n indep trials",
+        "f(x) = (n choose x) p^x (1-p)^(n-x), x = 0..n",
+        "Ex: n = 10, p = 0.3, P(X = 2) = 45(.09)(.7^8) = 0.233",
+        "Midterm 1 is Thursday Oct 8 - ch 1 to 4",
+        "Quiz 2 Fri Oct 30 in tutorial (UTD 105)"
+      ]
+    }
+  ]
+}

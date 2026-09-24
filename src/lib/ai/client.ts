@@ -39,6 +39,8 @@ export interface ClaudeRequest<T> {
   requestRef?: string | null;
   system: string;
   user: string;
+  /** Image or PDF blocks sent before the text (file transcription). */
+  attachments?: (Anthropic.ImageBlockParam | Anthropic.DocumentBlockParam)[];
   /** Structured output: the zod schema doubles as the JSON schema. */
   schema: z.ZodType<T>;
   maxTokens?: number;
@@ -119,6 +121,11 @@ async function run<R>(
   }
 }
 
+function userContent(req: { user: string; attachments?: ClaudeRequest<unknown>['attachments'] }): Anthropic.MessageParam['content'] {
+  if (!req.attachments?.length) return req.user;
+  return [...req.attachments, { type: 'text', text: req.user }];
+}
+
 export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promise<ClaudeResult<T>> {
   return run(
     deps,
@@ -127,7 +134,7 @@ export async function callClaude<T>(deps: AiDeps, req: ClaudeRequest<T>): Promis
       model,
       max_tokens: req.maxTokens ?? 16000,
       system: req.system,
-      messages: [{ role: 'user', content: req.user }],
+      messages: [{ role: 'user', content: userContent(req) }],
       output_config: {
         effort: req.effort ?? 'medium',
         format: { type: 'json_schema', schema: jsonSchema(req.schema) },

@@ -106,6 +106,12 @@ describe('planIncremental', () => {
     expect(plan.nothingNew).toBe(true);
   });
 
+  it('with no stored paste, notes already saved for the course still count', () => {
+    const plan = planIncremental(null, DOC, [L1]);
+    expect(plan.hadPrevious).toBe(true);
+    expect(plan.markdown).toBe(L2);
+  });
+
   it('deleting text only: nothing new', () => {
     const plan = planIncremental(DOC, L1);
     expect(plan.nothingNew).toBe(true);
