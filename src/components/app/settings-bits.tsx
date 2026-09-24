@@ -24,7 +24,7 @@ export function SettingsNav() {
             aria-current={active ? 'page' : undefined}
             className={cn(
               'relative flex min-h-11 shrink-0 items-center px-3 text-sm text-muted-foreground hover:text-foreground',
-              active && 'font-semibold text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-tie',
+              active && 'font-semibold text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:bg-mark',
             )}
           >
             {label}

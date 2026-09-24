@@ -23,7 +23,7 @@ function DiffText({ parts, className }: { parts: DiffPart[]; className?: string 
     <div className={cn('font-serif text-[17px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]', className)}>
       {parts.map((p, i) =>
         p.kind === 'added' ? (
-          <ins key={i} className="rounded-sm bg-[color-mix(in_oklab,var(--tie)_16%,transparent)] no-underline">
+          <ins key={i} className="rounded-sm bg-[color-mix(in_oklab,var(--tie)_40%,transparent)] no-underline">
             {p.text}
           </ins>
         ) : p.kind === 'removed' ? (
@@ -43,7 +43,7 @@ function Compare({ original, cleaned }: { original: string; cleaned: string }) {
   return (
     <div className="grid gap-3">
       <p className="text-sm text-muted-foreground">
-        <ins className="rounded-sm bg-[color-mix(in_oklab,var(--tie)_16%,transparent)] px-1 no-underline">Added</ins> in the cleaned copy,{' '}
+        <ins className="rounded-sm bg-[color-mix(in_oklab,var(--tie)_40%,transparent)] px-1 no-underline">Added</ins> in the cleaned copy,{' '}
         <del className="rounded-sm bg-[color-mix(in_oklab,var(--graphite)_18%,transparent)] px-1">removed</del> from your original.
       </p>
       {/* Side by side on desktop, one inline diff on mobile. */}

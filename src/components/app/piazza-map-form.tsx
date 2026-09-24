@@ -45,7 +45,7 @@ export function PiazzaMapForm({
         {classes.map((c) => (
           <li key={c.nid} className="grid gap-1 sm:grid-cols-[1fr_12rem] sm:items-center sm:gap-4">
             <label htmlFor={`piazza-${c.nid}`} className="grid gap-0.5 text-sm">
-              <a href={c.url} target="_blank" rel="noopener noreferrer" className="break-all font-semibold text-tie underline-offset-2 hover:underline">
+              <a href={c.url} target="_blank" rel="noopener noreferrer" className="break-all font-semibold text-link underline-offset-2 hover:underline">
                 {c.url.replace(/^https:\/\//, '')}
               </a>
               <span className="text-muted-foreground">

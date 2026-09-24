@@ -39,7 +39,7 @@ export default async function CourseLayout({ children, params }: LayoutProps<'/c
         {nextItem ? (
           <p className="text-sm tabular">
             Next:{' '}
-            <OpenItemButton id={nextItem.id} className="font-semibold text-tie underline-offset-2 hover:underline">
+            <OpenItemButton id={nextItem.id} className="font-semibold text-link underline-offset-2 hover:underline">
               {nextItem.title}
             </OpenItemButton>
             , {formatListDate(new Date(nextItem.due_at!))}, {formatCountdown(new Date(nextItem.due_at!), nextItem.time_known, now)}

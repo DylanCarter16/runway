@@ -62,7 +62,7 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                               href={r.url}
                               target={r.url.startsWith('/') ? undefined : '_blank'}
                               rel="noopener noreferrer"
-                              className="text-tie underline-offset-2 hover:underline"
+                              className="text-link underline-offset-2 hover:underline"
                             >
                               Open {r.url.startsWith('/') ? 'in Runway' : new URL(r.url).host}
                             </a>

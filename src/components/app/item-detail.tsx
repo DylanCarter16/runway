@@ -178,7 +178,7 @@ export function ItemDetailView({ detail, inDrawer = false }: { detail: ItemDetai
         <Row label="Source">
           <span>{sourceLine}</span>
           {item.source_url ? (
-            <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="block truncate text-tie underline-offset-2 hover:underline">
+            <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="block truncate text-link underline-offset-2 hover:underline">
               {item.source_url}
             </a>
           ) : null}

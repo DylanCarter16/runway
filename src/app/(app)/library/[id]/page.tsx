@@ -55,7 +55,7 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
           {[course?.code ?? 'No course', documentKindLabel(doc.kind), `captured ${formatListDate(at)}, ${formatTime(at)}`].join(', ')}
         </p>
         {doc.source_url ? (
-          <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-sm break-all text-tie underline-offset-2 hover:underline">
+          <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-sm break-all text-link underline-offset-2 hover:underline">
             {doc.source_url}
           </a>
         ) : null}
@@ -87,7 +87,7 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
                 <span>{describeProposal(p.kind, p.payload, p.course_id ? (codeOf.get(p.course_id) ?? null) : null).headline}</span>
                 <span className="text-muted-foreground">
                   {p.state === 'pending' ? (
-                    <Link href="/inbox#review" className="text-tie underline underline-offset-2">
+                    <Link href="/inbox#review" className="text-link underline underline-offset-2">
                       {STATE_LABEL.pending}
                     </Link>
                   ) : (
@@ -108,7 +108,7 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
               const when = i.due_at ?? i.starts_at;
               return (
                 <li key={i.id} className="py-2">
-                  <Link href={`/items/${i.id}`} className="text-tie underline-offset-2 hover:underline">
+                  <Link href={`/items/${i.id}`} className="text-link underline-offset-2 hover:underline">
                     {i.title}
                   </Link>
                   <span className="text-muted-foreground">, {when ? formatWhen(new Date(when), i.time_known) : 'no date yet'}</span>

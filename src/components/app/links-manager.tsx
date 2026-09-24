@@ -106,7 +106,7 @@ function LinkDialog({
             <Textarea rows={3} value={where} onChange={(e) => setWhere(e.target.value)} />
           </label>
           <label className="flex min-h-11 items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4 accent-(--tie)" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+            <input type="checkbox" className="size-4 accent-(--mark)" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
             Pin to the course header
           </label>
           {error ? (
@@ -162,7 +162,7 @@ export function LinksManager({ courseId, links }: { courseId: string | null; lin
                 return (
                   <li key={l.id} className="grid gap-1 py-2 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="min-w-0">
-                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-tie underline-offset-2 hover:underline sm:min-h-0">
+                      <a href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 font-semibold text-link underline-offset-2 hover:underline sm:min-h-0">
                         {l.label}
                         <ExternalLinkIcon className="size-4" aria-hidden />
                       </a>

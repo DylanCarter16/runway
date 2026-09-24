@@ -198,7 +198,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
         {outcome?.type === 'duplicate' ? (
           <p>
             Already saved:{' '}
-            <Link href={outcome.href} className="text-tie underline underline-offset-2">
+            <Link href={outcome.href} className="text-link underline underline-offset-2">
               {outcome.label}
             </Link>
             . Nothing new was created.
@@ -219,7 +219,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
         {outcome?.type === 'stored' ? (
           <p>
             Saved to the{' '}
-            <Link href={outcome.href} className="text-tie underline underline-offset-2">
+            <Link href={outcome.href} className="text-link underline underline-offset-2">
               Library
             </Link>
             .{' '}
@@ -238,7 +238,7 @@ export function PasteBox({ courses, initialCourse, initialKind }: { courses: Cou
                   : outcome.suggestNote
                     ? 'Saved. This looks like lecture notes.'
                     : 'Saved. Nothing new to review.'}{' '}
-              <Link href={outcome.href} className="text-tie underline underline-offset-2">
+              <Link href={outcome.href} className="text-link underline underline-offset-2">
                 Open in Library
               </Link>
             </p>

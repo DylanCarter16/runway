@@ -23,4 +23,4 @@ export const SETTINGS_SECTIONS = [
 ] as const;
 
 export const selectClass =
-  'h-11 w-full rounded-md border border-input bg-sheet px-3 text-base sm:h-9 sm:text-sm focus-visible:outline-2 focus-visible:outline-tie';
+  'h-11 w-full rounded-md border border-input bg-sheet px-3 text-base sm:h-9 sm:text-sm focus-visible:outline-2 focus-visible:outline-mark';

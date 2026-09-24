@@ -4,16 +4,23 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Tokens from docs/DESIGN.md. shadcn/ui variables map onto them below. */
+/*
+ * Tokens from docs/DESIGN.md: Waterloo black, white, and gold. shadcn/ui variables map onto
+ * them below. tests/lib/design-contrast.test.ts checks every pair against WCAG AA.
+ */
 :root {
-  --paper: #F3F6F4;
+  --paper: #F6F6F4;
   --sheet: #FFFFFF;
-  --ink: #1B2230;
-  --graphite: #5A6372;
-  --rule: #D5DDD8;
-  --tie: #B8135F;
-  --on-tie: #FFFFFF;
-  --soon: #8A5300;
+  --ink: #000000;
+  --graphite: #595959;
+  --rule: #D9D9D9;
+  --tie: #FED34C;
+  --on-tie: #000000;
+  --link: #000000;
+  --link-line: #EAAB00;
+  --mark: #000000;
+  --accent-soft: #FFF4CC;
+  --soon: #9C4500;
   --late: #B42318;
 
   --background: var(--paper);
@@ -33,20 +40,24 @@
   --destructive: var(--late);
   --border: var(--rule);
   --input: var(--rule);
-  --ring: var(--tie);
+  --ring: var(--mark);
   --radius: 0.375rem;
 }
 
 .dark {
-  --paper: #18211E;
-  --sheet: #202B27;
-  --ink: #E6ECE8;
-  --graphite: #9FB0A9;
-  --rule: #33443E;
-  --tie: #F06AA6;
-  --on-tie: #18211E;
-  --soon: #F2B45C;
-  --late: #FF8A7A;
+  --paper: #121212;
+  --sheet: #1C1C1C;
+  --ink: #F2F2F2;
+  --graphite: #ABABAB;
+  --rule: #383838;
+  --tie: #FED34C;
+  --on-tie: #000000;
+  --link: #FED34C;
+  --link-line: #FED34C;
+  --mark: #FED34C;
+  --accent-soft: #3A3113;
+  --soon: #FF9A4D;
+  --late: #FF6B6B;
 }
 
 @theme inline {
@@ -57,6 +68,9 @@
   --color-rule: var(--rule);
   --color-tie: var(--tie);
   --color-on-tie: var(--on-tie);
+  --color-link: var(--link);
+  --color-mark: var(--mark);
+  --color-accent-soft: var(--accent-soft);
   --color-soon: var(--soon);
   --color-late: var(--late);
   --font-sans: var(--font-ui), system-ui, sans-serif;
@@ -102,9 +116,17 @@
     @apply font-sans;
   }
   :focus-visible {
-    outline: 2px solid var(--tie);
+    outline: 2px solid var(--mark);
     outline-offset: 2px;
   }
+}
+
+/* Links: ink (light) or gold (dark) text, always underlined in gold, so they never rely on colour alone. */
+.text-link {
+  text-decoration-line: underline;
+  text-decoration-color: var(--link-line);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 @layer utilities {
@@ -144,8 +166,8 @@
   --fc-page-bg-color: var(--paper);
   --fc-neutral-bg-color: color-mix(in oklab, var(--rule) 40%, transparent);
   --fc-list-event-hover-bg-color: color-mix(in oklab, var(--rule) 40%, transparent);
-  --fc-today-bg-color: color-mix(in oklab, var(--tie) 6%, transparent);
-  --fc-now-indicator-color: var(--tie);
+  --fc-today-bg-color: color-mix(in oklab, var(--tie) 14%, transparent);
+  --fc-now-indicator-color: var(--mark);
   --fc-event-text-color: var(--ink);
   --fc-button-bg-color: var(--sheet);
   --fc-button-border-color: var(--rule);
@@ -266,7 +288,7 @@
 .prose-note ul { list-style: disc; padding-left: 1.4em; }
 .prose-note ol { list-style: decimal; padding-left: 1.4em; }
 .prose-note li + li { margin-top: 0.25em; }
-.prose-note a { color: var(--tie); text-decoration: underline; text-underline-offset: 2px; }
+.prose-note a { color: var(--link); text-decoration: underline; text-decoration-color: var(--link-line); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 .prose-note blockquote { border-left: 3px solid var(--rule); padding-left: 1em; color: var(--graphite); }
 .prose-note code { font-family: var(--font-mono); font-size: 0.85em; }
 .prose-note :not(pre) > code { background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 0 0.25em; }
@@ -288,7 +310,7 @@
 
 /* Syntax highlighting (rehype-highlight classes) in the ink palette. */
 .hljs-comment, .hljs-quote { color: var(--graphite); font-style: italic; }
-.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-type { color: var(--tie); }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-type { color: var(--ink); font-weight: 600; }
 .hljs-string, .hljs-regexp, .hljs-symbol { color: #2E7D4F; }
 .dark .hljs-string, .dark .hljs-regexp, .dark .hljs-symbol { color: #8FD1A8; }
 .hljs-number, .hljs-literal { color: var(--soon); }

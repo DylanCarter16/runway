@@ -6,9 +6,9 @@
     <meta name="robots" content="noindex" />
     <title>Offline, Runway</title>
     <style>
-      :root { --paper: #f3f6f4; --ink: #1b2230; --graphite: #5a6372; --tie: #b8135f; }
+      :root { --paper: #f6f6f4; --ink: #000000; --graphite: #595959; --link: #000000; --link-line: #eaab00; }
       @media (prefers-color-scheme: dark) {
-        :root { --paper: #18211e; --ink: #e6ece8; --graphite: #9fb0a9; --tie: #f06aa6; }
+        :root { --paper: #121212; --ink: #f2f2f2; --graphite: #ababab; --link: #fed34c; --link-line: #fed34c; }
       }
       body {
         margin: 0; min-height: 100dvh; display: grid; place-items: center;
@@ -18,7 +18,7 @@
       main { max-width: 26rem; }
       h1 { font-size: 21px; margin: 0 0 8px; }
       p { margin: 0 0 12px; color: var(--graphite); }
-      a { color: var(--tie); }
+      a { color: var(--link); text-decoration-color: var(--link-line); text-decoration-thickness: 2px; text-underline-offset: 3px; }
     </style>
   </head>
   <body>

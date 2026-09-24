@@ -112,7 +112,7 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
               <li key={q} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <span className={cn('max-w-[68ch]', q === FORMULA_WARNING && 'text-soon')}>{q}</span>
                 {q === FORMULA_WARNING ? null : (
-                  <Link href={askHref(note.id, q)} className="text-sm text-tie underline-offset-2 hover:underline">
+                  <Link href={askHref(note.id, q)} className="text-sm text-link underline-offset-2 hover:underline">
                     Ask about this
                   </Link>
                 )}
@@ -129,7 +129,7 @@ export default async function NotePage({ params }: PageProps<'/notes/[id]'>) {
           </h3>
           {pending ? (
             <p>
-              <Link href="/inbox" className="text-tie underline underline-offset-2">
+              <Link href="/inbox" className="text-link underline underline-offset-2">
                 {pending === 1 ? '1 date change waits' : `${pending} date changes wait`} for review in the Inbox
               </Link>
               .

@@ -63,7 +63,7 @@ export async function CourseGrades({ course }: { course: Course }) {
           {src ? (
             <span className="text-sm text-muted-foreground">
               {src.source_document_id ? (
-                <Link href={`/library/${src.source_document_id}`} className="text-tie underline-offset-2 hover:underline">
+                <Link href={`/library/${src.source_document_id}`} className="text-link underline-offset-2 hover:underline">
                   {sourceLabel(src.source)}
                 </Link>
               ) : (

@@ -2,47 +2,61 @@
 
 ## Brief
 
-Runway is a study tool for one Waterloo CS student, used mostly on a phone between classes and on a laptop while planning the week. Its job is to make any date, note, or link findable in seconds. The design borrows from the student's world: engineering graph paper, pen ink, a chalkboard, and the pink tie of Waterloo's Faculty of Mathematics.
+Runway is a study tool for one Waterloo CS student, used mostly on a phone between classes and on a laptop while planning the week. Its job is to make any date, note, or link findable in seconds. The design wears Waterloo's own colours: black, white, and UW gold, checked against the university's brand guidance (https://uwaterloo.ca/brand/how-express-our-brand/colour). Gold is the accent; black and white carry everything else.
 
 The one memorable element is the **runway bar**, a thin track under each deadline showing how much of its prep window has passed. Everything around it stays quiet.
 
 ## Color
 
-Light theme ("graph paper"):
+Waterloo black, white, and gold (Phase 9, 2026-09-24). From the brand page: gold level 3 `#FED34C` (PMS 122) is the primary gold, level 4 `#EAAB00` (PMS 124) the deep one, black `#000000` the digital primary, and the brand pairs gold with black. Gold text or thin gold lines on white fall below AA (`#FED34C` on white is 1.4:1), so gold is a fill with black on it, a gold underline under black link text, and a tint for highlights. On black it works as text too.
+
+Light theme ("white"):
 
 | Token | Hex | Use |
 |---|---|---|
-| `--paper` | `#F3F6F4` | page background, a cool green-grey like engineering paper |
-| `--sheet` | `#FFFFFF` | drawers, dialogs, palette, popovers |
-| `--ink` | `#1B2230` | primary text (14.7:1 on paper) |
-| `--graphite` | `#5A6372` | secondary text, icons (5.6:1 on paper) |
-| `--rule` | `#D5DDD8` | borders, row dividers, calendar grid |
-| `--tie` | `#B8135F` | primary buttons, the "now" tick, focus rings, links (5.9:1 on paper) |
-| `--soon` | `#8A5300` | due within 48 hours (5.8:1) |
-| `--late` | `#B42318` | overdue, errors (6.0:1) |
+| `--paper` | `#F6F6F4` | page background, near white |
+| `--sheet` | `#FFFFFF` | drawers, dialogs, palette, popovers, file rows |
+| `--ink` | `#000000` | primary text (19.4:1 on paper) |
+| `--graphite` | `#595959` | secondary text, icons (6.5:1 on paper). UW's own grey `#787878` is 4.4:1 on white, below AA for small text |
+| `--rule` | `#D9D9D9` | borders, row dividers, calendar grid |
+| `--tie` | `#FED34C` | the accent: primary buttons, the avatar, today's calendar tint, highlights. Always a fill |
+| `--on-tie` | `#000000` | text on gold (14.6:1) |
+| `--link` | `#000000` | link text, with a 2px `--link-line` underline |
+| `--link-line` | `#EAAB00` | the gold underline under links |
+| `--mark` | `#000000` | focus rings, the calendar "now" line, the runway bar's now tick, checkboxes, the active tab bar |
+| `--accent-soft` | `#FFF4CC` | gold tint behind a dragged-over drop area |
+| `--soon` | `#9C4500` | due within 48 hours, a burnt orange kept clear of gold (5.9:1) |
+| `--late` | `#B42318` | overdue, errors (6.1:1) |
 
-Dark theme ("chalkboard"):
+Dark theme ("black"):
 
 | Token | Hex |
 |---|---|
-| `--paper` | `#18211E` |
-| `--sheet` | `#202B27` |
-| `--ink` | `#E6ECE8` |
-| `--graphite` | `#9FB0A9` |
-| `--rule` | `#33443E` |
-| `--tie` | `#F06AA6` |
-| `--soon` | `#F2B45C` |
-| `--late` | `#FF8A7A` |
+| `--paper` | `#121212` |
+| `--sheet` | `#1C1C1C` |
+| `--ink` | `#F2F2F2` |
+| `--graphite` | `#ABABAB` |
+| `--rule` | `#383838` |
+| `--tie` | `#FED34C` |
+| `--on-tie` | `#000000` |
+| `--link` | `#FED34C` |
+| `--link-line` | `#FED34C` |
+| `--mark` | `#FED34C` |
+| `--accent-soft` | `#3A3113` |
+| `--soon` | `#FF9A4D` |
+| `--late` | `#FF6B6B` |
 
-Primary button text is `#FFFFFF` on light and `#18211E` on dark.
+Primary buttons are gold with black text in both themes. Links are never told apart by colour alone: they are always underlined.
 
-Course colors come from `courses.color` and `courses.color_dark` (seeded in `src/config/term-f26.ts`):
+`tests/lib/design-contrast.test.ts` reads these tokens from `globals.css` and checks every text colour at 4.5:1 on paper and sheet, black on gold, marks at 3:1, and course colours at 3:1 and clear of gold's hue.
+
+Course colors come from `courses.color` and `courses.color_dark` (seeded in `src/config/term-f26.ts`). None may sit near gold: CS 246 moved from amber to Math pink when gold became the accent (migration `20260924194329`, which only recolours the seeded amber).
 
 | Course | Light | Dark |
 |---|---|---|
 | STAT 230 | `#0F7B83` | `#5CC4CB` |
 | CS 245 | `#5B4FD1` | `#A59BFF` |
-| CS 246 | `#B7791F` | `#E3B25A` |
+| CS 246 | `#B0266E` | `#F27AB4` |
 | CS 251 | `#2F7D3A` | `#7BC98A` |
 
 Course colors mark things; they never color text. They appear as a 4px left bar on rows, an 8px dot in chips, a 12% tint behind chips and calendar events, and the fill of runway bars.
@@ -55,12 +69,14 @@ Urgency always pairs color with words ("overdue by 2 hours", "in 5 hours").
 @import "tailwindcss";
 
 :root {
-  --paper: #F3F6F4; --sheet: #FFFFFF; --ink: #1B2230; --graphite: #5A6372;
-  --rule: #D5DDD8; --tie: #B8135F; --on-tie: #FFFFFF; --soon: #8A5300; --late: #B42318;
+  --paper: #F6F6F4; --sheet: #FFFFFF; --ink: #000000; --graphite: #595959; --rule: #D9D9D9;
+  --tie: #FED34C; --on-tie: #000000; --link: #000000; --link-line: #EAAB00; --mark: #000000;
+  --accent-soft: #FFF4CC; --soon: #9C4500; --late: #B42318;
 }
 .dark {
-  --paper: #18211E; --sheet: #202B27; --ink: #E6ECE8; --graphite: #9FB0A9;
-  --rule: #33443E; --tie: #F06AA6; --on-tie: #18211E; --soon: #F2B45C; --late: #FF8A7A;
+  --paper: #121212; --sheet: #1C1C1C; --ink: #F2F2F2; --graphite: #ABABAB; --rule: #383838;
+  --tie: #FED34C; --on-tie: #000000; --link: #FED34C; --link-line: #FED34C; --mark: #FED34C;
+  --accent-soft: #3A3113; --soon: #FF9A4D; --late: #FF6B6B;
 }
 
 @theme inline {
@@ -71,15 +87,21 @@ Urgency always pairs color with words ("overdue by 2 hours", "in 5 hours").
   --color-rule: var(--rule);
   --color-tie: var(--tie);
   --color-on-tie: var(--on-tie);
+  --color-link: var(--link);
+  --color-mark: var(--mark);
+  --color-accent-soft: var(--accent-soft);
   --color-soon: var(--soon);
   --color-late: var(--late);
   --font-sans: var(--font-ui), system-ui, sans-serif;
   --font-serif: var(--font-reading), Georgia, serif;
   --font-mono: var(--font-code), ui-monospace, monospace;
 }
+
+/* Links: always underlined in gold. */
+.text-link { text-decoration-line: underline; text-decoration-color: var(--link-line); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 ```
 
-Map shadcn/ui variables onto these: `background` = paper, `card` and `popover` = sheet, `foreground` = ink, `muted-foreground` = graphite, `border` and `input` = rule, `primary` = tie, `primary-foreground` = on-tie, `ring` = tie, `destructive` = late. Theme follows the system setting, with a toggle in Settings.
+Map shadcn/ui variables onto these: `background` = paper, `card` and `popover` = sheet, `foreground` = ink, `muted-foreground` = graphite, `border` and `input` = rule, `primary` = tie, `primary-foreground` = on-tie, `ring` = mark, `destructive` = late. Use `text-link` for links, `bg-tie text-on-tie` for gold fills, and `mark` for focus and position marks. Theme follows the system setting, with a toggle in Settings. The app icon is the runway bar in gold on black.
 
 ## Type
 
@@ -221,7 +243,7 @@ AI-off courses (CS 245, CS 246, CS 251 this term) show only the Mine view on not
 
 - A 4px track (`--rule`) spanning the prep window: from runway start (due minus prep days) to due.
 - Fill from runway start to now, in the course color.
-- A 2px by 10px "now" tick in `--tie`.
+- A 2px by 10px "now" tick in `--mark` (black, or gold in dark mode).
 - Before the window opens: track only, with "Prep starts Sep 23" beside it.
 - Inside 48 hours: the fill turns `--soon`. Past due and not submitted: `--late`, plus "Overdue by 3 hours".
 - Submitted: the track becomes dotted `--graphite` with a check icon; no tick.

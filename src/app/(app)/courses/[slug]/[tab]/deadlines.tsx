@@ -79,7 +79,7 @@ export async function CourseDeadlines({ course, kind, progress }: { course: Cour
                       <span className="block text-xs text-muted-foreground">{i.time_known ? formatTime(new Date(at)) : 'time not set'}</span>
                     </>
                   ) : (
-                    <OpenItemButton id={i.id} className="text-tie underline-offset-2 hover:underline">
+                    <OpenItemButton id={i.id} className="text-link underline-offset-2 hover:underline">
                       Add date
                     </OpenItemButton>
                   )}

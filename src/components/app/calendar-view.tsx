@@ -232,7 +232,7 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
           );
         })}
         {selectedSlugs.length ? (
-          <button type="button" className="h-11 px-2 text-sm text-tie sm:h-9" onClick={() => setParam('courses', null)}>
+          <button type="button" className="h-11 px-2 text-sm text-link sm:h-9" onClick={() => setParam('courses', null)}>
             All courses
           </button>
         ) : null}
@@ -250,11 +250,11 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
           </select>
         </label>
         <label className="flex h-11 items-center gap-2 text-sm sm:h-9">
-          <input type="checkbox" className="size-4 accent-(--tie)" checked={showPrep} onChange={(e) => setParam('prep', e.target.checked ? null : '0')} />
+          <input type="checkbox" className="size-4 accent-(--mark)" checked={showPrep} onChange={(e) => setParam('prep', e.target.checked ? null : '0')} />
           Prep blocks
         </label>
         <label className="flex h-11 items-center gap-2 text-sm sm:h-9">
-          <input type="checkbox" className="size-4 accent-(--tie)" checked={showReminders} onChange={(e) => setParam('reminders', e.target.checked ? null : '0')} />
+          <input type="checkbox" className="size-4 accent-(--mark)" checked={showReminders} onChange={(e) => setParam('reminders', e.target.checked ? null : '0')} />
           Reminders
         </label>
         <label className="grid gap-1 text-sm">

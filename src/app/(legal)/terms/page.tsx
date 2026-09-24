@@ -17,14 +17,14 @@ export default function TermsPage() {
       <h2>Data</h2>
       <p>
         How data is stored and used is described in the{' '}
-        <Link href="/privacy" className="text-tie underline underline-offset-2">
+        <Link href="/privacy" className="text-link underline underline-offset-2">
           privacy page
         </Link>
         .
       </p>
       <h2>Contact</h2>
       <p>
-        <a href={`mailto:${email}`} className="text-tie underline underline-offset-2">
+        <a href={`mailto:${email}`} className="text-link underline underline-offset-2">
           {email}
         </a>
       </p>

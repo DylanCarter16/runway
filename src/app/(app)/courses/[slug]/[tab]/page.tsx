@@ -40,13 +40,13 @@ function PageUpdate({ doc, now, at }: { doc: { id: string; title: string; source
     <li className="grid gap-1 py-2">
       <span>
         {diff ? `${label} page changed.` : `Started watching the ${label} page.`}{' '}
-        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+        <Link href={`/library/${doc.id}`} className="text-link underline-offset-2 hover:underline">
           Saved copy
         </Link>
         {doc.source_url ? (
           <>
             {', '}
-            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
+            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">
               open page
             </a>
           </>
@@ -66,7 +66,7 @@ function PasteUpdate({ doc, now, at }: { doc: { id: string; title: string; kind:
     <li className="grid gap-1 py-2">
       <span>
         {documentKindLabel(doc.kind)} pasted:{' '}
-        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+        <Link href={`/library/${doc.id}`} className="text-link underline-offset-2 hover:underline">
           {doc.title}
         </Link>{' '}
         <span className="text-muted-foreground">{formatAgo(new Date(at), now)}</span>
@@ -84,13 +84,13 @@ function EmailUpdate({ doc, now, at }: { doc: { id: string; title: string; sourc
     <li className="grid gap-1 py-2">
       <span>
         Piazza:{' '}
-        <Link href={`/library/${doc.id}`} className="text-tie underline-offset-2 hover:underline">
+        <Link href={`/library/${doc.id}`} className="text-link underline-offset-2 hover:underline">
           {doc.title}
         </Link>
         {doc.source_url ? (
           <>
             {', '}
-            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-tie underline-offset-2 hover:underline">
+            <a href={doc.source_url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">
               open post
             </a>
           </>
@@ -218,7 +218,7 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
         <p className="text-sm">
           <Link
             href={showNoise ? `/courses/${course.slug}/updates` : `/courses/${course.slug}/updates?noise=1`}
-            className="text-tie underline-offset-2 hover:underline"
+            className="text-link underline-offset-2 hover:underline"
           >
             {showNoise ? 'Hide Piazza posts with nothing to act on' : `Show ${hidden} hidden Piazza ${hidden === 1 ? 'post' : 'posts'}`}
           </Link>

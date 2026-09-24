@@ -99,7 +99,7 @@ export async function NotesList({
           Paste notes
         </Link>
         {filtered ? (
-          <Link href={action} className="flex h-11 items-center text-sm text-tie underline-offset-2 hover:underline sm:h-9">
+          <Link href={action} className="flex h-11 items-center text-sm text-link underline-offset-2 hover:underline sm:h-9">
             Clear filters
           </Link>
         ) : null}
@@ -123,7 +123,7 @@ export async function NotesList({
                   <span>{lectureDateLabel(n.lecture_on)}</span>
                   {cleaning ? <span>Cleaning up...</span> : null}
                 </span>
-                <Link href={`/notes/${n.id}`} className="font-semibold text-tie underline-offset-2 hover:underline">
+                <Link href={`/notes/${n.id}`} className="font-semibold text-link underline-offset-2 hover:underline">
                   {noteTitle(n)}
                 </Link>
                 {n.summary ? <span className="text-sm">{n.summary}</span> : null}
