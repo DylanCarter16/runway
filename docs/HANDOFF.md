@@ -6,7 +6,7 @@ Written 2026-09-23 at the end of the autopilot run. Phases S and 0 through 8 are
 
 Checked on the hosted project with throwaway users (scripts in `.scratch/`, listed in `docs/PROGRESS.md`) and 320 unit tests.
 
-- **Sign-in**: a 6-digit email code, only for `ALLOWED_EMAIL`.
+- **Sign-in**: "Continue with Google" (Supabase Auth), only for the `ALLOWED_EMAIL` account; any other account sees "This app is private." (Replaced the email code on 2026-09-24.)
 - **Term setup**: Settings, Term, "Load Fall 2026 setup" loads the four courses, 42 outline dates, grading schemes, policies, links, Quest class times, and watched pages. Pressing it again changes nothing.
 - **Findability**: Today (runway list, next exam countdown, overdue items with the late policy, recent changes), Calendar (month, week, and list, with filters), course pages with eight tabs, an item drawer showing change history, quick add, and the command palette (Ctrl/Cmd+K or `/`) plus `/search` with aliases ("251 a1", "odysey").
 - **CS 251 pages**: the schedule, exam info, and assignments pages sync on their cadence (once the scheduled jobs SQL is in; see below). Moves show in Updates, and a date you locked gets a proposal instead of an overwrite.
@@ -45,8 +45,8 @@ Each item has a `docs/BLOCKED.md` entry naming the exact step.
 ## Manual steps left, in order
 
 1. **Scheduled jobs SQL** (5 minutes): https://supabase.com/dashboard/project/<SUPABASE_PROJECT_REF>/sql/new. Paste "Scheduled jobs (step 5)" from `docs/SETUP.md`, using the production URL and `CRON_SECRET` from `.env.local`. Do this first; most other things run from it.
-2. **Sign in and load the term** (3 minutes): https://<APP_HOST>. Enter the 6-digit code; Supabase's sender allows only 2 emails an hour. Then go to Settings, Term and press "Load Fall 2026 setup".
-3. **Magic-link email template** (3 minutes): Supabase dashboard, Authentication, Emails, Magic Link. Paste `supabase/templates/magic_link.html`.
+2. **Sign in and load the term** (3 minutes): https://<APP_HOST>. Press "Continue with Google" and pick the `ALLOWED_EMAIL` account. Then go to Settings, Term and press "Load Fall 2026 setup".
+3. **Sign in from the installed app** (2 minutes): open Runway from the iPhone home screen and press "Continue with Google" there too (docs/BLOCKED.md "Sign-in: first Google sign-in on the iPhone").
 4. **Anthropic key** (10 minutes): https://platform.claude.com/settings/keys. Make a key inside a workspace and set a spend limit on that workspace. Replace `ANTHROPIC_API_KEY` in `.env.local`. Then have a local Claude Code session add it to Vercel, redeploy, and re-record fixtures with `.scratch/record-ai.ts`.
 5. **Google Calendar** (10 minutes):
    - At https://console.cloud.google.com/auth/clients, check the redirect URI and scope, and publish the app.

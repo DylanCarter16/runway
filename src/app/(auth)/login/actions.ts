@@ -1,46 +1,30 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/db/server';
 import { serverEnv } from '@/env';
 
-type ActionResult = { ok: true } | { ok: false; error: string };
-
-const PRIVATE_MESSAGE = 'This app is private.';
-
-export async function requestCode(email: string): Promise<ActionResult> {
-  const normalized = email.trim().toLowerCase();
-
-  // Checked before Supabase is ever called, so addresses other than
-  // ALLOWED_EMAIL never use up the 2-per-hour sender allowance.
-  if (normalized !== serverEnv.ALLOWED_EMAIL.toLowerCase()) {
-    return { ok: false, error: PRIVATE_MESSAGE };
-  }
-
+/**
+ * Starts Google sign-in through Supabase Auth. The PKCE code verifier is saved as a cookie
+ * on this host, so the callback URL uses the same origin the button was pressed on.
+ * /auth/callback exchanges the code and applies the ALLOWED_EMAIL gate.
+ */
+export async function continueWithGoogle(): Promise<void> {
+  const origin = (await headers()).get('origin') ?? serverEnv.APP_URL;
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email: normalized,
-    options: { shouldCreateUser: true },
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: new URL('/auth/callback', origin).toString(),
+      // Always show the account picker, so a phone signed in to another Google account can switch.
+      queryParams: { prompt: 'select_account' },
+    },
   });
 
-  if (error) {
-    return { ok: false, error: 'Could not send the code. Try again.' };
+  if (error || !data.url) {
+    redirect('/login?error=failed');
   }
 
-  return { ok: true };
-}
-
-export async function verifyCode(email: string, token: string): Promise<ActionResult> {
-  const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({
-    email: email.trim().toLowerCase(),
-    token: token.trim(),
-    type: 'email',
-  });
-
-  if (error) {
-    return { ok: false, error: "That code didn't work. Check it and try again." };
-  }
-
-  redirect('/');
+  redirect(data.url);
 }
