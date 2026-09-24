@@ -227,8 +227,8 @@ enable_confirmations = true
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1m0s"
-# Number of characters used in the email OTP. Runway shows a 6-digit code (SPEC.md 7); the
-# hosted project's platform default is 8, so this is a deliberate change.
+# Number of characters used in the email OTP. Runway signs in with Google (SPEC.md 7) and
+# sends no codes; 6 matches what the hosted project was set to while it did.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
@@ -242,12 +242,6 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
-
-# The magic_link template can't be pushed via `supabase config push` on the free
-# tier with the default email provider ("Email template modification is not
-# available for free tier projects using the default email provider"). Its
-# content lives in supabase/templates/magic_link.html for reference; paste it
-# manually under Authentication > Emails > Magic Link in the dashboard instead.
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -325,6 +319,17 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# Sign-in (SPEC.md 7). Enabled in the dashboard; declared here so `supabase config push` keeps it on.
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+# DO NOT commit the secret. It comes from the environment when pushing.
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+email_optional = false
+
 [auth.external.apple]
 enabled = false
 client_id = ""
