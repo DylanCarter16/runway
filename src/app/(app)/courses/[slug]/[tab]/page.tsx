@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 import { AskThreads } from '@/components/app/ask-threads';
 import { AskView } from '@/components/app/ask-view';
+import { CourseFiles, type CourseFileRow } from '@/components/app/course-files';
 import { EmptyState } from '@/components/app/empty-state';
 import { LibraryList, readLibraryFilters } from '@/components/app/library-list';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
@@ -128,12 +129,25 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
       );
 
     case 'resources': {
-      const { data } = await supabase
-        .from('links')
-        .select('id, course_id, label, url, category, where_to_find, pinned, sort_order')
-        .eq('course_id', course.id)
-        .order('sort_order');
-      return <LinksManager courseId={course.id} links={(data ?? []) as LinkRow[]} />;
+      const [{ data }, { data: files }] = await Promise.all([
+        supabase.from('links').select('id, course_id, label, url, category, where_to_find, pinned, sort_order').eq('course_id', course.id).order('sort_order'),
+        supabase
+          .from('documents')
+          .select('id, kind, title, file_name, file_size, meta')
+          .eq('course_id', course.id)
+          .in('kind', ['textbook', 'upload'])
+          .order('captured_at', { ascending: false }),
+      ]);
+      const fileRows: CourseFileRow[] = (files ?? []).map((f) => {
+        const meta = (f.meta ?? {}) as { summary?: string; page_count?: number };
+        return { id: f.id, kind: f.kind, title: f.title, file_name: f.file_name, file_size: f.file_size, summary: meta.summary ?? null, page_count: meta.page_count ?? null };
+      });
+      return (
+        <div className="grid gap-8">
+          <LinksManager courseId={course.id} links={(data ?? []) as LinkRow[]} />
+          <CourseFiles courseId={course.id} courseCode={course.code} aiOn={course.ai_allowed} files={fileRows} />
+        </div>
+      );
     }
 
     case 'notes':

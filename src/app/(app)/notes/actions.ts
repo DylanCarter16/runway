@@ -5,8 +5,11 @@ import { revalidatePath } from 'next/cache';
 import { after } from 'next/server';
 import { z } from 'zod';
 import { createClient, requireUser } from '@/lib/db/server';
+import type { Json } from '@/lib/db/types';
+import { keepWholeFileNote } from '@/lib/jobs/files';
 import { enqueueNoteWork } from '@/lib/jobs/notes';
 import { runQueuedJobs } from '@/lib/jobs/schedule';
+import { describePlan, planIncremental, type IncrementalPlan } from '@/lib/notes/incremental';
 import { rebuildNoteChunks } from '@/lib/notes/store';
 import type { ActionResult } from '../actions';
 
@@ -28,7 +31,20 @@ const newNoteSchema = z.object({
 
 export type NewNoteInput = z.infer<typeof newNoteSchema>;
 
-export type NewNoteOutcome = { status: 'saved'; id: string; cleaning: boolean } | { status: 'duplicate'; id: string; title: string };
+export type NewNoteOutcome =
+  | { status: 'saved'; id: string; cleaning: boolean; decision: string | null }
+  | { status: 'duplicate'; id: string; title: string }
+  /** The paste holds nothing that isn't stored already; the full paste is kept as a document. */
+  | { status: 'nothing_new'; documentId: string; decision: string };
+
+/** What notes.incremental holds for a note cut from a running-notes paste. */
+export interface IncrementalRecord {
+  kind: 'text' | 'file';
+  mode: 'new' | 'whole';
+  document_id?: string;
+  counts?: IncrementalPlan['counts'];
+  summary?: string;
+}
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -58,8 +74,60 @@ async function loadNote(supabase: Supabase, id: string) {
 }
 
 /**
- * Stores a note exactly as pasted. Used by /notes/new and by the Inbox for
- * "Lecture notes" pastes. The same text pasted again returns the saved note.
+ * What was pasted for this course before: the latest running-notes paste (to line the new
+ * one up against) and every earlier paste and note (so text that moved isn't new).
+ */
+async function earlierForCourse(supabase: Supabase, courseId: string) {
+  const [{ data: sources }, { data: notes }] = await Promise.all([
+    supabase.from('documents').select('id, raw_text, captured_at').eq('course_id', courseId).eq('kind', 'note_source').order('captured_at', { ascending: false }),
+    supabase.from('notes').select('original_md').eq('course_id', courseId),
+  ]);
+  const latest = sources?.[0]?.raw_text ?? null;
+  const earlier = [...(sources ?? []).slice(1).map((s) => s.raw_text), ...(notes ?? []).map((n) => n.original_md)];
+  return { latest, earlier };
+}
+
+async function insertNote(
+  supabase: Supabase,
+  userId: string,
+  course: { id: string; ai_allowed: boolean },
+  fields: { lectureOn: string | null; title: string | null; text: string; sourceDocumentId: string | null; incremental: IncrementalRecord | null },
+): Promise<ActionResult<{ id: string }>> {
+  const { data: note, error } = await supabase
+    .from('notes')
+    .insert({
+      user_id: userId,
+      course_id: course.id,
+      lecture_on: fields.lectureOn,
+      title: fields.title,
+      original_md: fields.text,
+      content_hash: sha256(fields.text),
+      source_document_id: fields.sourceDocumentId,
+      incremental: fields.incremental as unknown as Json,
+    })
+    .select('id, user_id, course_id, original_md, cleaned_md, edited_md')
+    .single();
+  if (error) {
+    if (error.code === '23505') return { ok: false, error: 'This note is already saved.' };
+    return { ok: false, error: `Could not save the note: ${error.message}` };
+  }
+  // Searchable and askable right away, from the original; cleanup rebuilds the chunks.
+  try {
+    await rebuildNoteChunks(supabase, note);
+    const { admin } = await enqueueNoteWork(userId, note.id, { cleanup: course.ai_allowed, refreshReminders: true });
+    startWorker(admin);
+  } catch (e) {
+    console.error('note follow-up failed:', e instanceof Error ? e.message : e);
+  }
+  return { ok: true, data: { id: note.id } };
+}
+
+/**
+ * Saves lecture notes. Used by /notes/new and by the Inbox for "Lecture notes" pastes.
+ * Dylan keeps one running document per course and pastes all of it (PHASES.md Phase 9,
+ * part B): the full paste is stored as a note_source document, and the note holds only
+ * what is new since the last paste, with edited paragraphs marked as revisions. The first
+ * paste for a course becomes the note whole. The same text pasted again returns the saved note.
  */
 export async function createNote(input: NewNoteInput): Promise<ActionResult<NewNoteOutcome>> {
   const parsed = newNoteSchema.safeParse(input);
@@ -72,36 +140,103 @@ export async function createNote(input: NewNoteInput): Promise<ActionResult<NewN
   const { data: existing } = await supabase.from('notes').select('id, title').eq('content_hash', hash).maybeSingle();
   if (existing) return { ok: true, data: { status: 'duplicate', id: existing.id, title: existing.title ?? 'a lecture note' } };
 
-  const { data: course } = await supabase.from('courses').select('id, ai_allowed').eq('id', courseId).maybeSingle();
+  const { data: course } = await supabase.from('courses').select('id, code, ai_allowed').eq('id', courseId).maybeSingle();
   if (!course) return { ok: false, error: 'That course no longer exists.' };
 
-  const { data: note, error } = await supabase
-    .from('notes')
-    .insert({
-      user_id: user.id,
-      course_id: courseId,
-      lecture_on: lectureOn,
-      title: title || null,
-      original_md: text,
-      content_hash: hash,
-    })
-    .select('id, user_id, course_id, original_md, cleaned_md, edited_md')
-    .single();
-  if (error) {
-    if (error.code === '23505') return { ok: false, error: 'This note is already saved.' };
-    return { ok: false, error: `Could not save the note: ${error.message}` };
+  const { latest, earlier } = await earlierForCourse(supabase, courseId);
+  const plan = planIncremental(latest, text, earlier);
+  const decision = describePlan(plan);
+
+  // Keep everything: the whole paste is stored as it came, whatever the note ends up holding.
+  const { data: stored } = await supabase.from('documents').select('id').eq('kind', 'note_source').eq('content_hash', hash).maybeSingle();
+  let sourceId = stored?.id ?? null;
+  if (!sourceId) {
+    const { data: doc, error: docErr } = await supabase
+      .from('documents')
+      .insert({
+        user_id: user.id,
+        course_id: courseId,
+        kind: 'note_source',
+        title: `${course.code} running notes, pasted for ${lectureOn}`,
+        raw_text: text,
+        content_hash: hash,
+        processed_at: new Date().toISOString(),
+        meta: { via: 'notes', lecture_on: lectureOn, decision } as Json,
+      })
+      .select('id')
+      .single();
+    if (docErr) return { ok: false, error: `Could not store the paste: ${docErr.message}` };
+    sourceId = doc.id;
   }
 
-  // Searchable and askable right away, from the original; cleanup rebuilds the chunks.
-  try {
-    await rebuildNoteChunks(supabase, note);
-    const { admin } = await enqueueNoteWork(user.id, note.id, { cleanup: course.ai_allowed, refreshReminders: true });
-    startWorker(admin);
-  } catch (e) {
-    console.error('note follow-up failed:', e instanceof Error ? e.message : e);
+  if (plan.nothingNew) {
+    revalidatePath('/', 'layout');
+    return { ok: true, data: { status: 'nothing_new', documentId: sourceId, decision } };
+  }
+
+  const incremental: IncrementalRecord = plan.hadPrevious
+    ? { kind: 'text', mode: 'new', document_id: sourceId, counts: plan.counts, summary: decision }
+    : { kind: 'text', mode: 'whole', document_id: sourceId, summary: decision };
+  const saved = await insertNote(supabase, user.id, course, {
+    lectureOn,
+    title: title || null,
+    text: plan.hadPrevious ? plan.markdown : text,
+    sourceDocumentId: sourceId,
+    incremental,
+  });
+  if (!saved.ok) return saved;
+  revalidatePath('/', 'layout');
+  return { ok: true, data: { status: 'saved', id: saved.data.id, cleaning: course.ai_allowed, decision: plan.hadPrevious ? decision : null } };
+}
+
+const keepWholeSchema = z.object({ noteId: z.uuid().optional(), documentId: z.uuid().optional() });
+
+/**
+ * Undo for a note cut from a paste: makes one note from the whole paste (or, for a file,
+ * from every page) and removes the cut note. Works from a note, or from a paste that had
+ * nothing new and so has no note.
+ */
+export async function keepWholePaste(input: { noteId?: string; documentId?: string }): Promise<ActionResult<{ id: string }>> {
+  const parsed = keepWholeSchema.safeParse(input);
+  if (!parsed.success || (!parsed.data.noteId && !parsed.data.documentId)) return { ok: false, error: 'Unknown note.' };
+  const user = await requireUser();
+  const supabase = await createClient();
+
+  let cut: { id: string; lecture_on: string | null; title: string | null; source_document_id: string | null; incremental: Json | null } | null = null;
+  if (parsed.data.noteId) {
+    const { data } = await supabase.from('notes').select('id, lecture_on, title, source_document_id, incremental').eq('id', parsed.data.noteId).maybeSingle();
+    if (!data) return { ok: false, error: 'Unknown note.' };
+    cut = data;
+  }
+  const documentId = parsed.data.documentId ?? cut?.source_document_id;
+  if (!documentId) return { ok: false, error: 'This note was not cut from a paste.' };
+  const { data: doc } = await supabase.from('documents').select('id, kind, course_id, raw_text, meta, courses(id, ai_allowed)').eq('id', documentId).maybeSingle();
+  if (!doc?.courses) return { ok: false, error: 'The stored paste is gone.' };
+
+  let newId: string;
+  if (doc.kind === 'note_source') {
+    const meta = (doc.meta ?? {}) as { lecture_on?: string };
+    const saved = await insertNote(supabase, user.id, doc.courses, {
+      lectureOn: cut?.lecture_on ?? meta.lecture_on ?? null,
+      title: cut?.title ?? null,
+      text: doc.raw_text,
+      sourceDocumentId: doc.id,
+      incremental: { kind: 'text', mode: 'whole', document_id: doc.id },
+    });
+    if (!saved.ok) return saved;
+    newId = saved.data.id;
+  } else {
+    const made = await keepWholeFileNote(user.id, doc.id);
+    if (!made) return { ok: false, error: 'Could not make a note from the whole file.' };
+    newId = made;
+  }
+
+  if (cut) {
+    const { error } = await supabase.from('notes').delete().eq('id', cut.id);
+    if (error) return { ok: false, error: `Made the whole note, but could not remove the cut one: ${error.message}` };
   }
   revalidatePath('/', 'layout');
-  return { ok: true, data: { status: 'saved', id: note.id, cleaning: course.ai_allowed } };
+  return { ok: true, data: { id: newId } };
 }
 
 export interface NoteStatus {

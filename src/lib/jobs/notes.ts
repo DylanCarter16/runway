@@ -63,6 +63,11 @@ function metaJob(userId: string, noteId: string, warnings: string[]) {
   return { userId, type: JOB_NOTE_META, payload: { noteId, warnings }, dedupeKey: `notes:meta:${noteId}` };
 }
 
+/** Title, topics, summary, and date proposals for a note that arrived with its cleaned copy (a transcribed file). */
+export function enqueueNoteMeta(admin: Admin, userId: string, noteId: string): Promise<boolean> {
+  return enqueue(admin, metaJob(userId, noteId, []));
+}
+
 async function readNote(admin: Admin, job: Job, noteId: string) {
   const { data, error } = await admin
     .from('notes')
