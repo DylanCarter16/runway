@@ -160,7 +160,7 @@ Sent by the Apps Script bridge at the digest hour. `GET /api/digest` returns `{ 
 
 ## 7. Non-functional requirements
 
-- **Access**: single user. Supabase Auth with a 6-digit code sent by email. Only `ALLOWED_EMAIL` can request a code; other addresses see "This app is private." Supabase's built-in sender only emails members of the project's organization (2 emails per hour), so `ALLOWED_EMAIL` is the email on Dylan's Supabase account.
+- **Access**: single user. Sign-in is Google through Supabase Auth: `/login` has one "Continue with Google" button (`signInWithOAuth`, PKCE), and `/auth/callback` exchanges the code for a session. Only the Google account whose email is `ALLOWED_EMAIL` stays signed in; any other account is signed out at the callback and sees "This app is private." `proxy.ts` also treats a session for any other email as signed out. No email is sent, so Supabase's sender limits don't apply. Sessions last until sign-out.
 - **Speed**: Today renders in under 1 second on a phone over LTE with a term's worth of data. Palette results appear within 300 ms of typing.
 - **Reliability**: every sync writes a `sync_runs` row. Three failed runs in a row for a source puts a banner on Today and a line in the digest. Jobs retry up to 3 times with backoff.
 - **Cost**: every Claude call is logged with tokens and cost. The price table in `src/lib/ai/pricing.ts` is filled from Anthropic's pricing page. Spend shows in Settings > AI.

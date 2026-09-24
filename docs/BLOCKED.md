@@ -2,6 +2,12 @@
 
 Items parked during autopilot runs (docs/AUTOPILOT.md). Each needs one human step; the code behind it is built and tested.
 
+## Sign-in: first Google sign-in on the iPhone
+- Needed: (1) In Safari on the iPhone, open https://<APP_HOST>/login, press "Continue with Google", and pick the Google account whose email is `ALLOWED_EMAIL`. You should land on Today. (2) Open the installed Runway app from the home screen (if Safari was signed in first, sign out in the app, or delete and re-add it; the home-screen app keeps its own cookies apart from Safari). Press "Continue with Google" there too. Google opens inside the app; after you pick the account you should land on Today inside the app, not in Safari. (3) Report what happened. "Sign-in didn't finish. Try again." in the app means the code exchange couldn't find its PKCE cookie, so iOS opened Google in a browser that doesn't share the app's cookies. That needs a follow-up change. (4) If Google says access is blocked, add your address as a test user on the Google Cloud Audience page, or publish the app (the Phase 4 entry below).
+- Why: the code, the callback, and the redirect to Google are checked live, but only a real Google account on the real phone can finish the round trip, and iOS home-screen apps handle pages outside their scope (accounts.google.com) differently from a Safari tab.
+- Done so far: deployed to production 2026-09-24. `/login` shows the button, `/auth/callback` answers signed out, and Supabase hands off to Google's sign-in page with the `https://<SUPABASE_PROJECT_REF>.supabase.co/auth/v1/callback` redirect URI accepted. Unit tests cover the exchange, the private sign-out, a failed exchange, and the proxy gate. If the Google account's email matches the account made by the old email code, Supabase links the two, so existing data stays with you.
+- Time: 3 minutes.
+
 ## Phase 2: UW Open Data key
 - Needed: register for a key (docs/SETUP.md step 4: `POST https://openapi.data.uwaterloo.ca/v3/Account/Register?email=...&project=Runway&uri=https://<APP_HOST>`, then confirm with the emailed code at `/v3/Account/Confirm`). Put it in `.env.local` and in Vercel as `UW_OPENDATA_API_KEY` (production and preview, sensitive), then redeploy.
 - Why: unblocks the daily sync of final exams (published Oct 2, 2026) and UW important dates.

@@ -43,7 +43,7 @@ Still yours:
    - confirm before it creates the GitHub repo, the Supabase project, and the Vercel project;
    - approve installing the GitHub command-line tool, if you don't have it;
    - copy the database password from `.env.local` into your password manager;
-   - sign in to the finished app with the 6-digit code it emails you.
+   - sign in to the finished app with "Continue with Google", using the Google account whose email is `ALLOWED_EMAIL`.
 
 Everything it creates is private: a private repo, a new free Supabase project in ca-central-1, and a Vercel project on your existing account. Supabase's free plan allows two active projects. If you already have two, Claude Code stops and asks.
 
