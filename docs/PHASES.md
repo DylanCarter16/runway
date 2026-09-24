@@ -269,3 +269,34 @@ Commit: `phase 7: email ingest`
 - Data export (Settings > Data).
 - Read-only ICS feed with a secret token, for Apple Calendar.
 - Read-only MCP endpoint over items and notes so Claude chats can query Runway.
+
+---
+
+## Phase 9: Files, incremental notes, Waterloo colours
+**Model**: Opus. **Needs**: Phases 3, 5, and 6. Added 2026-09-24.
+
+Part A: files anywhere Dylan can paste
+1. Accept uploads in the Inbox paste box, the note form, and each course's Resources tab: PDFs, images, and screenshots, by drop, file picker, and clipboard paste.
+2. Store originals in the private `library` bucket under `<user_id>/`. Keep the file name, size, and type. Never alter the original.
+3. Text PDFs (slides, handouts): extract with unpdf. Scanned or handwritten PDFs and photos (GoodNotes exports): send the pages to Claude vision, for AI-on courses only. AI-off courses store the file and skip transcription, and the page says so.
+4. Never truncate. Long PDFs split into page ranges across several calls (each job step under 60 seconds) and are stitched back together in page order. If a file is too large to transcribe, store it, extract what can be extracted, and say what was skipped.
+5. Textbooks: a resource kind that stores the file and lists it on the course page, with no transcription by default and a per-chapter (page range) extract action.
+6. Everything uploaded is searchable and citable in Ask like any note.
+
+Part B: incremental notes
+1. Dylan keeps one running document per course and selects all of it after each lecture, so most of a paste is content already stored.
+2. On paste, compare against what is already stored for that course. Store the full paste as the document, but create the note from the new material only, in both the original and the cleaned copy.
+3. If earlier text changed rather than being appended, include those changed sections and mark them as revisions.
+4. PDFs work by page: track which pages are already ingested and only process new ones. For PDFs the new material can go to the cleaned copy alone.
+5. Show what it decided ("12 new paragraphs, 340 lines skipped") with an undo that keeps the whole paste as one note.
+
+Part C: Waterloo colours
+1. Rework the DESIGN.md tokens to black, white, and UW gold as the accent, checked against uwaterloo.ca brand guidance.
+2. Keep course colours distinct from the accent, keep light and dark modes, and keep every contrast ratio at AA.
+
+Acceptance
+- Unit tests for the diff logic: append, revise, reorder, identical paste.
+- Tests prove AI-off courses never send a file to Claude.
+- A real GoodNotes-style scanned PDF fixture comes through whole (every page transcribed and stitched in order).
+
+Commit: `phase 9: <what changed>` per step.
