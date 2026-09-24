@@ -181,6 +181,54 @@
 .fc .runway-exam {
   font-weight: 600;
 }
+/*
+ * Event titles never spill or clip mid-letter. Day rows (month, the week's all-day row) end
+ * in an ellipsis; week and day columns wrap. The full title shows on hover and in the drawer.
+ */
+.fc .fc-daygrid-event,
+.fc .fc-daygrid-event .fc-event-main,
+.fc .fc-daygrid-event .fc-event-main-frame,
+.fc .fc-daygrid-event .fc-event-title-container {
+  min-width: 0;
+  overflow: hidden;
+}
+.fc .fc-daygrid-event .fc-event-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fc .fc-timegrid-event .fc-event-main {
+  overflow: hidden;
+}
+.fc .fc-timegrid-event .fc-event-title-container {
+  overflow: hidden;
+}
+.fc .fc-event-time {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* --title-lines is how many whole lines fit in the event box (calendar-view.tsx measures it). */
+.fc .fc-timegrid-event .fc-event-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--title-lines, 3);
+  line-clamp: var(--title-lines, 3);
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.fc .fc-timegrid-event-short .fc-event-main-frame {
+  min-width: 0;
+}
+.fc .fc-timegrid-event-short .fc-event-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .fc .runway-break {
   background: color-mix(in oklab, var(--graphite) 10%, transparent);
 }

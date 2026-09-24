@@ -45,6 +45,27 @@ const VIEWS = ['dayGridMonth', 'timeGridWeek', 'listWeek'] as const;
 type View = (typeof VIEWS)[number];
 const VIEW_KEY = 'runway.calendarView';
 
+const titleObservers = new WeakMap<HTMLElement, ResizeObserver>();
+
+/**
+ * Week and day columns wrap event titles. Clamp them to the whole lines that fit in the
+ * event's box (globals.css turns --title-lines into a line clamp with an ellipsis), so the
+ * last visible line is never cut through the middle. Re-measured when the box resizes.
+ */
+function clampTitle(el: HTMLElement) {
+  const measure = () => {
+    const box = el.querySelector<HTMLElement>('.fc-event-title-container');
+    const title = el.querySelector<HTMLElement>('.fc-event-title');
+    if (!box || !title) return;
+    const line = parseFloat(getComputedStyle(title).lineHeight) || 16;
+    el.style.setProperty('--title-lines', String(Math.max(1, Math.floor(box.clientHeight / line))));
+  };
+  measure();
+  const observer = new ResizeObserver(measure);
+  observer.observe(el);
+  titleObservers.set(el, observer);
+}
+
 function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 }
@@ -177,6 +198,14 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
     arg.el.setAttribute('data-course', '');
     if (color) arg.el.style.setProperty('--course-l', color);
     if (colorDark) arg.el.style.setProperty('--course-d', colorDark);
+    // Titles can be cut short in narrow columns; hovering shows the whole thing.
+    arg.el.title = arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title;
+    if (arg.el.classList.contains('fc-timegrid-event')) clampTitle(arg.el);
+  }
+
+  function onUnmount(arg: EventMountArg) {
+    titleObservers.get(arg.el)?.disconnect();
+    titleObservers.delete(arg.el);
   }
 
   return (
@@ -257,6 +286,7 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
           noEventsText="Nothing scheduled. Click a day to add an item."
           events={events}
           eventDidMount={onMount}
+          eventWillUnmount={onUnmount}
           datesSet={(arg) => localStorage.setItem(VIEW_KEY, arg.view.type)}
           eventClick={(arg) => {
             const id = (arg.event.extendedProps as { itemId?: string }).itemId;
