@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TERM_F26 } from '@/config/term-f26';
-import { courseRow, itemRow, linkRows } from '@/lib/term/seed';
+import { courseRow, itemRow, linkRows, seedItemPatch } from '@/lib/term/seed';
 
 const ctx = { userId: 'u1', courseId: 'c1', sourceUrl: null };
 const course = (slug: string) => TERM_F26.courses.find((c) => c.slug === slug)!;
@@ -69,5 +69,71 @@ describe('term config rows', () => {
     const rows = linkRows(TERM_F26.globalLinks, { userId: 'u1', courseId: null });
     expect(rows[0].label).toMatch(/Odyssey/);
     expect(rows.map((r) => r.sort_order)).toEqual(rows.map((_, i) => i));
+  });
+});
+
+describe('tutorial sections', () => {
+  it('seeds the current CS 245 and STAT 230 tutorials', () => {
+    const tut = (slug: string) => course(slug).meetings.find((m) => m.component === 'TUT')!;
+    expect(tut('cs245')).toMatchObject({ section: '103', classNumber: '6434', days: ['Fri'], startTime: '11:30', endTime: '12:20', location: 'MC 4063' });
+    expect(tut('stat230')).toMatchObject({ section: '102', classNumber: '6032', days: ['Fri'], startTime: '14:30', endTime: '15:20', location: 'UTD 105', instructor: 'Diana Skrzydlo' });
+  });
+
+  it('puts STAT 230 Quiz 2 on Oct 30, 2:30 to 3:20 pm, in UTD 105', () => {
+    const row = itemRow(seed('stat230', 'outline:stat230:Q2'), ctx);
+    expect(row.starts_at).toBe('2026-10-30T18:30:00.000Z');
+    expect(row.ends_at).toBe('2026-10-30T19:20:00.000Z');
+    expect(row.location).toBe('UTD 105');
+    expect(row.description).toContain('section 102, Fridays 2:30 to 3:20 pm, UTD 105');
+  });
+
+  it('moves workshops after the DST change to the same local time', () => {
+    const row = itemRow(seed('stat230', 'outline:stat230:W5'), ctx);
+    expect(row.starts_at).toBe('2026-11-27T19:30:00.000Z');
+    expect(row.location).toBe('UTD 105');
+  });
+});
+
+describe('seedItemPatch', () => {
+  const next = itemRow(seed('stat230', 'outline:stat230:Q2'), ctx);
+  // Quiz 2 as loaded before the section change: 3:30 pm, no room.
+  const stale = {
+    ...next,
+    due_at: '2026-10-30T19:30:00+00:00',
+    starts_at: '2026-10-30T19:30:00+00:00',
+    ends_at: '2026-10-30T20:20:00+00:00',
+    location: null,
+    description: 'Closed book, in the Friday tutorial slot (section 104, 3:30 to 4:20 pm).',
+    locked_fields: [] as string[],
+  };
+
+  it('updates the stale time, room, and description in place', () => {
+    const patch = seedItemPatch(stale, next)!;
+    expect(patch).toMatchObject({
+      due_at: next.due_at,
+      starts_at: next.starts_at,
+      ends_at: next.ends_at,
+      location: 'UTD 105',
+      description: next.description,
+      last_change_source: 'seed',
+    });
+    expect(patch).not.toHaveProperty('title');
+  });
+
+  it('changes nothing when the item already matches (timestamps compared as instants)', () => {
+    const current = { ...next, due_at: '2026-10-30T18:30:00+00:00', locked_fields: [] as string[] };
+    expect(seedItemPatch(current, next)).toBeNull();
+  });
+
+  it("keeps a field Dylan edited", () => {
+    const patch = seedItemPatch({ ...stale, locked_fields: ['location'] }, next)!;
+    expect(patch).not.toHaveProperty('location');
+    expect(patch.due_at).toBe(next.due_at);
+  });
+
+  it('keeps the whole timing group when any timing field is locked', () => {
+    const patch = seedItemPatch({ ...stale, locked_fields: ['due_at'] }, next)!;
+    for (const f of ['due_at', 'starts_at', 'ends_at', 'all_day', 'time_known']) expect(patch).not.toHaveProperty(f);
+    expect(patch.location).toBe('UTD 105');
   });
 });
