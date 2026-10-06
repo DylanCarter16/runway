@@ -7,6 +7,7 @@ export const COURSE_TABS = [
   ['notes', 'Notes'],
   ['ask', 'Ask'],
   ['resources', 'Resources'],
+  ['documents', 'Documents'],
   ['updates', 'Updates'],
   ['grades', 'Grades'],
   ['library', 'Library'],

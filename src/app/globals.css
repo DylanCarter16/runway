@@ -353,3 +353,13 @@
 .dark .hljs-string, .dark .hljs-regexp, .dark .hljs-symbol { color: #8FD1A8; }
 .hljs-number, .hljs-literal { color: var(--soon); }
 .hljs-title, .hljs-function .hljs-title, .hljs-attr { font-weight: 600; }
+
+/* PDF viewer: search words marked in the page's text layer (pdf-viewer.tsx). */
+.react-pdf__Page .textLayer mark.pdf-hit {
+  background: color-mix(in oklab, var(--tie) 55%, transparent);
+  color: transparent;
+  border-radius: 2px;
+}
+.react-pdf__Page {
+  background: white;
+}

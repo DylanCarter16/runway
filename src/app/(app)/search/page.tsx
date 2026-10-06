@@ -14,6 +14,7 @@ const TYPES: [SearchHit['type'], string][] = [
   ['item', 'Items'],
   ['note', 'Notes'],
   ['document', 'Documents'],
+  ['page', 'In files'],
   ['link', 'Links'],
 ];
 
@@ -106,7 +107,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
             <ul className="divide-y divide-rule border-y border-rule">
               {group.map((h) => {
                 const c = h.courseId ? courseById.get(h.courseId) : null;
-                const meta = [c?.code, h.kind, h.type !== 'link' && h.at ? formatListDate(new Date(h.at)) : null].filter(Boolean).join(', ');
+                const meta = [c?.code, h.kind, h.type === 'page' ? `Page ${h.page}` : h.type !== 'link' && h.at ? formatListDate(new Date(h.at)) : null].filter(Boolean).join(', ');
                 const title = <span className="font-semibold text-link underline-offset-2 hover:underline">{h.title}</span>;
                 return (
                   <li key={`${h.type}-${h.id}`} className="grid gap-0.5 py-2 text-sm">
@@ -121,7 +122,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
                           {title}
                         </a>
                       ) : (
-                        <Link href={h.type === 'note' ? `/notes/${h.id}` : `/library/${h.id}`}>{title}</Link>
+                        <Link href={h.type === 'note' ? `/notes/${h.id}` : h.type === 'page' ? `/library/${h.id}?page=${h.page ?? 1}` : `/library/${h.id}`}>{title}</Link>
                       )}
                     </span>
                     {meta ? <span className="text-muted-foreground tabular">{meta}</span> : null}

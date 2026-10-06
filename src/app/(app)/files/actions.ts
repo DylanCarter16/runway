@@ -174,3 +174,38 @@ export async function retryFailedPages(documentId: string): Promise<ActionResult
   revalidatePath(`/library/${doc.id}`);
   return { ok: true, data: null };
 }
+
+const pageSearchSchema = z.object({
+  q: z.string().trim().min(1, 'Type something to search for.').max(200, 'Search is limited to 200 characters.'),
+  documentId: z.uuid().nullable().optional(),
+  courseId: z.uuid().nullable().optional(),
+});
+
+export interface PageHit {
+  documentId: string;
+  courseId: string | null;
+  title: string;
+  page: number;
+  heading: string | null;
+  /** Page text around the match, with matches between <mark> and </mark>. Render as text. */
+  snippet: string;
+}
+
+/** Page-level search inside one file, one course's files, or every file (Phase 10). No AI. */
+export async function searchPages(input: z.input<typeof pageSearchSchema>): Promise<ActionResult<PageHit[]>> {
+  const parsed = pageSearchSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the search.' };
+  await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('search_pages', {
+    q: parsed.data.q,
+    p_document_id: parsed.data.documentId ?? undefined,
+    p_course_id: parsed.data.courseId ?? undefined,
+    p_limit: 50,
+  });
+  if (error) return { ok: false, error: `Search failed: ${error.message}` };
+  return {
+    ok: true,
+    data: (data ?? []).map((r) => ({ documentId: r.document_id, courseId: r.course_id, title: r.title, page: r.page, heading: r.heading, snippet: r.snippet })),
+  };
+}

@@ -24,8 +24,10 @@ const STATUS_LABEL: Record<string, string> = {
   failed: 'Reading it failed.',
 };
 
-export default async function DocumentPage({ params }: PageProps<'/library/[id]'>) {
+export default async function DocumentPage({ params, searchParams }: PageProps<'/library/[id]'>) {
   const { id } = await params;
+  const { page } = await searchParams;
+  const initialPage = typeof page === 'string' && /^\d{1,5}$/.test(page) ? Number(page) : 1;
   if (!z.uuid().safeParse(id).success) notFound();
   const { supabase, courses } = await getAppContext();
   const { data: doc } = await supabase.from('documents').select('*').eq('id', id).maybeSingle();
@@ -61,7 +63,7 @@ export default async function DocumentPage({ params }: PageProps<'/library/[id]'
         ) : null}
       </header>
 
-      {doc.storage_path ? <FileSection supabase={supabase} doc={doc} aiOn={Boolean(course?.ai_allowed)} /> : null}
+      {doc.storage_path ? <FileSection supabase={supabase} doc={doc} aiOn={Boolean(course?.ai_allowed)} initialPage={initialPage} /> : null}
 
       {!doc.storage_path && (meta.status || meta.summary || meta.notes?.length) ? (
         <section className="grid gap-1 text-sm">

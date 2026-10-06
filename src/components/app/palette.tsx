@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarIcon, FileTextIcon, LinkIcon, NotebookIcon, SearchIcon, SquareCheckIcon } from 'lucide-react';
+import { BookOpenIcon, CalendarIcon, FileTextIcon, LinkIcon, NotebookIcon, SearchIcon, SquareCheckIcon } from 'lucide-react';
 import {
   Command,
   CommandDialog,
@@ -33,6 +33,7 @@ const TYPE_LABEL: Record<SearchHit['type'], string> = {
   item: 'Items',
   note: 'Notes',
   document: 'Documents',
+  page: 'In files',
   link: 'Links',
 };
 
@@ -40,6 +41,7 @@ const TYPE_ICON = {
   item: SquareCheckIcon,
   note: NotebookIcon,
   document: FileTextIcon,
+  page: BookOpenIcon,
   link: LinkIcon,
 };
 
@@ -117,6 +119,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       openItem(hit.id);
     } else if (hit.type === 'note') router.push(`/notes/${hit.id}`);
     else if (hit.type === 'document') router.push(`/library/${hit.id}`);
+    else if (hit.type === 'page') router.push(`/library/${hit.id}?page=${hit.page ?? 1}`);
     else if (hit.url) window.open(hit.url, '_blank', 'noopener,noreferrer');
   }
 
@@ -132,7 +135,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const courseHits = q
     ? courses.filter((c) => c.code.toLowerCase().replace(' ', '').includes(lower.replace(' ', '')) || c.title.toLowerCase().includes(lower))
     : [];
-  const groups = (['item', 'note', 'document', 'link'] as const)
+  const groups = (['item', 'note', 'document', 'page', 'link'] as const)
     .map((type) => ({ type, hits: q ? hits.filter((h) => h.type === type) : [] }))
     .filter((g) => g.hits.length);
 
@@ -210,7 +213,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                         <span className="truncate font-semibold">{hit.title}</span>
                       </div>
                       <div className="truncate text-xs text-muted-foreground tabular">
-                        {[course?.code, hit.kind, hit.type !== 'link' && hit.at ? formatListDate(new Date(hit.at)) : null, hit.url ?? hit.snippet]
+                        {[
+                          course?.code,
+                          hit.kind,
+                          hit.type === 'page' ? `Page ${hit.page}` : hit.type !== 'link' && hit.at ? formatListDate(new Date(hit.at)) : null,
+                          hit.url ?? hit.snippet,
+                        ]
                           .filter(Boolean)
                           .join(', ')}
                       </div>

@@ -7,6 +7,7 @@ import { DOCUMENT_KIND_LABEL, documentKindLabel } from '@/lib/inbox/kinds';
 import { fromTorontoLocal, addDaysToDate, formatListDate } from '@/lib/time';
 import { selectClass } from '@/lib/ui';
 import { EmptyState } from './empty-state';
+import { PageResults } from './page-results';
 
 // Library list with filters for kind, course, date, and full-text search
 // (SPEC 4.8). A plain GET form, so every filtered view has its own URL.
@@ -119,6 +120,7 @@ export async function LibraryList({
         ) : null}
       </form>
 
+      {filters.q ? <PageResults supabase={supabase} q={filters.q} courseId={courseId} courses={courses} /> : null}
       {error ? <p className="text-sm text-late">Search failed: {error.message}</p> : null}
       {docs?.length ? (
         <ul className="divide-y divide-rule border-y border-rule text-sm">

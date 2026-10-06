@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { AskThreads } from '@/components/app/ask-threads';
 import { AskView } from '@/components/app/ask-view';
 import { CourseFiles, type CourseFileRow } from '@/components/app/course-files';
 import { EmptyState } from '@/components/app/empty-state';
+import { PageResults } from '@/components/app/page-results';
+import { Input } from '@/components/ui/input';
 import { LibraryList, readLibraryFilters } from '@/components/app/library-list';
 import { LinksManager, type LinkRow } from '@/components/app/links-manager';
 import { NotesList, readNotesFilters } from '@/components/app/notes-list';
@@ -129,22 +131,58 @@ export default async function CourseTabPage({ params, searchParams }: PageProps<
       );
 
     case 'resources': {
-      const [{ data }, { data: files }] = await Promise.all([
-        supabase.from('links').select('id, course_id, label, url, category, where_to_find, pinned, sort_order').eq('course_id', course.id).order('sort_order'),
-        supabase
-          .from('documents')
-          .select('id, kind, title, file_name, file_size, meta')
-          .eq('course_id', course.id)
-          .in('kind', ['textbook', 'upload'])
-          .order('captured_at', { ascending: false }),
-      ]);
+      const { data } = await supabase
+        .from('links')
+        .select('id, course_id, label, url, category, where_to_find, pinned, sort_order')
+        .eq('course_id', course.id)
+        .order('sort_order');
+      return (
+        <div className="grid gap-4">
+          <LinksManager courseId={course.id} links={(data ?? []) as LinkRow[]} />
+          <p className="text-sm text-muted-foreground">
+            Files and textbooks are on the{' '}
+            <Link href={`/courses/${course.slug}/documents`} className="text-link underline underline-offset-2">
+              Documents
+            </Link>{' '}
+            tab.
+          </p>
+        </div>
+      );
+    }
+
+    case 'documents': {
+      const q = typeof sp.q === 'string' ? sp.q.trim().slice(0, 200) : '';
+      const { data: files } = await supabase
+        .from('documents')
+        .select('id, kind, title, file_name, file_size, meta')
+        .eq('course_id', course.id)
+        .in('kind', ['textbook', 'upload'])
+        .order('captured_at', { ascending: false });
       const fileRows: CourseFileRow[] = (files ?? []).map((f) => {
-        const meta = (f.meta ?? {}) as { summary?: string; page_count?: number };
-        return { id: f.id, kind: f.kind, title: f.title, file_name: f.file_name, file_size: f.file_size, summary: meta.summary ?? null, page_count: meta.page_count ?? null };
+        const meta = (f.meta ?? {}) as { summary?: string; page_count?: number; status?: string };
+        return {
+          id: f.id,
+          kind: f.kind,
+          title: f.title,
+          file_name: f.file_name,
+          file_size: f.file_size,
+          summary: meta.summary ?? null,
+          page_count: meta.page_count ?? null,
+          reading: meta.status === 'queued' || meta.status === 'reading',
+        };
       });
       return (
-        <div className="grid gap-8">
-          <LinksManager courseId={course.id} links={(data ?? []) as LinkRow[]} />
+        <div className="grid gap-6">
+          <form action={`/courses/${course.slug}/documents`} method="get" role="search" className="flex gap-2">
+            <label htmlFor="doc-q" className="sr-only">
+              Search {course.code} files
+            </label>
+            <Input id="doc-q" name="q" defaultValue={q} placeholder={`Search every page of ${course.code} files`} className="h-11 sm:h-9" />
+            <Button type="submit" variant="outline" className="h-11 sm:h-9">
+              Search
+            </Button>
+          </form>
+          {q ? <PageResults supabase={supabase} q={q} courseId={course.id} courses={[course]} /> : null}
           <CourseFiles courseId={course.id} courseCode={course.code} aiOn={course.ai_allowed} files={fileRows} />
         </div>
       );

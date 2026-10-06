@@ -167,7 +167,8 @@ export async function getItemDetail(id: string): Promise<ActionResult<ItemDetail
 // ---------------------------------------------------------------------------
 
 export interface SearchHit {
-  type: 'item' | 'note' | 'document' | 'link';
+  /** `page` is a page of an uploaded file: `id` is the file, `page` the page number. */
+  type: 'item' | 'note' | 'document' | 'page' | 'link';
   id: string;
   courseId: string | null;
   title: string;
@@ -175,6 +176,7 @@ export interface SearchHit {
   at: string | null;
   url: string | null;
   kind: string | null;
+  page: number | null;
 }
 
 export async function search(query: string, opts: { limit?: number; courseId?: string | null } = {}): Promise<ActionResult<SearchHit[]>> {
@@ -205,6 +207,7 @@ export async function search(query: string, opts: { limit?: number; courseId?: s
       at: r.happened_at,
       url: r.result_type === 'link' ? r.snippet : null,
       kind: null,
+      page: r.page ?? null,
     }));
   } else if (courseId) {
     // The query named only a course: list its next items.
@@ -225,6 +228,7 @@ export async function search(query: string, opts: { limit?: number; courseId?: s
       at: r.due_at ?? r.starts_at,
       url: null,
       kind: r.kind,
+      page: null,
     }));
   }
 

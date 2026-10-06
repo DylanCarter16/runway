@@ -4,9 +4,13 @@ import { LIBRARY_BUCKET, formatBytes } from '@/lib/files/constants';
 import type { FileMeta } from '@/lib/files/process';
 import type { createClient } from '@/lib/db/server';
 import { ExtractPagesForm, RefreshWhileReading, RetryPagesButton } from './file-actions';
+import { PdfViewerLoader } from './pdf-viewer-loader';
 
 // An uploaded file on its Library page: what it is, a link to the original, what was read,
-// and each page's text (or why a page was skipped).
+// and each page's text (or why a page was skipped). PDFs open in the viewer (Phase 10), so
+// only pages Claude transcribed, and pages still waiting or failed, are listed below it.
+
+const PDF_LISTED = ['pending', 'failed'];
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 type Page = Pick<Tables<'document_pages'>, 'page' | 'status' | 'method' | 'text' | 'reason'>;
@@ -17,22 +21,32 @@ export async function FileSection({
   supabase,
   doc,
   aiOn,
+  initialPage,
 }: {
   supabase: Supabase;
-  doc: Pick<Tables<'documents'>, 'id' | 'kind' | 'storage_path' | 'file_name' | 'file_size' | 'file_type' | 'meta'>;
+  doc: Pick<Tables<'documents'>, 'id' | 'kind' | 'title' | 'storage_path' | 'file_name' | 'file_size' | 'file_type' | 'meta'>;
   aiOn: boolean;
+  /** The page the viewer opens on (?page= from search results). */
+  initialPage?: number;
 }) {
   const meta = (doc.meta ?? {}) as FileMeta;
-  const [{ data: signed }, { data: pages }] = await Promise.all([
+  const isPdf = doc.file_type === 'application/pdf';
+  // A book can have hundreds of pages: for PDFs, only transcribed pages bring their text.
+  const [{ data: signed }, { data: pages }, { data: texts }] = await Promise.all([
     supabase.storage.from(LIBRARY_BUCKET).createSignedUrl(doc.storage_path!, 3600),
-    supabase.from('document_pages').select('page, status, method, text, reason').eq('document_id', doc.id).order('page'),
+    isPdf
+      ? supabase.from('document_pages').select('page, status, method, reason').eq('document_id', doc.id).order('page')
+      : supabase.from('document_pages').select('page, status, method, text, reason').eq('document_id', doc.id).order('page'),
+    isPdf
+      ? supabase.from('document_pages').select('page, text').eq('document_id', doc.id).eq('method', 'vision').order('page')
+      : Promise.resolve({ data: [] as { page: number; text: string | null }[] }),
   ]);
-  const rows: Page[] = pages ?? [];
+  const textByPage = new Map((texts ?? []).map((t) => [t.page, t.text]));
+  const rows: Page[] = (pages ?? []).map((r) => ({ ...r, text: ('text' in r ? (r.text as string | null) : null) ?? textByPage.get(r.page) ?? null }));
   const reading = meta.status === 'queued' || meta.status === 'reading';
   const failed = rows.filter((r) => r.status === 'failed').length;
   const notRequested = rows.filter((r) => r.status === 'not_requested').length;
-  const shown = rows.filter((r) => r.status !== 'not_requested');
-  const isPdf = doc.file_type === 'application/pdf';
+  const shown = rows.filter((r) => (isPdf ? r.method === 'vision' || PDF_LISTED.includes(r.status) : r.status !== 'not_requested'));
 
   return (
     <section className="grid gap-4">
@@ -68,10 +82,21 @@ export async function FileSection({
 
       {isPdf && notRequested && !reading ? <ExtractPagesForm documentId={doc.id} pageCount={meta.page_count ?? rows.length} aiOn={aiOn} /> : null}
 
+      {isPdf && signed?.signedUrl ? (
+        <PdfViewerLoader
+          url={signed.signedUrl}
+          documentId={doc.id}
+          title={doc.title}
+          pageCount={meta.page_count ?? null}
+          outline={meta.outline ?? []}
+          initialPage={Math.max(1, Math.min(initialPage ?? 1, meta.page_count ?? Number.MAX_SAFE_INTEGER))}
+        />
+      ) : null}
+
       {shown.length ? (
         <div className="grid gap-3">
-          <h3 className="text-base font-semibold">{shown.length === 1 && rows.length === 1 ? 'Text' : 'Pages'}</h3>
-          {notRequested ? <p className="text-sm text-muted-foreground">{notRequested} pages are stored but not read. Use Extract pages to read a chapter.</p> : null}
+          <h3 className="text-base font-semibold">{shown.length === 1 && rows.length === 1 ? 'Text' : isPdf ? 'Pages Claude read, and pages still waiting' : 'Pages'}</h3>
+          {notRequested && !isPdf ? <p className="text-sm text-muted-foreground">{notRequested} pages are stored but not read. Use Extract pages to read a chapter.</p> : null}
           <ol className="grid gap-4">
             {shown.map((r) => (
               <li key={r.page} className="grid gap-1 border-t border-rule pt-3">
