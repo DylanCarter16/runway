@@ -204,3 +204,31 @@ select 'T29 new course has AI off by default: ' || (not ai_allowed)::text from c
 update items set flags = array['date_tba'], last_change_source = 'seed' where title = 'Midterm';
 select 'T30 flag change logged: ' || (count(*) = 1)::text from item_changes where field = 'flags';
 rollback;
+
+-- ===== Phase 10: page-level search in uploaded files =====
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+insert into documents (course_id, kind, title, raw_text, content_hash, storage_path, file_name, file_type)
+select id, 'textbook', 'Patterson and Hennessy', '', 'hash-book-1', '11111111-1111-1111-1111-111111111111/b/book.pdf', 'book.pdf', 'application/pdf'
+from courses where slug = 'cs251';
+insert into document_pages (document_id, page, status, method, text, headings)
+select d.id, p.page, 'done', 'pdf_text', p.text, p.headings
+from documents d,
+     (values (236, 'An overview of pipelining with a laundry analogy.', '4.5 An Overview of Pipelining'),
+             (237, 'Forwarding resolves the load-use hazard after one stall cycle.', null),
+             (300, 'Pipelining appears in passing on this page.', null)) as p(page, text, headings)
+where d.title = 'Patterson and Hennessy';
+select 'T31 search_pages finds page 237 with a marked snippet: '
+       || (count(*) = 1 and bool_and(page = 237 and snippet like '%<mark>%'))::text
+from search_pages('load-use hazard');
+select 'T32 heading match ranks above body text: '
+       || ((array_agg(page order by rank desc))[1] = 236)::text
+from search_pages('pipelining');
+select 'T33 search_all returns the best page of the file: '
+       || (count(*) = 1 and bool_and(page = 237))::text
+from search_all('load-use hazard') where result_type = 'page';
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', true);
+select 'T34 other user gets no pages (RLS): ' || (count(*) = 0)::text from search_pages('load-use hazard');
+select 'T35 other user sees no page rows: ' || (count(*) = 0)::text from document_pages;
+rollback;

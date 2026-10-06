@@ -10,6 +10,9 @@ import { describePages, stitchPages } from '@/lib/files/plan';
 import { processFileStep, type FileAi, type FileDoc, type StepResult } from '@/lib/files/process';
 import { MemoryFileStore } from './memory-store';
 
+// Real PDF work: under a full parallel run these can pass vitest's 5-second default.
+vi.setConfig({ testTimeout: 30_000 });
+
 const FIXTURES = path.join(__dirname, '../../fixtures');
 const NOTEBOOK = new Uint8Array(readFileSync(path.join(FIXTURES, 'files/stat230-notebook-scanned.pdf')));
 const SPEC = JSON.parse(readFileSync(path.join(FIXTURES, 'files/stat230-notebook.json'), 'utf8')) as { pages: { heading: string; lines: string[] }[] };

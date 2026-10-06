@@ -27,6 +27,8 @@ export interface PlannedPage {
   reason: string | null;
   fingerprint: string | null;
   same_as: string | null;
+  /** Outline titles that open on this page, one per line (books, Phase 10). */
+  headings?: string | null;
 }
 
 export interface PlanOptions {

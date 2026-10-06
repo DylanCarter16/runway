@@ -71,18 +71,19 @@ export async function rebuildDocumentChunks(db: Db, doc: DocumentChunkSource): P
   const { error: delErr } = await db.from('chunks').delete().eq('parent_type', 'document').eq('parent_id', doc.id);
   if (delErr) throw new Error(`Could not clear the document's chunks: ${delErr.message}`);
   if (!chunks.length) return 0;
-  const { error } = await db.from('chunks').insert(
-    chunks.map((c) => ({
-      user_id: doc.user_id,
-      course_id: doc.course_id,
-      parent_type: 'document',
-      parent_id: doc.id,
-      ord: c.ord,
-      heading: c.heading,
-      content: c.content,
-      token_estimate: c.token_estimate,
-    })),
-  );
+  const rows = chunks.map((c) => ({
+    user_id: doc.user_id,
+    course_id: doc.course_id,
+    parent_type: 'document',
+    parent_id: doc.id,
+    ord: c.ord,
+    heading: c.heading,
+    content: c.content,
+    token_estimate: c.token_estimate,
+  }));
+  // A whole book makes thousands of chunks: insert them a few hundred at a time.
+  let error: { message: string } | null = null;
+  for (let i = 0; i < rows.length && !error; i += 400) ({ error } = await db.from('chunks').insert(rows.slice(i, i + 400)));
   if (error) throw new Error(`Could not save the document's chunks: ${error.message}`);
   return chunks.length;
 }

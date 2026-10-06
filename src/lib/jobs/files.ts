@@ -2,7 +2,8 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { createAdminClient } from '@/lib/db/admin';
 import { LIBRARY_BUCKET } from '@/lib/files/constants';
-import { failFirstPending, processFileStep, type FileAi, type FileDoc, type FileMeta, type FileStore, type FinishedFile, type StoredPage } from '@/lib/files/process';
+import { indexesWithoutAi, skipIndexPage } from '@/lib/files/index-pdf';
+import { failFirstPending, fileStep, processFileStep, type FileAi, type FileDoc, type FileMeta, type FileStore, type FinishedFile, type StoredPage } from '@/lib/files/process';
 import type { KnownPage } from '@/lib/files/plan';
 import type { Json } from '@/lib/db/types';
 import { rebuildDocumentChunks, rebuildNoteChunks } from '@/lib/notes/store';
@@ -11,8 +12,8 @@ import { enqueueNoteMeta } from './notes';
 import { JOB_REMINDERS } from './gcal';
 import { enqueue, type Admin, type JobHandler } from './queue';
 
-// Reading uploaded files (PHASES.md Phase 9, part A). Each job runs one step of
-// processFileStep and queues the next until no page is left, then stitches the pages,
+// Reading uploaded files (PHASES.md Phase 9, part A; books indexed page by page in Phase 10).
+// Each job runs one step of fileStep and queues the next until no page is left, then stitches the pages,
 // builds the chunks Ask and search use, and, for files added from the note form, makes
 // the note from the pages that are new.
 
@@ -47,7 +48,7 @@ export function adminFileStore(admin: Admin): FileStore {
     async pages(documentId) {
       const { data, error } = await admin
         .from('document_pages')
-        .select('id, page, status, method, text, reason, fingerprint')
+        .select('id, page, status, method, text, reason, fingerprint, headings')
         .eq('document_id', documentId)
         .order('page');
       if (error) throw new Error(`Could not read the pages: ${error.message}`);
@@ -195,12 +196,15 @@ const fileHandler: JobHandler = async (admin, job) => {
 
   let result;
   try {
-    result = await processFileStep(store, ai, documentId, job.user_id);
+    result = await fileStep(store, ai, documentId, job.user_id);
   } catch (e) {
     if (job.attempts < job.max_attempts) throw e;
     // Out of tries on one page: mark it and carry on with the rest of the file.
     const message = e instanceof Error ? e.message : String(e);
-    await failFirstPending(store, documentId, `Could not read this page: ${message.slice(0, 300)}`);
+    const reason = `Could not read this page: ${message.slice(0, 300)}`;
+    const failing = await store.document(documentId, job.user_id);
+    if (failing && indexesWithoutAi(failing)) await skipIndexPage(store, failing, reason);
+    else await failFirstPending(store, documentId, reason);
     await enqueue(admin, fileJob(job.user_id, documentId, step + 1));
     return;
   }

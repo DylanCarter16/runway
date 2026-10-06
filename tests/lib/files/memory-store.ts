@@ -40,7 +40,7 @@ export class MemoryFileStore implements FileStore {
     for (const p of planned) {
       const existing = [...this.rows.values()].find((r) => r.document_id === doc.id && r.page === p.page);
       const id = existing?.id ?? `page-${this.nextId++}`;
-      this.rows.set(id, { id, document_id: doc.id, user_id: doc.user_id, course_id: doc.course_id, page: p.page, status: p.status, method: p.method, text: p.text, reason: p.reason, fingerprint: p.fingerprint });
+      this.rows.set(id, { id, document_id: doc.id, user_id: doc.user_id, course_id: doc.course_id, page: p.page, status: p.status, method: p.method, text: p.text, reason: p.reason, fingerprint: p.fingerprint, headings: p.headings ?? existing?.headings ?? null });
     }
   }
 

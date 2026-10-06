@@ -328,11 +328,13 @@ export type Database = {
           created_at: string
           document_id: string
           fingerprint: string | null
+          headings: string | null
           id: string
           method: string | null
           page: number
           reason: string | null
           same_as: string | null
+          search: unknown
           status: string
           text: string | null
           updated_at: string
@@ -342,11 +344,13 @@ export type Database = {
           created_at?: string
           document_id: string
           fingerprint?: string | null
+          headings?: string | null
           id?: string
           method?: string | null
           page: number
           reason?: string | null
           same_as?: string | null
+          search?: unknown
           status?: string
           text?: string | null
           updated_at?: string
@@ -356,11 +360,13 @@ export type Database = {
           created_at?: string
           document_id?: string
           fingerprint?: string | null
+          headings?: string | null
           id?: string
           method?: string | null
           page?: number
           reason?: string | null
           same_as?: string | null
+          search?: unknown
           status?: string
           text?: string | null
           updated_at?: string
@@ -1296,6 +1302,7 @@ export type Database = {
         Returns: {
           course_id: string
           happened_at: string
+          page: number
           rank: number
           result_id: string
           result_type: string
@@ -1313,6 +1320,23 @@ export type Database = {
           parent_id: string
           parent_type: string
           rank: number
+        }[]
+      }
+      search_pages: {
+        Args: {
+          p_course_id?: string
+          p_document_id?: string
+          p_limit?: number
+          q: string
+        }
+        Returns: {
+          course_id: string
+          document_id: string
+          heading: string
+          page: number
+          rank: number
+          snippet: string
+          title: string
         }[]
       }
     }

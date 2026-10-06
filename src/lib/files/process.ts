@@ -2,6 +2,8 @@ import type { AiDeps } from '@/lib/ai/client';
 import { aiAllowed } from '@/lib/ai/switch';
 import { MAX_VISION_PDF_BYTES, PAGES_PER_CALL, PDF_TYPE, type UploadPurpose, isVisionImageType } from './constants';
 import { pdfPageCount, readPdf, sha256Hex, slicePdf } from './pdf';
+import { ensureOutline, indexPdfStep, indexesWithoutAi, type IndexProgress } from './index-pdf';
+import type { OutlineEntry, OutlineSource } from './outline';
 import { RETRY_ALONE, aiOffReason, describePages, planPages, stitchPages, type KnownPage, type PageInput, type PageRow, type PlannedPage } from './plan';
 import { transcribePages, type Attachment } from './transcribe';
 
@@ -34,12 +36,18 @@ export interface FileMeta {
   lecture_on?: string | null;
   note_title?: string | null;
   note_id?: string | null;
+  /** Books: how far page-by-page indexing has got (Phase 10). */
+  index?: IndexProgress;
+  /** The viewer's outline, built once: bookmarks, detected headings, or nothing found. */
+  outline?: OutlineEntry[];
+  outline_source?: OutlineSource;
   [key: string]: unknown;
 }
 
 export interface StoredPage extends PageRow {
   id: string;
   fingerprint: string | null;
+  headings?: string | null;
 }
 
 export interface CourseRow {
@@ -56,7 +64,7 @@ export interface FileStore {
   pages(documentId: string): Promise<StoredPage[]>;
   /** Inserts or replaces rows by (document_id, page). */
   savePages(doc: FileDoc, rows: PlannedPage[]): Promise<void>;
-  updatePage(id: string, patch: Partial<Pick<StoredPage, 'status' | 'method' | 'text' | 'reason'>>): Promise<void>;
+  updatePage(id: string, patch: Partial<Pick<StoredPage, 'status' | 'method' | 'text' | 'reason' | 'headings'>>): Promise<void>;
   /** Pages already read for the same course in other files, by fingerprint. */
   knownPages(userId: string, courseId: string | null, exceptDocumentId: string): Promise<Map<string, KnownPage>>;
   updateMeta(doc: FileDoc, meta: FileMeta): Promise<void>;
@@ -209,6 +217,26 @@ export async function processFileStep(store: FileStore, ai: FileAi, documentId: 
       summary: describePages(rows),
     },
   };
+}
+
+/**
+ * One step of reading any uploaded file. Books are indexed page by page first, with no AI
+ * (Phase 10); then the Phase 9 step finishes them, or reads other files. A finished PDF gets
+ * its outline once.
+ */
+export async function fileStep(store: FileStore, ai: FileAi, documentId: string, userId: string): Promise<StepResult> {
+  const doc = await store.document(documentId, userId);
+  if (!doc) return { state: 'missing' };
+  if (indexesWithoutAi(doc)) {
+    const indexed = await indexPdfStep(store, doc);
+    if (indexed.state === 'more') return indexed;
+  }
+  const result = await processFileStep(store, ai, documentId, userId);
+  if (result.state === 'finished' && isPdf(doc)) {
+    const latest = await store.document(documentId, userId);
+    if (latest && !latest.meta.outline_source) await ensureOutline(store, latest);
+  }
+  return result;
 }
 
 /** Marks the page a failing job was reading, so the file can finish without it. */
