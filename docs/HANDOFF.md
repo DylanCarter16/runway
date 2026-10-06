@@ -2,6 +2,23 @@
 
 Written 2026-09-23 at the end of the autopilot run. Phases S and 0 through 8 are built, pushed to `main`, and deployed at <APP_URL>. CI is green and production answers 200. What's left is mostly clicks only Dylan can make: keys, logins, and one SQL paste. Details for each are in `docs/BLOCKED.md`.
 
+## Phase 10 update (2026-10-06)
+
+Phase 10 is done and deployed (CI and Vercel green on `main`, production `/login` returns 200).
+
+- **Secrets audit** (docs/AUDIT.md): no secret was ever committed, so nothing needs rotating. History still holds personal identifiers; tracked files no longer do.
+- **Calendar**: 11:59 pm items and reminders draw one slot tall inside their own day; events at the same time sit side by side, with a "+N more" list on phones; new Day view.
+- **Documents**: a Documents tab per course and uploads in the Library. Textbooks are indexed page by page with no AI, open in an in-app PDF viewer with a contents sidebar (bookmarks or numbered headings), and every page is searchable from the document, the course, the Library, and the palette.
+- **Term config out of git**: your Fall 2026 config is in `src/config/term.local.ts` (gitignored) and stored in your settings row, so "Load Fall 2026 setup" still works. Edit the file and run `npm run term:upload` to change it. A fresh clone loads a made-up example term.
+- **README** rewritten for a public repo.
+
+Left for you (docs/BLOCKED.md, "Phase 10" entries):
+1. The history fix in docs/AUDIT.md (Option A, a fresh single-commit history, is about 20 minutes), then make the repo public yourself.
+2. Five README screenshots (list in docs/screenshots/README.md).
+3. Only if you ever run `supabase config push`: set `APP_URL` and `AUTH_REDIRECT_URL` first.
+
+Most likely to break first in the new pieces: a very large or unusual PDF whose pdf.js parse is slow enough to push a 10-second indexing step past Vercel's limit (it re-queues, but a single slow page repeats); heading detection on books that don't number their headings (the outline then shows "no numbered headings were found"); and the example term getting loaded by mistake if `settings.term_seed` is ever cleared (Settings, Term says so plainly).
+
 ## What works now
 
 Checked on the hosted project with throwaway users (scripts in `.scratch/`, listed in `docs/PROGRESS.md`) and 320 unit tests.
