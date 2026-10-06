@@ -16,7 +16,7 @@ export default async function CalendarPage() {
       .limit(2000),
     supabase
       .from('reminders')
-      .select('id, course_id, title, remind_at')
+      .select('id, course_id, item_id, title, remind_at')
       .is('done_at', null)
       .order('remind_at')
       .limit(500),

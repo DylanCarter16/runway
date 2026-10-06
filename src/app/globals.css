@@ -186,6 +186,17 @@
   font-size: 1.3125rem;
   font-weight: 600;
 }
+/* Phones: the title gets its own row, and the view buttons wrap under the arrows if they must. */
+@media (max-width: 639px) {
+  .fc .fc-header-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .fc .fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
+    order: -1;
+    width: 100%;
+  }
+}
 .fc a {
   color: inherit;
 }
@@ -250,6 +261,33 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* A one-line event in a narrow column (week view at 390px) drops its time so the title shows. */
+.fc .fc-timegrid-event-short .fc-event-main {
+  container-type: inline-size;
+}
+@container (max-width: 7rem) {
+  .fc .fc-timegrid-event-short .fc-event-time {
+    display: none;
+  }
+}
+/* "+N more": a chip in week and day columns, a link in month cells. Both open the same list. */
+.fc {
+  --fc-more-link-bg-color: var(--sheet);
+  --fc-more-link-text-color: var(--ink);
+}
+.fc .fc-timegrid-more-link {
+  border: 1px solid var(--rule);
+  border-radius: 0.375rem;
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.fc .fc-timegrid-more-link-inner {
+  padding: 1px 4px;
+}
+.fc .fc-daygrid-more-link {
+  font-weight: 600;
 }
 .fc .runway-break {
   background: color-mix(in oklab, var(--graphite) 10%, transparent);

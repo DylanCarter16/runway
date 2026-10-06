@@ -119,3 +119,27 @@ export function formatAgo(date: Date, now: Date): string {
 export function torontoIso(date: string, time: string): string {
   return formatInTimeZone(fromTorontoLocal(date, time), TIME_ZONE, "yyyy-MM-dd'T'HH:mm:ssXXX");
 }
+
+/** Shortest timed event the calendar draws: one 30-minute slot, room for one title line. */
+export const MIN_EVENT_MINUTES = 30;
+
+/**
+ * Where the calendar draws a timed event. Deadlines (no end) and very short events get
+ * one slot of height. An event stretched that way past midnight moves up so it ends at
+ * the bottom of its own day instead of spilling a sliver into the next one. `timeZone`
+ * is the zone the calendar draws in (the device's). Longer events pass through untouched.
+ */
+export function fitTimedEvent(
+  start: Date,
+  end: Date | null,
+  timeZone: string = TIME_ZONE,
+  minMinutes: number = MIN_EVENT_MINUTES,
+): { start: Date; end: Date; adjusted: boolean } {
+  const min = minMinutes * MINUTE;
+  if (end && end.getTime() - start.getTime() >= min) return { start, end, adjusted: false };
+  const nextDay = addDaysToDate(formatInTimeZone(start, timeZone, 'yyyy-MM-dd'), 1);
+  const dayEnd = fromZonedTime(`${nextDay}T00:00:00`, timeZone);
+  const fitted = new Date(start.getTime() + min);
+  if (fitted <= dayEnd) return { start, end: fitted, adjusted: true };
+  return { start: new Date(dayEnd.getTime() - min), end: dayEnd, adjusted: true };
+}

@@ -7,12 +7,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
-import type { EventInput, EventMountArg } from '@fullcalendar/core';
+import { formatDate, type EventApi, type EventContentArg, type EventInput, type EventMountArg, type MoreLinkArg, type MoreLinkSimpleAction } from '@fullcalendar/core';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import type { ItemKind } from '@/config/term-f26';
 import { EXAM_KINDS, ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
 import { runwayState } from '@/lib/items/runway';
-import { toTorontoDate, toTorontoTime } from '@/lib/time';
+import { fitTimedEvent, toTorontoDate, toTorontoTime } from '@/lib/time';
 import { selectClass } from '@/lib/ui';
 import { cn } from '@/lib/utils';
 import { courseStyle } from './course-mark';
@@ -37,15 +38,52 @@ export interface CalendarItem {
 export interface CalendarReminder {
   id: string;
   course_id: string | null;
+  item_id: string | null;
   title: string;
   remind_at: string;
 }
 
-const VIEWS = ['dayGridMonth', 'timeGridWeek', 'listWeek'] as const;
+const VIEWS = ['dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek'] as const;
 type View = (typeof VIEWS)[number];
 const VIEW_KEY = 'runway.calendarView';
+const NARROW = '(max-width: 639px)';
+const TIME_FORMAT = { hour: 'numeric', minute: '2-digit', meridiem: 'short' } as const;
+/**
+ * FullCalendar opens its own popover when moreLinkClick returns nothing or "popover", and
+ * switches view for any other string. Any other truthy value does neither, so Runway's list
+ * opens alone.
+ */
+const KEEP_POPOVER_CLOSED = true as unknown as MoreLinkSimpleAction;
+
+interface EventProps {
+  itemId?: string;
+  color?: string;
+  colorDark?: string;
+  /**
+   * Set for deadlines and short events drawn one slot tall: the real start, which the box
+   * shows as its only time (it may have moved up to stay inside its day).
+   */
+  realStart?: string;
+}
+
+/** One row in the "+N more" list. */
+interface MoreRow {
+  id: string;
+  title: string;
+  time: string;
+}
 
 const titleObservers = new WeakMap<HTMLElement, ResizeObserver>();
+
+function eventTime(event: EventApi): string {
+  if (event.allDay || !event.start) return 'All day';
+  const { realStart } = event.extendedProps as EventProps;
+  return formatDate(realStart ?? event.start, TIME_FORMAT);
+}
+
+function moreRow(event: EventApi): MoreRow {
+  return { id: event.id, title: event.title, time: eventTime(event) };
+}
 
 /**
  * Week and day columns wrap event titles. Clamp them to the whole lines that fit in the
@@ -77,6 +115,8 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
   const params = useSearchParams();
   const calendar = useRef<FullCalendar>(null);
   const [view, setView] = useState<View | null>(null);
+  const [narrow, setNarrow] = useState(false);
+  const [more, setMore] = useState<{ heading: string; rows: MoreRow[] } | null>(null);
 
   const coursesParam = params.get('courses') ?? '';
   const selectedSlugs = coursesParam.split(',').filter(Boolean);
@@ -92,6 +132,14 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
     // The saved view lives in localStorage, which only exists after mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setView(saved && VIEWS.includes(saved) ? saved : fallback);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia(NARROW);
+    const update = () => setNarrow(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
   }, []);
 
   useEffect(() => {
@@ -124,6 +172,16 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
 
   function buildEvents(): EventInput[] {
     const now = new Date();
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    /** Deadlines and short events get one slot of height and stay inside their own day. */
+    const timed = (start: string, end: string | null) => {
+      const fit = fitTimedEvent(new Date(start), end ? new Date(end) : null, zone);
+      return {
+        start: fit.start.toISOString(),
+        end: fit.end.toISOString(),
+        realStart: fit.adjusted ? start : undefined,
+      };
+    };
     const selectedIds = new Set(
       coursesParam
         .split(',')
@@ -159,15 +217,21 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
       }
 
       const start = item.starts_at ?? at;
-      out.push({
-        ...base,
-        id: item.id,
-        title: `${done ? '✓ ' : ''}${label}`,
-        start: item.time_known ? start : toTorontoDate(new Date(at)),
-        end: item.time_known && item.ends_at ? item.ends_at : undefined,
-        allDay: !item.time_known,
-        classNames: ['runway-event', EXAM_KINDS.includes(k) ? 'runway-exam' : ''],
-      });
+      const classNames = ['runway-event', EXAM_KINDS.includes(k) ? 'runway-exam' : ''];
+      const title = `${done ? '✓ ' : ''}${label}`;
+      if (item.time_known) {
+        const fit = timed(start, item.ends_at);
+        out.push({
+          id: item.id,
+          title,
+          start: fit.start,
+          end: fit.end,
+          extendedProps: { ...base.extendedProps, realStart: fit.realStart },
+          classNames,
+        });
+      } else {
+        out.push({ ...base, id: item.id, title, start: toTorontoDate(new Date(at)), allDay: true, classNames });
+      }
 
       if (showPrep && !done) {
         const state = runwayState({ ...item, kind: k, courseSlug: course?.slug ?? null }, now);
@@ -186,7 +250,17 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
     if (showReminders) {
       for (const r of reminders) {
         if (selectedIds.size && (!r.course_id || !selectedIds.has(r.course_id))) continue;
-        out.push({ id: `rem-${r.id}`, title: r.title, start: r.remind_at, classNames: ['text-muted-foreground'], backgroundColor: 'transparent', borderColor: 'transparent' });
+        const fit = timed(r.remind_at, null);
+        out.push({
+          id: `rem-${r.id}`,
+          title: r.title,
+          start: fit.start,
+          end: fit.end,
+          extendedProps: { itemId: r.item_id ?? undefined, realStart: fit.realStart },
+          classNames: ['runway-reminder', 'text-muted-foreground'],
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+        });
       }
     }
     return out;
@@ -194,13 +268,50 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
   const events = buildEvents();
 
   function onMount(arg: EventMountArg) {
-    const { color, colorDark } = arg.event.extendedProps as { color?: string; colorDark?: string };
+    const { color, colorDark, realStart } = arg.event.extendedProps as EventProps;
     arg.el.setAttribute('data-course', '');
     if (color) arg.el.style.setProperty('--course-l', color);
     if (colorDark) arg.el.style.setProperty('--course-d', colorDark);
     // Titles can be cut short in narrow columns; hovering shows the whole thing.
-    arg.el.title = arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title;
+    const time = realStart ? eventTime(arg.event) : arg.timeText;
+    arg.el.title = time ? `${time} ${arg.event.title}` : arg.event.title;
     if (arg.el.classList.contains('fc-timegrid-event')) clampTitle(arg.el);
+  }
+
+  /** A one-slot box shows its real start alone (11:59pm, not 11:30pm - 12:00am). */
+  function renderContent(arg: EventContentArg) {
+    const { realStart } = arg.event.extendedProps as EventProps;
+    if (!realStart || !arg.timeText) return true;
+    return (
+      <div className="fc-event-main-frame">
+        <div className="fc-event-time">{eventTime(arg.event)}</div>
+        <div className="fc-event-title-container">
+          <div className="fc-event-title fc-sticky">{arg.event.title}</div>
+        </div>
+      </div>
+    );
+  }
+
+  function openEvent(event: EventApi) {
+    const { itemId } = event.extendedProps as EventProps;
+    if (itemId) openItem(itemId);
+    else if (event.id.startsWith('rem-')) router.push('/inbox#paste-reminders');
+  }
+
+  /** "+N more" opens one list of everything sharing that slot (or day), the visible ones included. */
+  function onMoreLink(arg: MoreLinkArg) {
+    let events = arg.allSegs.map((s) => s.event);
+    if (!arg.allDay && arg.view.type.startsWith('timeGrid')) {
+      const hidden = arg.hiddenSegs.map((s) => s.event);
+      const from = Math.min(...hidden.map((e) => e.start?.getTime() ?? Infinity));
+      const to = Math.max(...hidden.map((e) => e.end?.getTime() ?? e.start?.getTime() ?? -Infinity));
+      events = (calendar.current?.getApi().getEvents() ?? []).filter(
+        (e) => !e.allDay && e.display !== 'background' && e.start && e.end && e.start.getTime() < to && e.end.getTime() > from,
+      );
+    }
+    events.sort((a, b) => (a.start?.getTime() ?? 0) - (b.start?.getTime() ?? 0) || a.title.localeCompare(b.title));
+    setMore({ heading: formatDate(arg.date, { weekday: 'long', month: 'short', day: 'numeric' }), rows: events.map(moreRow) });
+    return KEEP_POPOVER_CLOSED;
   }
 
   function onUnmount(arg: EventMountArg) {
@@ -274,24 +385,27 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
           ref={calendar}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView={view}
-          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' }}
-          buttonText={{ today: 'Today', month: 'Month', week: 'Week', list: 'List' }}
+          headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' }}
+          buttonText={{ today: 'Today', month: 'Month', week: 'Week', day: 'Day', list: 'List' }}
           firstDay={1}
           height="auto"
           nowIndicator
           allDayText="All day"
           scrollTime="08:00:00"
           slotMinTime="07:00:00"
-          eventTimeFormat={{ hour: 'numeric', minute: '2-digit', meridiem: 'short' }}
+          eventTimeFormat={TIME_FORMAT}
           noEventsText="Nothing scheduled. Click a day to add an item."
           events={events}
+          slotEventOverlap={false}
+          eventMaxStack={narrow ? 1 : 3}
+          dayMaxEvents={narrow ? 2 : 4}
+          moreLinkContent={(arg) => `+${arg.num} more`}
+          moreLinkClick={onMoreLink}
+          eventContent={renderContent}
           eventDidMount={onMount}
           eventWillUnmount={onUnmount}
           datesSet={(arg) => localStorage.setItem(VIEW_KEY, arg.view.type)}
-          eventClick={(arg) => {
-            const id = (arg.event.extendedProps as { itemId?: string }).itemId;
-            if (id) openItem(id);
-          }}
+          eventClick={(arg) => openEvent(arg.event)}
           dateClick={(arg) => {
             const date = arg.allDay ? arg.dateStr.slice(0, 10) : toTorontoDate(arg.date);
             openQuickAdd({ date, time: arg.allDay ? undefined : toTorontoTime(arg.date) });
@@ -301,6 +415,32 @@ export function CalendarView({ items, reminders }: { items: CalendarItem[]; remi
       ) : (
         <div className="h-96" aria-busy />
       )}
+      <Dialog open={more !== null} onOpenChange={(open) => !open && setMore(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{more?.heading}</DialogTitle>
+            <DialogDescription>{more ? `${more.rows.length} items. Choose one to open it.` : null}</DialogDescription>
+          </DialogHeader>
+          <ul className="grid divide-y divide-rule">
+            {more?.rows.map((row) => (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  className="grid min-h-11 w-full grid-cols-[5.5rem_1fr] items-baseline gap-2 py-2 text-left text-sm hover:bg-[color-mix(in_oklab,var(--rule)_40%,transparent)]"
+                  onClick={() => {
+                    setMore(null);
+                    const event = calendar.current?.getApi().getEventById(row.id);
+                    if (event) openEvent(event);
+                  }}
+                >
+                  <span className="text-muted-foreground tabular-nums">{row.time}</span>
+                  <span className="min-w-0 break-words">{row.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
       <p className="text-xs text-muted-foreground">
         Times shown in your device&apos;s time zone. Items without a time show as all day with &quot;(time TBD)&quot;.
       </p>
