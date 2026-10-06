@@ -13,8 +13,11 @@ import { detectHeadings, headingsByPage, mergeHeadings, pageText, pdfBookmarks, 
 /** Pages read per step. pdf.js reads a text page in a few milliseconds; the time budget is the real cap. */
 export const INDEX_PAGES_PER_STEP = 150;
 
-/** Stop reading new pages after this long, leaving room to save before the 60-second limit. */
-export const INDEX_STEP_BUDGET_MS = 35_000;
+/**
+ * Stop reading new pages after this long. The worker keeps claiming jobs for up to 45 seconds
+ * (processJobs), so a step that starts late must still end, saved, inside Vercel's 60.
+ */
+export const INDEX_STEP_BUDGET_MS = 10_000;
 
 /** Headings are looked for on at most this many pages when a small file is outlined at the end. */
 export const OUTLINE_SCAN_MAX_PAGES = 400;
