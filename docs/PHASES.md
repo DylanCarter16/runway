@@ -300,3 +300,90 @@ Acceptance
 - A real GoodNotes-style scanned PDF fixture comes through whole (every page transcribed and stitched in order).
 
 Commit: `phase 9: <what changed>` per step.
+
+---
+
+## Phase 10: Going public, calendar fixes, document library
+**Model**: Opus. **Runs**: Task 1 in a local session on Dylan's computer (it needs the full history and `.env.local` to compare against). **Needs**: Phase 9 merged. Added 2026-10-06.
+
+Five tasks, in order. **Task 1 is a stop point**: if the audit finds anything, report it and end the session. Tasks 2 to 5 start only after Dylan has acted on the report. If it finds nothing, say so and carry on. The repo stays private for the whole phase; Dylan changes visibility himself once Tasks 1 and 5 are done.
+
+### Task 1: secrets audit before the repo goes public (stop point)
+1. Scan every commit on every branch and tag (`git log --all -p`, plus unreachable objects from `git fsck --lost-found`), not only the working tree. Use `gitleaks detect --log-opts="--all"` if Dylan agrees to install it, and also grep for the exact values in `.env.local` without printing them. Report a match as name, file, and commit, never the value.
+2. Look for: Supabase publishable and secret keys, `SUPABASE_DB_PASSWORD`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `CRON_SECRET`, `INGEST_WEBHOOK_SECRET`, `TOKEN_ENCRYPTION_KEY`, the LEARN feed token (and the full feed URL), `VOYAGE_API_KEY`, `UW_OPENDATA_API_KEY`, `ANTHROPIC_WORKSPACE_ID`, any MCP, feed, or Odyssey token, the Supabase project ref, and Dylan's personal email.
+3. Check these paths in history as well as now: `.env*`, `.scratch/`, `.autopilot/`, `docs/` (PROGRESS, HANDOFF, BLOCKED, DECISIONS, SETUP, autopilot-log), `tests/fixtures/`, `scripts/apps-script/Code.gs`, `supabase/config.toml`, and `.github/`. `.scratch/` and `.autopilot/` are gitignored now; check whether they ever were committed.
+4. List personal content that would become public, and say plainly for each whether it's fine to publish: course notes and pastes in fixtures, Piazza class ids, calendar contents (the term config's dates, rooms, and sections), staff names and emails in the term config, the hosted URLs (Vercel production URL, Supabase URL), and the GitHub username.
+5. Recommend a fix per finding: rotate the secret (and where: Supabase, Anthropic, Google Cloud, Vercel env), rewrite history (`git filter-repo`), or publish a fresh single-commit history instead. A secret that was ever committed is rotated even if history is rewritten. If history needs rewriting, do it after Task 5 so one rewrite covers both.
+6. Write the report to `docs/AUDIT.md` (no secret values) and summarize it in chat.
+
+Acceptance
+- `docs/AUDIT.md` lists every finding with file, commit, and the recommended fix, and has a "Fine to publish" and a "Remove before publishing" list.
+- The scan covered all commits on all refs, and the report says which tools and patterns were used.
+- No secret value appears in the report, the chat, or any commit.
+- If anything was found, the session stops here. Next session resumes at Task 2 once Dylan confirms rotation or picks a history fix.
+
+Commit: `phase 10: secrets audit`
+
+### Task 2: calendar bugs
+1. Items at 11:59 pm and zero-length items render as a sliver at the bottom of the day. Give near-midnight and zero-length timed events a minimum visible height (one slot, enough for a single title line) and keep them inside their own day: an event that would overflow midnight shifts up so it ends at the day's bottom edge, not past it.
+2. Concurrent events (for example the three 6:00 pm "Paste notes" reminders) draw on top of each other. Lay them out side by side in week and day views. When more than two share a slot, or the column is too narrow (390px), show the first one and a "+N more" chip that opens a list of all of them; each row opens the item drawer.
+3. Month view keeps FullCalendar's "+N more" behaviour with the same list.
+4. The change lives in `src/components/app/calendar-view.tsx` and `globals.css`; keep the title clamping from Phase 9.
+
+Acceptance
+- A STAT 230 item due 11:59 pm shows its title in week and day views, fully inside that day, and doesn't spill into the next day.
+- Three reminders at 6:00 pm on the same day show side by side at 1280px and as one event plus a "+2 more" chip at 390px; the chip lists all three and each opens its drawer.
+- Checked at 390px and 1280px, light and dark, with screenshots in the session log. No horizontal scroll, no console errors.
+- A unit test covers the minimum-height and in-day clamping helper, including an item across the DST change on Nov 1.
+
+Commit: `phase 10: calendar minimum height and overlaps`
+
+### Task 3: document library for PDFs
+1. A Documents area on each course page (a tab, or the Library tab renamed) plus the global Library, both with upload by drop and file picker, reusing the Phase 9 upload path (browser to the private `library` bucket, `finishUpload`).
+2. An in-app PDF viewer (pdf.js through `react-pdf` or `pdfjs-dist`; check the current version's Next.js 16 setup in its docs): page navigation, page number input, zoom (fit width, fit page, steps), and a text layer so text can be selected and copied. Works at 390px.
+3. Outline sidebar: built from the PDF's own bookmarks (`getOutline`) when it has them; otherwise from heading detection over the extracted text (numbered headings like "4 The Processor" or "4.2 ...", font size from the text items). Clicking an entry jumps to its page. Store the outline so it isn't rebuilt on every open.
+4. Search inside a document and across all documents by keyword, with results showing title, page number, and a snippet with the match marked; selecting one opens the viewer on that page. Topic search means the outline headings are indexed and weighted above body text.
+5. No AI anywhere in this path: CS 251 and CS 246 ban it. Text comes from unpdf, per page, into `document_pages.text` with `method = 'pdf_text'`. A new migration adds a generated `tsvector` on `document_pages` with a GIN index, a page-level search function, and extends `search_all` so the palette finds pages. Follow `.claude/rules/database.md`.
+6. Large books: index pages in batches, each job step under 60 seconds, re-queueing until done. The document page shows progress ("Indexed 312 of 840 pages"). Never truncate: every page is either indexed or listed with a reason. This replaces Phase 9's "textbooks have no extraction by default" for text PDFs; scanned textbooks in AI-off courses stay unread and say so.
+
+Acceptance
+- Uploading a textbook-sized fixture PDF (generate one of 500+ pages in a test; don't commit a real textbook) indexes every page across several job steps and shows progress to completion.
+- A PDF with bookmarks shows them as the outline; one without gets detected headings, and clicking "4 The Processor" (or the fixture's equivalent) opens that page.
+- Searching a phrase from page 237 finds it in-document and from the global Library search and the palette, with page number and snippet, and opens page 237.
+- A unit test spies on `callClaude` and proves uploading, indexing, outlining, and searching a CS 251 and a CS 246 document never call it, and no `ai_calls` row is written.
+- `tests/db/schema-checks.sql` gains a check for the page search function and its RLS; run `tests/db/run.sh` if a scratch Postgres is available, and say so in PROGRESS.md if not.
+- Viewer, outline, and search work at 390px and 1280px, light and dark.
+
+Commit: `phase 10: <what changed>` per step.
+
+### Task 4: README for a public repo
+1. Rewrite `README.md` for a recruiter or engineer landing cold. Tight, no filler, sentence case.
+2. Sections: the problem (Waterloo scatters course data across six systems: LEARN, course websites, Piazza, Quest, Odyssey, outlines); what Runway does; architecture with a Mermaid diagram (sources, ingest and jobs, Supabase, review queue, Google Calendar, Apps Script bridge, Claude); a source table with how each is reached and why (LEARN iCal feed; course page scrapers with ETag; UW Open Data API; Piazza by email because scraping breaks its terms; paste for login-walled Quest, Odyssey, and outlines); the review queue for anything an LLM extracted; the per-course AI switch and the academic-integrity reason (Policy 71, enforced in code by `assertAiAllowed` and tested); the overnight autopilot build (`docs/AUTOPILOT.md`); the stack; running it locally from the template config (Task 5).
+3. Screenshots as placeholder paths Dylan fills in, for example `docs/screenshots/today.png`, `calendar.png`, `review-queue.png`, `pdf-viewer.png`, `ai-switch.png`.
+4. No personal data: no project ref, no production URL, no email.
+
+Acceptance
+- README renders on GitHub, including the Mermaid diagram (check with `gh markdown-preview` or the GitHub API render endpoint).
+- Every claim in the source table matches docs/SOURCES.md, and every linked path exists.
+- No personal values in it (grep for the project ref, email, and production host).
+
+Commit: `phase 10: public README`
+
+### Task 5: strip Dylan's data from the repo
+1. Split `src/config/term-f26.ts` into a typed template (`src/config/term.template.ts`: the shape, with comments) and an example (`src/config/term.example.ts`: a made-up term with fictional courses, no real Piazza ids, emails, or rooms). The real config moves out of git: either `src/config/term.local.ts` (gitignored) or a JSON blob in an env var, whichever is simpler; log the choice under Decisions. The import picks the local file when present and falls back to the example, and "Load Fall 2026 setup" keeps working for Dylan.
+2. Piazza class ids, the personal email, and the Supabase project ref live only in `.env.local`, Vercel env, and the database.
+3. Update docs that hardcode personal values (PROGRESS, HANDOFF, BLOCKED, DECISIONS, SETUP, autopilot-log, CLAUDE.md, and the Code.gs header): replace the production URL, Supabase ref and URL, and email with placeholders like `<APP_URL>` and `<SUPABASE_PROJECT_REF>`.
+4. Tests that read the real config read the example instead, or a fixture copy of it.
+5. If Task 1 recommended a history rewrite, prepare the exact commands (or the fresh-history plan) for Dylan and stop before running them; rewriting and force-pushing need his go-ahead.
+
+Acceptance
+- `git grep` for the project ref, Dylan's email, every Piazza class id, and the production host returns nothing in tracked files.
+- A fresh clone with only `.env.example` filled in builds and loads the example term.
+- Dylan's own deploy still loads the real Fall 2026 term (checked against the hosted project).
+
+Commit: `phase 10: term template and example, personal data out of the repo`
+
+### Finish
+- `npm run lint && npm run typecheck && npm run test && npm run build` pass after each task.
+- Commit per task, push the branch, deploy (`npx vercel deploy --prod` or merge to `main`, which auto-deploys), and check production loads.
+- Update `docs/PROGRESS.md`: which tasks are done, what Dylan must do (rotate keys, history rewrite, fill in screenshots, change visibility).
