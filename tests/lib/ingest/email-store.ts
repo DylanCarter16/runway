@@ -24,7 +24,7 @@ export class MemoryEmailStore implements EmailStore {
   }
 }
 
-export const NIDS = { stat230: '<PIAZZA_CLASS_1>', cs251: '<PIAZZA_CLASS_4>', unmapped: '<PIAZZA_CLASS_2>' };
+export const NIDS = { stat230: 'xq1stat230demo', cs251: 'xq2cs251demo1', unmapped: 'xq3unmapped01' };
 
 /** Two of the four classes mapped, as Dylan would in Settings, Courses. */
 export const PIAZZA_MAP = { [NIDS.stat230]: 'stat230', [NIDS.cs251]: 'cs251' };

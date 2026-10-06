@@ -28,7 +28,7 @@ export const emailBatchSchema = z.object({
 export type EmailMessage = z.infer<typeof emailMessageSchema>;
 export type EmailBatch = z.infer<typeof emailBatchSchema>;
 
-/** Piazza class ids are lowercase letters and digits ("<PIAZZA_CLASS_1>"). */
+/** Piazza class ids are lowercase letters and digits ("xq1stat230demo"). */
 const CLASS_LINK = /https?:\/\/(?:www\.)?piazza\.com\/class\/([a-z0-9]{8,24})\b([^\s"'<>)\]]*)/gi;
 
 function links(msg: Pick<EmailMessage, 'text' | 'html'>): { nid: string; url: string }[] {

@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { TERM_F26 } from '@/config/term-f26';
 import { parseGradePaste } from '@/lib/grades/parse';
 import { courseStanding, formatPercent, guessComponent, neededOnFinal, type Mark, type SchemeComponent } from '@/lib/grades/scheme';
 
 const fixture = (name: string) => readFileSync(path.join(__dirname, '../../fixtures', name), 'utf8');
 
 function scheme(slug: string): SchemeComponent[] {
-  const course = TERM_F26.courses.find((c) => c.slug === slug)!;
-  return course.gradingScheme.map((g) => ({ component: g.component, weight_percent: g.weightPercent, notes: g.notes ?? null }));
+  // Grading schemes from the Fall 2026 outlines (public course information, no personal data).
+  const schemes = JSON.parse(fixture('term/grading-schemes.json')) as Record<string, { component: string; weightPercent: number; notes?: string }[]>;
+  return schemes[slug].map((g) => ({ component: g.component, weight_percent: g.weightPercent, notes: g.notes ?? null }));
 }
 
 let n = 0;

@@ -1,4 +1,4 @@
-import type { SeedCourse, SeedItem, SeedLink, SeedMeeting, SeedPage, SeedTerm } from '@/config/term-f26';
+import type { SeedCourse, SeedItem, SeedLink, SeedMeeting, SeedPage, SeedTerm } from '@/config/term.template';
 import type { TablesInsert, TablesUpdate } from '@/lib/db/types';
 import { addDaysToDate, fromTorontoLocal } from '@/lib/time';
 

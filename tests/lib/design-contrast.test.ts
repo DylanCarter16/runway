@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { TERM_F26 } from '@/config/term-f26';
+import { COURSE_PALETTE } from '@/config/term.template';
 
 // PHASES.md Phase 9, part C: Waterloo black, white, and gold, every contrast ratio at WCAG AA.
 // Reads the tokens straight from globals.css so the check follows any later change.
@@ -73,7 +73,7 @@ describe('course colours', () => {
   };
   const goldHue = hue(UW_GOLD);
 
-  it.each(TERM_F26.courses.map((c) => [c.code, c.color, c.colorDark]))('%s marks reach 3:1 in both themes and stay clear of gold', (_code, color, colorDark) => {
+  it.each(Object.entries(COURSE_PALETTE).map(([name, c]) => [name, c.color, c.colorDark]))('%s marks reach 3:1 in both themes and stay clear of gold', (_code, color, colorDark) => {
     expect(contrast(color, light.paper)).toBeGreaterThanOrEqual(3);
     expect(contrast(color, light.sheet)).toBeGreaterThanOrEqual(3);
     expect(contrast(colorDark, dark.paper)).toBeGreaterThanOrEqual(3);

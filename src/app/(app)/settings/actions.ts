@@ -5,7 +5,7 @@ import { after } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/db/admin';
 import { createClient, requireUser } from '@/lib/db/server';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import type { Json } from '@/lib/db/types';
 import { fileWaitingEmails } from '@/lib/jobs/email';
 import { disconnectGoogle } from '@/lib/jobs/gcal';

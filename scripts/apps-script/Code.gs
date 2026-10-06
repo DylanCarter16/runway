@@ -7,7 +7,7 @@
  *   sendDigest  daily near 8am Toronto: fetches the morning digest from Runway and emails it to you.
  *
  * Script properties (Project Settings > Script properties):
- *   RUNWAY_URL     your app URL with no trailing slash, e.g. https://runway-dylan.vercel.app
+ *   RUNWAY_URL     your app URL with no trailing slash, e.g. https://your-app.vercel.app
  *   RUNWAY_SECRET  the same value as INGEST_WEBHOOK_SECRET in Vercel
  *   DIGEST_TO      the address that should receive the digest
  *

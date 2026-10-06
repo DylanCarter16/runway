@@ -1,5 +1,5 @@
 import { KIND_LABEL } from '@/lib/items/labels';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { formatTime, formatWhen } from '@/lib/time';
 import type { CourseInfoPayload, CreateItemPayload, GradePayload, ItemFields, MeetingPayload, UpdateItemPayload } from './types';
 

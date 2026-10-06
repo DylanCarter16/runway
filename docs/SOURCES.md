@@ -119,7 +119,7 @@ HTML comments on course pages hold old policies and last term's dates. Every par
 - CS 251: https://outline.uwaterloo.ca/viewer/view/nve57s
 - STAT 230 and CS 245: linked from each LEARN course home.
 - outline.uwaterloo.ca disallows automated access in robots.txt, so the server never fetches it.
-- **Fall 2026 is done.** All four outlines were read on 2026-09-17. Their dates, weights, grading schemes, late, remark, and AI policies, staff, and office hours live in `src/config/term-f26.ts` (seed items use `source = 'seed'`), so Runway doesn't extract them.
+- **Fall 2026 is done.** All four outlines were read on 2026-09-17. Their dates, weights, grading schemes, late, remark, and AI policies, staff, and office hours live in `src/config/term.local.ts` (gitignored, stored in `settings.term_seed`) (seed items use `source = 'seed'`), so Runway doesn't extract them.
 - AI policies: CS 245, CS 246, and CS 251 ban generative AI and name "running course materials through GenAI" as a Policy 71 violation. STAT 230 allows AI as a study aid outside assessments. The seed sets each course's `ai_allowed` to match.
 - Known issue: CS 245's assessment table says "Tuesday, October 28" for the midterm, but Oct 28, 2026 is a Wednesday, and the outline's test section says Thursday, Oct 29. The seed uses Oct 29 with the flag `outline_date_conflict`.
 - STAT 230 workshops and quizzes happen in the Friday tutorial, whose time depends on the section. Those seed items have no time and the flag `time_depends_on_section` until the Quest paste supplies Dylan's section.
@@ -127,7 +127,7 @@ HTML comments on course pages hold old policies and last term's dates. Every par
 
 ## 6. Piazza (email only)
 
-- **Class ids**: `<PIAZZA_CLASS_1>`, `<PIAZZA_CLASS_2>`, `<PIAZZA_CLASS_3>`, `<PIAZZA_CLASS_4>`. Dylan maps each to a course in Settings. Piazza email links contain `/class/<id>`, which is how an email finds its course.
+- **Class ids**: listed in the term config's `piazzaClasses` (kept out of git; see `src/config/term.template.ts`). Dylan maps each to a course in Settings. Piazza email links contain `/class/<id>`, which is how an email finds its course.
 - **Setup (Dylan)**: Piazza account settings, add the Gmail address and make it the preferred address. For each class, set notifications to Real Time, and at minimum "instructor posts". Instructors can also force immediate emails for announcements.
 - **Bridge**: the Apps Script (`scripts/apps-script/Code.gs`) searches `from:piazza.com newer_than:2d` every 15 minutes and posts batches of up to 10 messages to `POST /api/ingest/email`. It resends overlapping messages on purpose; the server ignores Gmail ids it has already stored (unique index on documents).
 - **AI-off courses** (CS 245, CS 246, CS 251 this term): emails are stored and listed in Updates with subject, sender, and link. No extraction runs; Dylan turns dates into items with quick add.
@@ -156,7 +156,7 @@ HTML comments on course pages hold old policies and last term's dates. Every par
 ## 9. Quest class schedule (paste)
 
 - Quest, Class Schedule, List View, select all, paste. Gives each course's lecture, tutorial, lab, and test sections with days, times, rooms, and date ranges.
-- **Fall 2026 is done.** Dylan's sections were read on 2026-09-17 and live in `src/config/term-f26.ts` as `meetings`. Paste again only after an enrolment change.
+- **Fall 2026 is done.** Dylan's sections were read on 2026-09-17 and live in `src/config/term.local.ts` as `meetings`. Paste again only after an enrolment change.
 - A rule-based parser reads it (the page is a table). Claude is a fallback only for rows about AI-on courses.
 - Stored on `courses.meetings` after approval. Used for lecture-note reminders, default lecture dates on new notes, and matching final exam sections.
 

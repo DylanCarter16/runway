@@ -1,4 +1,4 @@
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { addDaysToDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
 import { MAX_REMINDER_MINUTES, resolveRule, type RuleOverrides } from './rules';
 

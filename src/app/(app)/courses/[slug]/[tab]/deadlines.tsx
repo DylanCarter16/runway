@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { AddItemButton, OpenItemButton } from '@/components/app/quick-actions';
 import { RunwayBar } from '@/components/app/runway-bar';
 import { UrlSelect } from '@/components/app/url-select';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import type { Course } from '@/lib/db/queries';
 import { getAppContext } from '@/lib/db/queries';
 import { EXAM_KINDS, ITEM_KINDS, KIND_LABEL, PROGRESS_LABEL, sourceLabel, type Progress } from '@/lib/items/labels';

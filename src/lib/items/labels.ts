@@ -1,4 +1,4 @@
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 
 export const ITEM_KINDS: ItemKind[] = [
   'assignment', 'quiz', 'midterm', 'final', 'project', 'tutorial', 'lab', 'reading', 'admin', 'break', 'other',

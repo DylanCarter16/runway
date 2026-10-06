@@ -67,7 +67,7 @@ export function ThemeToggle() {
   );
 }
 
-export function LoadTermButton() {
+export function LoadTermButton({ termName }: { termName: string }) {
   const [isPending, startTransition] = useTransition();
   const [summary, setSummary] = useState<string | null>(null);
   return (
@@ -93,7 +93,7 @@ export function LoadTermButton() {
             })
           }
         >
-          {isPending ? 'Loading' : 'Load Fall 2026 setup'}
+          {isPending ? 'Loading' : `Load ${termName} setup`}
         </Button>
       </div>
       {summary ? (

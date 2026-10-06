@@ -12,7 +12,7 @@ function input(over: Partial<CatalogInput> = {}): CatalogInput {
         code: 'STAT 230',
         hasMeetings: true,
         usesLearn: true,
-        piazzaUrl: 'https://piazza.com/class/<PIAZZA_CLASS_4>',
+        piazzaUrl: 'https://piazza.com/class/xq2cs251demo1',
       },
       {
         id: 'c-251',
@@ -90,7 +90,7 @@ describe('reminderCatalog', () => {
   });
 
   it('links Piazza Resources for class URLs and keeps other Piazza links as they are', () => {
-    expect(byKey.get('piazza_resources:stat230')?.url).toBe('https://piazza.com/class/<PIAZZA_CLASS_4>/resources');
+    expect(byKey.get('piazza_resources:stat230')?.url).toBe('https://piazza.com/class/xq2cs251demo1/resources');
     expect(byKey.get('piazza_resources:cs251')?.url).toBe('https://piazza.com/uwaterloo.ca/fall2026/cs251');
   });
 

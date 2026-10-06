@@ -106,11 +106,7 @@ Create a key inside a workspace in the Claude Console and set a monthly spend li
 
 ## 9. Piazza (before Phase 7)
 
-The email settings from step 0.4 must be on. After Phase 7 ships, pick the course for each class in Runway, Settings, Courses:
-- https://piazza.com/class/<PIAZZA_CLASS_1>
-- https://piazza.com/class/<PIAZZA_CLASS_2>
-- https://piazza.com/class/<PIAZZA_CLASS_3>
-- https://piazza.com/class/<PIAZZA_CLASS_4>
+The email settings from step 0.4 must be on. After Phase 7 ships, pick the course for each class in Runway, Settings, Courses. The class ids (the part after `piazza.com/class/`) are listed in your term config's `piazzaClasses` (`src/config/term.local.ts`, gitignored) and in Settings, Courses.
 
 ## 10. Microsoft Graph for Crowdmark emails (optional, Phase 7)
 

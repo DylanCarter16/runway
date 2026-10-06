@@ -10,7 +10,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"summary\": \"Quiz 2 moves from Friday, Oct 30 to Friday, Nov 6, during tutorial. It covers Chapters 5 and 6.\", \"importance\": \"deadline_change\", \"course_slug\": \"stat230\", \"items\": [{\"action\": \"update\", \"match_item_id\": \"00000000-0000-4000-8000-00000000a002\", \"course_slug\": \"stat230\", \"kind\": \"quiz\", \"title\": \"Quiz 2\", \"date\": \"2026-11-06\", \"time\": \"15:30\", \"end_time\": \"16:20\", \"location\": null, \"seat\": null, \"weight_percent\": null, \"evidence\": \"Quiz 2 is moving from Friday, October 30 to Friday, November 6, still during your usual tutorial.\", \"confidence\": 0.94}], \"course_info\": [], \"post_url\": \"https://piazza.com/class/<PIAZZA_CLASS_1>/post/57\"}"
+          "text": "{\"summary\": \"Quiz 2 moves from Friday, Oct 30 to Friday, Nov 6, during tutorial. It covers Chapters 5 and 6.\", \"importance\": \"deadline_change\", \"course_slug\": \"stat230\", \"items\": [{\"action\": \"update\", \"match_item_id\": \"00000000-0000-4000-8000-00000000a002\", \"course_slug\": \"stat230\", \"kind\": \"quiz\", \"title\": \"Quiz 2\", \"date\": \"2026-11-06\", \"time\": \"15:30\", \"end_time\": \"16:20\", \"location\": null, \"seat\": null, \"weight_percent\": null, \"evidence\": \"Quiz 2 is moving from Friday, October 30 to Friday, November 6, still during your usual tutorial.\", \"confidence\": 0.94}], \"course_info\": [], \"post_url\": \"https://piazza.com/class/xq1stat230demo/post/57\"}"
         }
       ],
       "stop_reason": "end_turn",

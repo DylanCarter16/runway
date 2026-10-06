@@ -33,3 +33,6 @@ npm-debug.log*
 .scratch/
 
 .claude/worktrees/
+
+# Your own term config (Phase 10): uploaded with npm run term:upload, never committed
+src/config/term.local.ts

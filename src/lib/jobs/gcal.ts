@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { serverEnv } from '@/env';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { decryptSecret, encryptSecret } from '@/lib/crypto';
 import { createAdminClient } from '@/lib/db/admin';
 import type { Json } from '@/lib/db/types';

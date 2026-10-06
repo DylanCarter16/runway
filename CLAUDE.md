@@ -57,7 +57,8 @@ src/lib/reminders/                rules.ts (defaults) and the reminder generator
 src/lib/jobs/                     queue helpers and job handlers
 src/lib/search/                   alias expansion + search_all wrapper
 src/lib/time/                     America/Toronto helpers
-src/config/term-f26.ts            Fall 2026 seed (courses, links, pages, policies, Piazza ids)
+src/config/term.template.ts       term config shape; term.example.ts is a made-up term
+src/config/term.local.ts          Dylan's real term (gitignored; npm run term:upload stores it in settings.term_seed)
 supabase/migrations/              schema source of truth
 tests/                            vitest specs, fixtures (pages, ai), db checks
 ```

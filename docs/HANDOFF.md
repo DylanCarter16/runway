@@ -1,6 +1,6 @@
 # Handoff
 
-Written 2026-09-23 at the end of the autopilot run. Phases S and 0 through 8 are built, pushed to `main`, and deployed at https://<APP_HOST>. CI is green and production answers 200. What's left is mostly clicks only Dylan can make: keys, logins, and one SQL paste. Details for each are in `docs/BLOCKED.md`.
+Written 2026-09-23 at the end of the autopilot run. Phases S and 0 through 8 are built, pushed to `main`, and deployed at <APP_URL>. CI is green and production answers 200. What's left is mostly clicks only Dylan can make: keys, logins, and one SQL paste. Details for each are in `docs/BLOCKED.md`.
 
 ## What works now
 
@@ -45,17 +45,17 @@ Each item has a `docs/BLOCKED.md` entry naming the exact step.
 ## Manual steps left, in order
 
 1. **Scheduled jobs SQL** (5 minutes): https://supabase.com/dashboard/project/<SUPABASE_PROJECT_REF>/sql/new. Paste "Scheduled jobs (step 5)" from `docs/SETUP.md`, using the production URL and `CRON_SECRET` from `.env.local`. Do this first; most other things run from it.
-2. **Sign in and load the term** (3 minutes): https://<APP_HOST>. Press "Continue with Google" and pick the `ALLOWED_EMAIL` account. Then go to Settings, Term and press "Load Fall 2026 setup".
+2. **Sign in and load the term** (3 minutes): <APP_URL>. Press "Continue with Google" and pick the `ALLOWED_EMAIL` account. Then go to Settings, Term and press "Load Fall 2026 setup".
 3. **Sign in from the installed app** (2 minutes): open Runway from the iPhone home screen and press "Continue with Google" there too (docs/BLOCKED.md "Sign-in: first Google sign-in on the iPhone").
 4. **Anthropic key** (10 minutes): https://platform.claude.com/settings/keys. Make a key inside a workspace and set a spend limit on that workspace. Replace `ANTHROPIC_API_KEY` in `.env.local`. Then have a local Claude Code session add it to Vercel, redeploy, and re-record fixtures with `.scratch/record-ai.ts`.
 5. **Google Calendar** (10 minutes):
    - At https://console.cloud.google.com/auth/clients, check the redirect URI and scope, and publish the app.
-   - Press "Connect Google Calendar" at https://<APP_HOST>/settings/integrations.
+   - Press "Connect Google Calendar" at <APP_URL>/settings/integrations.
    - Once the Runway calendar fills, delete the 49 stopgap events from Sep 17.
 6. **Apps Script bridge** (15 minutes): https://script.google.com. Follow `docs/SETUP.md` step 8.
 7. **Piazza** (10 minutes):
    - At https://piazza.com/account_settings, make your Gmail the preferred address and set Real Time emails in each class.
-   - After the first emails arrive, pick a course for each Piazza class at https://<APP_HOST>/settings/courses.
+   - After the first emails arrive, pick a course for each Piazza class at <APP_URL>/settings/courses.
 8. **LEARN feed** (5 minutes): https://learn.uwaterloo.ca/. In Calendar, Settings, turn on Enable Calendar Feeds, then Subscribe. Paste the URL into Settings, Integrations.
 9. **UW Open Data key** (10 minutes): `docs/SETUP.md` step 4. Register at `https://openapi.data.uwaterloo.ca/v3/Account/Register`, then add `UW_OPENDATA_API_KEY` to Vercel.
 10. **Copy `SUPABASE_DB_PASSWORD` into a password manager** (1 minute). If it's lost, it can only be reset, not recovered.

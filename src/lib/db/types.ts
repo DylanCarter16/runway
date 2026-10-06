@@ -1088,6 +1088,7 @@ export type Database = {
           piazza_map: Json
           reminder_rules: Json
           study_block_hour: number
+          term_seed: Json | null
           timezone: string
           updated_at: string
           user_id: string
@@ -1102,6 +1103,7 @@ export type Database = {
           piazza_map?: Json
           reminder_rules?: Json
           study_block_hour?: number
+          term_seed?: Json | null
           timezone?: string
           updated_at?: string
           user_id?: string
@@ -1116,6 +1118,7 @@ export type Database = {
           piazza_map?: Json
           reminder_rules?: Json
           study_block_hour?: number
+          term_seed?: Json | null
           timezone?: string
           updated_at?: string
           user_id?: string

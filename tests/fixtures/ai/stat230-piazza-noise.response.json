@@ -10,7 +10,7 @@
       "content": [
         {
           "type": "text",
-          "text": "{\"summary\": \"A student asks whether the course notes are on reserve at the library.\", \"importance\": \"noise\", \"course_slug\": \"stat230\", \"items\": [], \"course_info\": [], \"post_url\": \"https://piazza.com/class/<PIAZZA_CLASS_1>?cid=61\"}"
+          "text": "{\"summary\": \"A student asks whether the course notes are on reserve at the library.\", \"importance\": \"noise\", \"course_slug\": \"stat230\", \"items\": [], \"course_info\": [], \"post_url\": \"https://piazza.com/class/xq1stat230demo?cid=61\"}"
         }
       ],
       "stop_reason": "end_turn",

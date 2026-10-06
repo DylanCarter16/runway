@@ -154,12 +154,14 @@ max_indexes = 5
 [auth]
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
-# in emails.
-site_url = "https://<APP_HOST>"
+# in emails. Read from APP_URL (your production URL) so the repo holds no hosted address; the
+# hosted project already has these set in the dashboard, so only `supabase config push` reads them.
+site_url = "env(APP_URL)"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://<APP_HOST>/**", "http://localhost:3000/**"]
+# AUTH_REDIRECT_URL is your production URL followed by /** (set it before a config push).
+additional_redirect_urls = ["env(AUTH_REDIRECT_URL)", "http://localhost:3000/**"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.

@@ -15,7 +15,7 @@ AI_MONTHLY_BUDGET_USD=15
 **2. Google Cloud (15 min).** At console.cloud.google.com, create a project named Runway and enable the **Google Calendar API**. Under Google Auth Platform: Branding (app name Runway, your email), Audience set to External, Data access with `openid`, `userinfo.email`, `userinfo.profile`, and `https://www.googleapis.com/auth/calendar.app.created`. Then Clients, Create client, Web application, with these redirect URIs:
 ```
 https://<your-supabase-ref>.supabase.co/auth/v1/callback
-https://<APP_HOST>/api/gcal/callback
+<APP_URL>/api/gcal/callback
 http://localhost:3000/api/gcal/callback
 ```
 Finish with Audience, **Publish app**. Skipping that makes calendar sync die every 7 days.
@@ -24,11 +24,11 @@ GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 ```
 
-**3. Supabase (5 min).** Authentication, Sign In / Providers, Google: turn it on and paste the same client ID and secret. Under URL Configuration, Site URL is the Vercel URL, and the redirect list holds `https://<APP_HOST>/**` and `http://localhost:3000/**`. This also replaces the 6-digit code sign-in that the free email sender can't support.
+**3. Supabase (5 min).** Authentication, Sign In / Providers, Google: turn it on and paste the same client ID and secret. Under URL Configuration, Site URL is the Vercel URL, and the redirect list holds `<APP_URL>/**` and `http://localhost:3000/**`. This also replaces the 6-digit code sign-in that the free email sender can't support.
 
 **4. UW Open Data key (5 min).**
 ```
-curl -X POST "https://openapi.data.uwaterloo.ca/v3/Account/Register?email=YOUR_EMAIL&project=Runway&uri=https://<APP_HOST>"
+curl -X POST "https://openapi.data.uwaterloo.ca/v3/Account/Register?email=YOUR_EMAIL&project=Runway&uri=<APP_URL>"
 curl -X POST "https://openapi.data.uwaterloo.ca/v3/Account/Confirm?email=YOUR_EMAIL&code=CODE_FROM_EMAIL"
 ```
 ```

@@ -18,10 +18,10 @@ import { OdysseyControls } from '@/components/app/odyssey-controls';
 import { InstallApp } from '@/components/app/pwa';
 import { LearnFeedForm, RunNowButton } from '@/components/app/sync-controls';
 import { buttonVariants } from '@/components/ui/button';
-import { TERM_F26 } from '@/config/term-f26';
 import { serverEnv } from '@/env';
 import { createAdminClient } from '@/lib/db/admin';
 import { getAppContext } from '@/lib/db/queries';
+import { activeTerm } from '@/lib/term/active';
 import { pageRunSource } from '@/lib/jobs/sync';
 import { googleStatus, parseOverrides } from '@/lib/jobs/gcal';
 import { embeddingStatus } from '@/lib/jobs/embeddings';
@@ -202,15 +202,21 @@ export default async function SettingsSection({ params, searchParams }: PageProp
 
   switch (section) {
     case 'term': {
-      const { count } = await supabase.from('items').select('id', { count: 'exact', head: true });
+      const [{ count }, setup] = await Promise.all([supabase.from('items').select('id', { count: 'exact', head: true }), activeTerm(supabase)]);
       return (
         <div className="grid gap-6">
-          <Block title="Fall 2026 setup">
+          <Block title={`${setup.term.name} setup`}>
             <p className="text-sm text-muted-foreground">
-              Loads the four courses with their colors, AI switches, links, watched pages, and outline dates. Running it again only adds
-              what is missing; it never overwrites your edits.
+              Loads {setup.term.courses.length === 1 ? 'the course' : `the ${setup.term.courses.length} courses`} with their colors, AI switches, links, watched pages,
+              and outline dates. Running it again only adds what is missing and updates seeded dates; it never overwrites your edits.
             </p>
-            <LoadTermButton />
+            {setup.source === 'example' ? (
+              <p className="text-sm">
+                This is the made-up example term. To load your own, fill in <code>src/config/term.local.ts</code> and run{' '}
+                <code>npm run term:upload</code>.{setup.problem ? ` The stored config was not used: ${setup.problem}.` : ''}
+              </p>
+            ) : null}
+            <LoadTermButton termName={setup.term.name} />
           </Block>
           <Block title="Current term">
             {term ? (
@@ -229,7 +235,7 @@ export default async function SettingsSection({ params, searchParams }: PageProp
                 <dd>{count ?? 0}</dd>
               </dl>
             ) : (
-              <p className="text-sm text-muted-foreground">No term loaded yet. {TERM_F26.name} runs {TERM_F26.startsOn} to {TERM_F26.endsOn}.</p>
+              <p className="text-sm text-muted-foreground">No term loaded yet. {setup.term.name} runs {setup.term.startsOn} to {setup.term.endsOn}.</p>
             )}
           </Block>
         </div>
@@ -237,14 +243,15 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'courses': {
-      const [{ data: settings }, { data: emails }] = await Promise.all([
+      const [{ data: settings }, { data: emails }, setup] = await Promise.all([
         supabase.from('settings').select('piazza_map').maybeSingle(),
         supabase.from('documents').select('course_id, class_id:meta->>class_id').eq('kind', 'piazza_email').limit(5000),
+        activeTerm(supabase),
       ]);
       const piazzaMap = Object.fromEntries(
         Object.entries((settings?.piazza_map ?? {}) as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string'),
       );
-      const nids = [...new Set([...TERM_F26.piazzaClasses.map((c) => c.nid), ...(emails ?? []).map((e) => e.class_id).filter((n): n is string => !!n)])];
+      const nids = [...new Set([...setup.term.piazzaClasses.map((c) => c.nid), ...(emails ?? []).map((e) => e.class_id).filter((n): n is string => !!n)])];
       const piazzaClasses: PiazzaClassRow[] = nids.map((nid) => {
         const mine = (emails ?? []).filter((e) => e.class_id === nid);
         return { nid, url: `https://piazza.com/class/${nid}`, emails: mine.length, waiting: mine.filter((e) => !e.course_id).length };

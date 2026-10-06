@@ -1,4 +1,4 @@
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 
 export interface CourseRef {
   id: string;

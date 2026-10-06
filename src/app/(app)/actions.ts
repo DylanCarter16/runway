@@ -2,11 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { TERM_F26 } from '@/config/term-f26';
 import { createClient, requireUser } from '@/lib/db/server';
 import type { Tables } from '@/lib/db/types';
 import { buildItemUpdate, itemFormSchema, whenFromForm, type ItemForm } from '@/lib/items/edit';
 import { expandQuery } from '@/lib/search/aliases';
+import { activeTerm } from '@/lib/term/active';
 import { importTerm } from '@/lib/term/import';
 
 export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error: string };
@@ -36,7 +36,8 @@ function refreshAll() {
 export async function loadTermSetup() {
   const { user, supabase } = await session();
   try {
-    const result = await importTerm(supabase, TERM_F26, user.id);
+    const { term } = await activeTerm(supabase);
+    const result = await importTerm(supabase, term, user.id);
     refreshAll();
     return ok({ created: result.created, updated: result.updated });
   } catch (e) {

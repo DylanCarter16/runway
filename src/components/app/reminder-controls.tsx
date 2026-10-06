@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { updateReminder } from '@/app/(app)/inbox/actions';
 import { disconnectGoogleCalendar, saveReminderSettings } from '@/app/(app)/settings/actions';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { formatOffset, parseOffsets } from '@/lib/reminders/rules';
 
 export function ReminderButtons({ id, title }: { id: string; title: string }) {

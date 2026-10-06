@@ -42,7 +42,7 @@ Within a phase, work in small steps. Commit after each step with `phase N: <what
 
 - **Stack**: as named in `CLAUDE.md`. A library it doesn't name gets the most widely used maintained option; log it in `docs/DECISIONS.md`.
 - **Schema changes**: write a migration under `supabase/migrations/`, apply it with `npx supabase db push --linked` using the password in `.env.local`, regenerate `src/lib/db/types.ts`, and run `tests/db/run.sh` when a local Postgres is available.
-- **Seed data**: `src/config/term-f26.ts` is correct. Do not rewrite its dates from any other source.
+- **Seed data**: `src/config/term.local.ts` (gitignored, stored in `settings.term_seed`) is correct. Do not rewrite its dates from any other source.
 - **AI switch**: build Phases 5 and 6 in full for every course. Leave `ai_allowed` as seeded (STAT 230 on, CS 245, CS 246, and CS 251 off). The code respects the switch; Dylan flips it in Settings.
 - **LEARN feed**: if `LEARN_ICS_URL` exists in `.env.local`, seed it as the feed and mark the Phase 2 LEARN work done. If not, build the parser against `tests/fixtures/` and park the live sync.
 - **Missing secret**: park that source, build its code and tests against fixtures, and carry on. Never invent a key, never stub a credential into the repo.

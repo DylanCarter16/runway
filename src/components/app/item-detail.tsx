@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { ExternalLinkIcon, MessageCircleQuestionIcon, PencilIcon } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { setItemState, updateItem, type ItemDetail } from '@/app/(app)/actions';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { EXAM_KINDS, FLAG_LABEL, KIND_LABEL, sourceLabel } from '@/lib/items/labels';
 import { effectiveDue, runwayState } from '@/lib/items/runway';
 import { formatAgo, formatCountdown, formatTime, formatWhen, toTorontoDate, toTorontoTime } from '@/lib/time';

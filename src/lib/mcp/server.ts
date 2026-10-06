@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { KIND_LABEL, SOURCE_LABEL } from '@/lib/items/labels';
 import { expandQuery } from '@/lib/search/aliases';
 import { addDaysToDate, formatWhen, fromTorontoLocal, toTorontoDate, toTorontoTime } from '@/lib/time';

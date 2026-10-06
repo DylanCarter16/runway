@@ -1,6 +1,6 @@
 'use client';
 
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import type { CourseLite } from '@/lib/db/queries';
 import { EXAM_KINDS, FLAG_LABEL, KIND_LABEL } from '@/lib/items/labels';
 import { runwayState } from '@/lib/items/runway';

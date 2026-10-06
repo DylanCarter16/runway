@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SeedTerm } from '@/config/term-f26';
+import type { SeedTerm } from '@/config/term.template';
 import type { Database, TablesInsert } from '@/lib/db/types';
 import { canonical } from '@/lib/sync/items';
 import { courseRow, itemRow, linkRows, pageRows, seedItemPatch, termRow } from './seed';

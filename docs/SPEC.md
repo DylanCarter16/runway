@@ -130,7 +130,7 @@ Header: course code and title, next deadline with countdown, and a row of big li
 Title, course, kind, dates (with "time not set" when unknown), location and seat, weight, progress, source with link and last sync time, change history, related notes and documents, the course's late policy and submission checklist, and actions: mark started or submitted, edit, change reminders, dismiss, open source, ask about this.
 
 ### 4.10 Settings (`/settings/[section]`)
-- **Term**: "Load Fall 2026 setup" (idempotent import of `src/config/term-f26.ts`), term dates, current term.
+- **Term**: "Load Fall 2026 setup" (idempotent import of `src/config/term.local.ts` (gitignored, stored in `settings.term_seed`)), term dates, current term.
 - **Courses**: colors, links, policies, checklist, external ids, Piazza class mapping (each of the four class ids gets a course dropdown). Each course shows its AI switch beside the outline's AI policy. Turning a switch on asks Dylan to type the course code and confirm the instructor allows AI for this use.
 - **Integrations**: Google Calendar (connect, status, reconnect, calendar name), LEARN feed URL (write-only field, stored encrypted), UW Open Data key status, Apps Script bridge status (last ping and last email received), Microsoft (optional, Phase 7).
 - **Reminders**: rule editor per kind (runway days and up to 5 reminder offsets), study block hour, digest hour, weekly sweep time.

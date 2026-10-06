@@ -50,7 +50,7 @@ Primary buttons are gold with black text in both themes. Links are never told ap
 
 `tests/lib/design-contrast.test.ts` reads these tokens from `globals.css` and checks every text colour at 4.5:1 on paper and sheet, black on gold, marks at 3:1, and course colours at 3:1 and clear of gold's hue.
 
-Course colors come from `courses.color` and `courses.color_dark` (seeded in `src/config/term-f26.ts`). None may sit near gold: CS 246 moved from amber to Math pink when gold became the accent (migration `20260924194329`, which only recolours the seeded amber).
+Course colors come from `courses.color` and `courses.color_dark` (seeded in `src/config/term.local.ts` (gitignored, stored in `settings.term_seed`)). None may sit near gold: CS 246 moved from amber to Math pink when gold became the accent (migration `20260924194329`, which only recolours the seeded amber).
 
 | Course | Light | Dark |
 |---|---|---|

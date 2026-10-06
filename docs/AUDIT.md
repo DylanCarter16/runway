@@ -60,3 +60,42 @@ No secret was ever committed, so no key needs rotating because of the repo. Two 
 
 - Confirm the Vercel env has the same values as `.env.local` and nothing was pasted into a GitHub issue, PR, or Actions log (outside git; this scan can't see it). GitHub: Settings, Secrets and variables, Actions can be empty, since `ci.yml` uses none.
 - The scan only proves the repo is clean. Secrets also live in `.env.local` on this machine, in Vercel, in Supabase Vault (the scheduled jobs SQL), and in the Apps Script project's properties; going public doesn't change any of those.
+
+## History fix: exact commands (Task 5, not run)
+
+Task 5 removed every value above from the tracked files (checked with `git grep` for the project ref, both emails, all four Piazza ids, and the production host: no matches). History still has them. Pick one option; both rewrite what GitHub shows, so they wait for you. Run them from a clean checkout of `main` with nothing uncommitted.
+
+First, set the commit email to your GitHub noreply address (GitHub, Settings, Emails, "Keep my email addresses private" shows it):
+
+```
+git config user.email "<id>+DylanCarter16@users.noreply.github.com"
+```
+
+**Option A, fresh single-commit history (recommended).** Simplest; nothing old can leak.
+
+```
+git checkout --orphan public-main
+git add -A                      # src/config/term.local.ts and .env.local stay out (gitignored)
+git status --short              # check nothing private is staged
+git commit -m "Runway: personal course tracker for Waterloo"
+git grep -nF "<your project ref>"; git grep -nF "<your production host>"   # both print nothing
+git push --force origin public-main:main
+git push origin --delete phase-9 worktree-google-signin worktree-phase-10-plan
+```
+
+Keep the old history as a private archive first if you want it: create an empty private repo `runway-archive` on GitHub, then `git push --mirror https://github.com/DylanCarter16/runway-archive.git` before the force push.
+
+**Option B, `git filter-repo`** (keeps the commit-by-commit autopilot story). Needs `pip install git-filter-repo`. Make two files outside the repo, never committed:
+
+- `../replacements.txt`, one line per value: `<project ref>==><SUPABASE_PROJECT_REF>`, `<production host>==><APP_HOST>`, and each Piazza id `==>` a placeholder.
+- `../mailmap.txt`: `DylanCarter16 <id+DylanCarter16@users.noreply.github.com> <your personal email>`
+
+```
+git clone --mirror https://github.com/DylanCarter16/runway.git runway-rewrite
+cd runway-rewrite
+git filter-repo --replace-text ../replacements.txt --mailmap ../mailmap.txt --path src/config/term-f26.ts --invert-paths
+git remote add origin https://github.com/DylanCarter16/runway.git   # filter-repo removes it
+git push --force --mirror origin
+```
+
+Then delete and re-clone your local copy (old objects stay in it otherwise), and run `git gc --prune=now` on any other clone. Either way, change the repo's visibility yourself afterwards (Settings, General, Danger Zone).

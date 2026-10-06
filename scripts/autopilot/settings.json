@@ -33,7 +33,7 @@
       "Bash(ls*)",
       "Bash(rg *)",
       "Bash(bash tests/db/run.sh*)",
-      "Bash(curl -sI https://<APP_HOST>*)"
+      "Bash(curl -sI https://*.vercel.app*)"
     ],
     "deny": [
       "Bash(rm -rf *)",

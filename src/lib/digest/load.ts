@@ -1,6 +1,6 @@
 import 'server-only';
 import { serverEnv } from '@/env';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import type { Json } from '@/lib/db/types';
 import type { Admin } from '@/lib/jobs/queue';
 import { describeChange } from '@/lib/items/changes';

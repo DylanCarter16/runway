@@ -1,4 +1,4 @@
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { prepDaysFor } from '@/lib/reminders/rules';
 import { addDaysToDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
 

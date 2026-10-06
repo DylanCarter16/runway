@@ -10,7 +10,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { formatDate, type EventApi, type EventContentArg, type EventInput, type EventMountArg, type MoreLinkArg, type MoreLinkSimpleAction } from '@fullcalendar/core';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import type { ItemKind } from '@/config/term-f26';
+import type { ItemKind } from '@/config/term.template';
 import { EXAM_KINDS, ITEM_KINDS, KIND_LABEL } from '@/lib/items/labels';
 import { runwayState } from '@/lib/items/runway';
 import { fitTimedEvent, toTorontoDate, toTorontoTime } from '@/lib/time';

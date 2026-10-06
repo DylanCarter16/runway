@@ -1,0 +1,103 @@
+{
+  "stat230": [
+    {
+      "component": "Workshops (best 4 of 5)",
+      "weightPercent": 5
+    },
+    {
+      "component": "Quizzes (best 3 of 4)",
+      "weightPercent": 15
+    },
+    {
+      "component": "Midterm 1",
+      "weightPercent": 20,
+      "notes": "The higher midterm counts 25%, the lower 15%."
+    },
+    {
+      "component": "Midterm 2",
+      "weightPercent": 20,
+      "notes": "The higher midterm counts 25%, the lower 15%."
+    },
+    {
+      "component": "Final exam",
+      "weightPercent": 40,
+      "notes": "2.5 hours, cumulative."
+    },
+    {
+      "component": "In-class poll questions (iClicker)",
+      "weightPercent": 0,
+      "notes": "Replaces the workshop total or one quiz (5%) when that helps. Marked out of 75% of the available marks."
+    }
+  ],
+  "cs245": [
+    {
+      "component": "Marked quizzes",
+      "weightPercent": 10
+    },
+    {
+      "component": "Assignments",
+      "weightPercent": 20
+    },
+    {
+      "component": "Midterm",
+      "weightPercent": 30
+    },
+    {
+      "component": "Final exam",
+      "weightPercent": 40,
+      "notes": "You must pass the weighted exam portion to pass the course."
+    }
+  ],
+  "cs246": [
+    {
+      "component": "A1",
+      "weightPercent": 5
+    },
+    {
+      "component": "A2",
+      "weightPercent": 6
+    },
+    {
+      "component": "A3",
+      "weightPercent": 6
+    },
+    {
+      "component": "A4",
+      "weightPercent": 8
+    },
+    {
+      "component": "A5 (group project)",
+      "weightPercent": 15
+    },
+    {
+      "component": "Midterm",
+      "weightPercent": 20,
+      "notes": "The final can win back up to a third of lost midterm marks if you meet the passing conditions."
+    },
+    {
+      "component": "Final exam",
+      "weightPercent": 40,
+      "notes": "Each weekly tutorial problem set that passes at least 50% of the Marmoset tests replaces 0.5% of the final."
+    }
+  ],
+  "cs251": [
+    {
+      "component": "Assignments (Crowdmark)",
+      "weightPercent": 20
+    },
+    {
+      "component": "Clicker questions",
+      "weightPercent": 5,
+      "notes": "Up to 25% of your lowest clicker marks may be dropped. Register only in your own section."
+    },
+    {
+      "component": "Midterm",
+      "weightPercent": 25
+    },
+    {
+      "component": "Final exam",
+      "weightPercent": 50,
+      "notes": "Your weighted exam average must be at least 50% to pass."
+    }
+  ]
+}
