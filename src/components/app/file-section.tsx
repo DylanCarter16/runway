@@ -1,6 +1,6 @@
 import { Markdown } from '@/components/app/markdown';
 import type { Tables } from '@/lib/db/types';
-import { LIBRARY_BUCKET, formatBytes } from '@/lib/files/constants';
+import { formatBytes } from '@/lib/files/constants';
 import type { FileMeta } from '@/lib/files/process';
 import type { createClient } from '@/lib/db/server';
 import { ExtractPagesForm, RefreshWhileReading, RetryPagesButton } from './file-actions';
@@ -32,8 +32,9 @@ export async function FileSection({
   const meta = (doc.meta ?? {}) as FileMeta;
   const isPdf = doc.file_type === 'application/pdf';
   // A book can have hundreds of pages: for PDFs, only transcribed pages bring their text.
-  const [{ data: signed }, { data: pages }, { data: texts }] = await Promise.all([
-    supabase.storage.from(LIBRARY_BUCKET).createSignedUrl(doc.storage_path!, 3600),
+  // No signed URL here: this renders on every refresh. The original link signs when clicked,
+  // and the viewer gets its link once per session (src/lib/files/pdf-cache.ts).
+  const [{ data: pages }, { data: texts }] = await Promise.all([
     isPdf
       ? supabase.from('document_pages').select('page, status, method, reason').eq('document_id', doc.id).order('page')
       : supabase.from('document_pages').select('page, status, method, text, reason').eq('document_id', doc.id).order('page'),
@@ -50,20 +51,18 @@ export async function FileSection({
 
   return (
     <section className="grid gap-4">
-      <RefreshWhileReading active={reading} />
+      <RefreshWhileReading documentIds={[doc.id]} active={reading} />
       <div className="grid gap-1 text-sm">
         <h3 className="text-base font-semibold">File</h3>
         <p>
           {doc.file_name} <span className="text-muted-foreground">({[doc.file_type, doc.file_size ? formatBytes(doc.file_size) : null, meta.page_count ? `${meta.page_count} pages` : null].filter(Boolean).join(', ')})</span>
         </p>
-        {signed?.signedUrl ? (
-          <p>
-            <a href={signed.signedUrl} target="_blank" rel="noopener noreferrer" className="text-link underline underline-offset-2">
-              Open the original
-            </a>{' '}
-            <span className="text-muted-foreground">(stored exactly as uploaded; the link works for an hour)</span>
-          </p>
-        ) : null}
+        <p>
+          <a href={`/api/files/${doc.id}/original`} target="_blank" rel="noopener noreferrer" className="text-link underline underline-offset-2">
+            Open the original
+          </a>{' '}
+          <span className="text-muted-foreground">(stored exactly as uploaded)</span>
+        </p>
         <p className={reading ? 'text-muted-foreground' : undefined}>{reading ? `Reading it now. ${meta.summary ?? ''}` : (meta.summary ?? 'Not read yet.')}</p>
         {meta.note_id ? (
           <p>
@@ -82,9 +81,8 @@ export async function FileSection({
 
       {isPdf && notRequested && !reading ? <ExtractPagesForm documentId={doc.id} pageCount={meta.page_count ?? rows.length} aiOn={aiOn} /> : null}
 
-      {isPdf && signed?.signedUrl ? (
+      {isPdf ? (
         <PdfViewerLoader
-          url={signed.signedUrl}
           documentId={doc.id}
           title={doc.title}
           pageCount={meta.page_count ?? null}

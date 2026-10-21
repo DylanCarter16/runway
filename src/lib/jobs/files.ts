@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { createAdminClient } from '@/lib/db/admin';
 import { LIBRARY_BUCKET } from '@/lib/files/constants';
 import { indexesWithoutAi, skipIndexPage } from '@/lib/files/index-pdf';
-import { failFirstPending, fileStep, processFileStep, type FileAi, type FileDoc, type FileMeta, type FileStore, type FinishedFile, type StoredPage } from '@/lib/files/process';
+import { WholeFileError } from '@/lib/files/file-store';
+import { recordStorageRead } from '@/lib/files/storage-reads';
+import { failFile, failFirstPending, fileStep, processFileStep, type FileAi, type FileDoc, type FileMeta, type FileStore, type FinishedFile, type StoredPage } from '@/lib/files/process';
 import type { KnownPage } from '@/lib/files/plan';
 import type { Json } from '@/lib/db/types';
 import { rebuildDocumentChunks, rebuildNoteChunks } from '@/lib/notes/store';
@@ -35,8 +37,11 @@ export function adminFileStore(admin: Admin): FileStore {
       if (error) throw new Error(`Could not read the file: ${error.message}`);
       return data ? ({ ...data, meta: (data.meta ?? {}) as FileMeta } as FileDoc) : null;
     },
-    async download(path) {
-      const { data, error } = await admin.storage.from(LIBRARY_BUCKET).download(path);
+    async download(doc) {
+      if (!doc.storage_path) throw new Error('This document has no stored file.');
+      // Counted before the download, so a file past its daily cap is never fetched.
+      await recordStorageRead(admin, doc.id, 'worker');
+      const { data, error } = await admin.storage.from(LIBRARY_BUCKET).download(doc.storage_path);
       if (error || !data) throw new Error(`Could not download the file: ${error?.message ?? 'no data'}`);
       return new Uint8Array(await data.arrayBuffer());
     },
@@ -188,23 +193,39 @@ async function finishFile(admin: Admin, store: FileStore, doc: FileDoc, file: Fi
   if (error) throw new Error(`Could not save the file's status: ${error.message}`);
 }
 
-const fileHandler: JobHandler = async (admin, job) => {
+export interface FileHandlerDeps {
+  store(admin: Admin): FileStore;
+  ai(admin: Admin, userId: string): Promise<FileAi>;
+}
+
+/** The files.process handler over a store and AI (tests pass in-memory ones). */
+export const makeFileHandler = (deps: FileHandlerDeps): JobHandler => async (admin, job) => {
   const { documentId, step = 0 } = job.payload as { documentId?: string; step?: number };
   if (!documentId) throw new Error('Job has no documentId.');
-  const store = adminFileStore(admin);
-  const ai = await fileAi(admin, job.user_id);
+  const store = deps.store(admin);
+  const ai = await deps.ai(admin, job.user_id);
 
   let result;
   try {
     result = await fileStep(store, ai, documentId, job.user_id);
   } catch (e) {
+    const message = (e instanceof Error ? e.message : String(e)).slice(0, 300);
+    // The file itself can't be had or opened: another step would only download it again.
+    if (e instanceof WholeFileError) {
+      if (e.retry && job.attempts < job.max_attempts) throw e;
+      await failFile(store, documentId, job.user_id, message);
+      return;
+    }
     if (job.attempts < job.max_attempts) throw e;
-    // Out of tries on one page: mark it and carry on with the rest of the file.
-    const message = e instanceof Error ? e.message : String(e);
-    const reason = `Could not read this page: ${message.slice(0, 300)}`;
+    // Out of tries on one page: mark it and carry on with the rest of the file. The next
+    // step always starts past a page; when there is none to mark, the file stops here.
+    const reason = `Could not read this page: ${message}`;
     const failing = await store.document(documentId, job.user_id);
     if (failing && indexesWithoutAi(failing)) await skipIndexPage(store, failing, reason);
-    else await failFirstPending(store, documentId, reason);
+    else if (!(await failFirstPending(store, documentId, reason))) {
+      await failFile(store, documentId, job.user_id, `Could not read the file: ${message}`);
+      return;
+    }
     await enqueue(admin, fileJob(job.user_id, documentId, step + 1));
     return;
   }
@@ -216,10 +237,16 @@ const fileHandler: JobHandler = async (admin, job) => {
     await enqueue(admin, fileJob(job.user_id, documentId, step + 1));
     return;
   }
-  await finishFile(admin, store, doc, result.file);
+  try {
+    await finishFile(admin, store, doc, result.file);
+  } catch (e) {
+    // Never leave a file "reading" after its last try: the page polls while it reads.
+    if (job.attempts < job.max_attempts) throw e;
+    await failFile(store, documentId, job.user_id, `Could not finish the file: ${(e instanceof Error ? e.message : String(e)).slice(0, 300)}`);
+  }
 };
 
-export const FILE_HANDLERS: Record<string, JobHandler> = { [JOB_FILE_PROCESS]: fileHandler };
+export const FILE_HANDLERS: Record<string, JobHandler> = { [JOB_FILE_PROCESS]: makeFileHandler({ store: adminFileStore, ai: fileAi }) };
 
 /** Queues reading a file (a new upload, an extract request, or a retry); returns the admin client for after(). */
 export async function queueFile(userId: string, documentId: string): Promise<Admin> {

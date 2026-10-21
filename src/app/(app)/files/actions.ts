@@ -7,6 +7,8 @@ import { createClient, requireUser } from '@/lib/db/server';
 import type { Json } from '@/lib/db/types';
 import { LIBRARY_BUCKET, MAX_UPLOAD_BYTES, UPLOAD_TYPES, storagePath } from '@/lib/files/constants';
 import type { FileMeta } from '@/lib/files/process';
+import { VIEWER_URL_SECONDS } from '@/lib/files/pdf-cache';
+import { StorageReadLimitError, recordStorageRead } from '@/lib/files/storage-reads';
 import { queueFile } from '@/lib/jobs/files';
 import { runQueuedJobs } from '@/lib/jobs/schedule';
 import type { ActionResult } from '../actions';
@@ -133,6 +135,34 @@ export async function getFileStatus(documentId: string): Promise<ActionResult<Fi
       nothingNew: meta.note_outcome === 'nothing_new',
     },
   };
+}
+
+export interface ViewerFile {
+  url: string;
+  /** Bytes; the viewer reads the file by range, so it needs the length up front. */
+  size: number | null;
+}
+
+/**
+ * A short-lived link to a stored file for the PDF viewer. The viewer asks once per browser
+ * session per file (src/lib/files/pdf-cache.ts) and again only when the link expires, so this
+ * count is the number of times the file was opened from storage.
+ */
+export async function viewerFileUrl(documentId: string): Promise<ActionResult<ViewerFile>> {
+  if (!z.uuid().safeParse(documentId).success) return { ok: false, error: 'Unknown file.' };
+  await requireUser();
+  const supabase = await createClient();
+  const { data: doc } = await supabase.from('documents').select('id, storage_path, file_size').eq('id', documentId).maybeSingle();
+  if (!doc?.storage_path) return { ok: false, error: 'Unknown file.' };
+  try {
+    await recordStorageRead(supabase, doc.id, 'viewer');
+  } catch (e) {
+    if (e instanceof StorageReadLimitError) return { ok: false, error: e.message };
+    throw e;
+  }
+  const { data, error } = await supabase.storage.from(LIBRARY_BUCKET).createSignedUrl(doc.storage_path, VIEWER_URL_SECONDS);
+  if (error || !data) return { ok: false, error: 'The file could not be opened. Try again in a minute.' };
+  return { ok: true, data: { url: data.signedUrl, size: doc.file_size } };
 }
 
 const extractSchema = z

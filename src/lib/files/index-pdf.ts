@@ -2,6 +2,7 @@ import { getDocumentProxy } from 'unpdf';
 import type { FileDoc, FileMeta, FileStore } from './process';
 import type { PlannedPage } from './plan';
 import { MIN_TEXT_CHARS } from './constants';
+import { downloadFile, wholeFile } from './file-store';
 import { detectHeadings, headingsByPage, mergeHeadings, pageText, pdfBookmarks, textPieces, type OutlineEntry, type OutlineSourceDoc } from './outline';
 
 // Indexing a book-sized PDF (PHASES.md Phase 10, Task 3), with no AI anywhere: each step reads
@@ -37,6 +38,16 @@ interface PdfProxy extends OutlineSourceDoc {
 async function openPdf(bytes: Uint8Array): Promise<PdfProxy> {
   // pdf.js may detach the buffer it is given: hand it a copy.
   return (await getDocumentProxy(new Uint8Array(bytes))) as unknown as PdfProxy;
+}
+
+/** The stored PDF, opened. Failing here is the whole file's problem, not one page's. */
+async function openStoredPdf(store: FileStore, doc: FileDoc): Promise<PdfProxy> {
+  const bytes = await downloadFile(store, doc);
+  try {
+    return await openPdf(bytes);
+  } catch (e) {
+    throw wholeFile(e, 'Could not open the PDF');
+  }
 }
 
 /** Books (`textbook`) are indexed page by page; Phase 9 reads other uploads in one pass. */
@@ -80,11 +91,10 @@ export async function indexPdfStep(
   doc: FileDoc,
   opts: { pagesPerStep?: number; budgetMs?: number } = {},
 ): Promise<IndexStepResult> {
-  if (!doc.storage_path) throw new Error('This document has no stored file.');
   const perStep = opts.pagesPerStep ?? INDEX_PAGES_PER_STEP;
   const budget = opts.budgetMs ?? INDEX_STEP_BUDGET_MS;
   const course = (await store.courses(doc.user_id)).find((c) => c.id === doc.course_id);
-  const pdf = await openPdf(await store.download(doc.storage_path));
+  const pdf = await openStoredPdf(store, doc);
   try {
     const meta: FileMeta = { ...doc.meta };
     let progress = meta.index;
@@ -133,7 +143,7 @@ export async function indexPdfStep(
  */
 export async function ensureOutline(store: FileStore, doc: FileDoc): Promise<void> {
   if (doc.meta.outline_source || !doc.storage_path) return;
-  const pdf = await openPdf(await store.download(doc.storage_path));
+  const pdf = await openStoredPdf(store, doc);
   try {
     let outline = await pdfBookmarks(pdf);
     let source: FileMeta['outline_source'] = 'bookmarks';

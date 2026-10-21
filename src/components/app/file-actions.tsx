@@ -5,16 +5,37 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { extractPages, retryFailedPages } from '@/app/(app)/files/actions';
+import { extractPages, getFileStatus, retryFailedPages } from '@/app/(app)/files/actions';
+import { combinedStatus, pollStep, startPoll, type PollState } from '@/lib/files/poll';
 
-/** Reloads the page every few seconds while a file is still being read. */
-export function RefreshWhileReading({ active }: { active: boolean }) {
+/**
+ * While files are being read, checks their status and reloads the page only when one changed,
+ * less often the longer nothing changes, and not at all after 15 quiet minutes (src/lib/files/poll.ts).
+ */
+export function RefreshWhileReading({ documentIds, active }: { documentIds: string[]; active: boolean }) {
   const router = useRouter();
+  const ids = documentIds.join(',');
   useEffect(() => {
-    if (!active) return;
-    const t = window.setInterval(() => router.refresh(), 4000);
-    return () => window.clearInterval(t);
-  }, [active, router]);
+    if (!active || !ids) return;
+    let stopped = false;
+    let timer = 0;
+    const check = async (state: PollState) => {
+      const results = await Promise.all(ids.split(',').map((id) => getFileStatus(id).catch(() => null)));
+      if (stopped) return;
+      const step = pollStep(state, combinedStatus(results.map((r) => (r?.ok ? r.data : null))), Date.now());
+      if (step.refresh) router.refresh();
+      if (step.next) {
+        const next = step.next;
+        timer = window.setTimeout(() => void check(next), next.delay);
+      }
+    };
+    const first = startPoll(Date.now());
+    timer = window.setTimeout(() => void check(first), first.delay);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+  }, [active, ids, router]);
   return null;
 }
 

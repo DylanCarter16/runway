@@ -5,6 +5,7 @@ import { pdfPageCount, readPdf, sha256Hex, slicePdf } from './pdf';
 import { ensureOutline, indexPdfStep, indexesWithoutAi, type IndexProgress } from './index-pdf';
 import type { OutlineEntry, OutlineSource } from './outline';
 import { RETRY_ALONE, aiOffReason, describePages, planPages, stitchPages, type KnownPage, type PageInput, type PageRow, type PlannedPage } from './plan';
+import { downloadFile, stepStore, wholeFile } from './file-store';
 import { transcribePages, type Attachment } from './transcribe';
 
 // One step of reading an uploaded file (PHASES.md Phase 9, part A). The first step reads the
@@ -59,7 +60,8 @@ export interface CourseRow {
 
 export interface FileStore {
   document(id: string, userId: string): Promise<FileDoc | null>;
-  download(path: string): Promise<Uint8Array>;
+  /** The stored original. Counted per read (src/lib/files/storage-reads.ts); each step reads it at most once. */
+  download(doc: Pick<FileDoc, 'id' | 'storage_path'>): Promise<Uint8Array>;
   courses(userId: string): Promise<CourseRow[]>;
   pages(documentId: string): Promise<StoredPage[]>;
   /** Inserts or replaces rows by (document_id, page). */
@@ -95,9 +97,17 @@ function courseLabel(course: CourseRow | undefined): string {
   return course ? `${course.code}${course.title ? ` ${course.title}` : ''}` : 'No course';
 }
 
+/** Plans every page. Any failure here is the whole file's: nothing was planned, so no page can be skipped past it. */
 async function planFile(store: FileStore, doc: FileDoc, course: CourseRow | undefined, existing: StoredPage[]): Promise<void> {
-  if (!doc.storage_path) throw new Error('This document has no stored file.');
-  const bytes = await store.download(doc.storage_path);
+  try {
+    await planPagesOf(store, doc, course, existing);
+  } catch (e) {
+    throw wholeFile(e, 'Could not read the file');
+  }
+}
+
+async function planPagesOf(store: FileStore, doc: FileDoc, course: CourseRow | undefined, existing: StoredPage[]): Promise<void> {
+  const bytes = await downloadFile(store, doc);
   const aiOn = Boolean(course?.ai_allowed);
   const range = doc.meta.extract ?? null;
 
@@ -146,7 +156,8 @@ async function attachmentFor(doc: FileDoc, bytes: Uint8Array, pages: number[]): 
  * Runs one step. Throws only for errors worth retrying (a single page Claude couldn't read,
  * storage down); the job runner retries, and the handler marks the page failed at the end.
  */
-export async function processFileStep(store: FileStore, ai: FileAi, documentId: string, userId: string): Promise<StepResult> {
+export async function processFileStep(anyStore: FileStore, ai: FileAi, documentId: string, userId: string): Promise<StepResult> {
+  const store = stepStore(anyStore);
   const doc = await store.document(documentId, userId);
   if (!doc) return { state: 'missing' };
   const courses = await store.courses(userId);
@@ -170,7 +181,7 @@ export async function processFileStep(store: FileStore, ai: FileAi, documentId: 
     } else {
       const batch = pending[0].reason === RETRY_ALONE ? [pending[0]] : pending.slice(0, PAGES_PER_CALL).filter((r) => r.reason !== RETRY_ALONE);
       const pages = batch.map((r) => r.page);
-      const bytes = await store.download(doc.storage_path!);
+      const bytes = await downloadFile(store, doc);
       const attachment = await attachmentFor(doc, bytes, pages);
       if (!attachment) {
         if (batch.length > 1) for (const r of batch) await store.updatePage(r.id, { reason: RETRY_ALONE });
@@ -224,7 +235,8 @@ export async function processFileStep(store: FileStore, ai: FileAi, documentId: 
  * (Phase 10); then the Phase 9 step finishes them, or reads other files. A finished PDF gets
  * its outline once.
  */
-export async function fileStep(store: FileStore, ai: FileAi, documentId: string, userId: string): Promise<StepResult> {
+export async function fileStep(anyStore: FileStore, ai: FileAi, documentId: string, userId: string): Promise<StepResult> {
+  const store = stepStore(anyStore);
   const doc = await store.document(documentId, userId);
   if (!doc) return { state: 'missing' };
   if (indexesWithoutAi(doc)) {
@@ -239,9 +251,19 @@ export async function fileStep(store: FileStore, ai: FileAi, documentId: string,
   return result;
 }
 
-/** Marks the page a failing job was reading, so the file can finish without it. */
-export async function failFirstPending(store: FileStore, documentId: string, reason: string): Promise<void> {
+/**
+ * Marks the page a failing job was reading, so the file can finish without it. Returns false
+ * when no page was waiting: then there is nothing to move past, and the file has to stop.
+ */
+export async function failFirstPending(store: FileStore, documentId: string, reason: string): Promise<boolean> {
   const rows = await store.pages(documentId);
   const first = rows.filter((r) => r.status === 'pending').sort((a, b) => a.page - b.page)[0];
   if (first) await store.updatePage(first.id, { status: 'failed', reason });
+  return Boolean(first);
+}
+
+/** Ends a file that can't be read: no more steps, and the page stops waiting on it. */
+export async function failFile(store: FileStore, documentId: string, userId: string, reason: string): Promise<void> {
+  const doc = await store.document(documentId, userId);
+  if (doc) await store.updateMeta(doc, { ...doc.meta, status: 'failed', summary: reason, extract: null });
 }

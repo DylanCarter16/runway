@@ -84,7 +84,8 @@ export async function readPdf(bytes: Uint8Array): Promise<PdfInfo> {
   const pageCount = Math.max(totalPages, doc.getPageCount());
   const pages: PdfPage[] = [];
   for (let i = 0; i < pageCount; i++) {
-    const t = (text[i] ?? '').trim();
+    // Postgres text can't hold NUL, which some fonts' text layers have: a save that always fails would retry forever.
+    const t = (text[i] ?? '').replace(/\u0000/g, '').trim();
     pages.push({ page: i + 1, text: t, fingerprint: pageFingerprint(doc, Math.min(i, doc.getPageCount() - 1), t) });
   }
   return { pageCount, pages };

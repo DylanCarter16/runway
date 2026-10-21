@@ -1125,6 +1125,47 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_reads: {
+        Row: {
+          created_at: string
+          day: string
+          document_id: string
+          id: string
+          reads: number
+          updated_at: string
+          user_id: string
+          via: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          document_id: string
+          id?: string
+          reads?: number
+          updated_at?: string
+          user_id?: string
+          via: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          document_id?: string
+          id?: string
+          reads?: number
+          updated_at?: string
+          user_id?: string
+          via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storage_reads_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_runs: {
         Row: {
           error: string | null
@@ -1297,6 +1338,10 @@ export type Database = {
           parent_type: string
           similarity: number
         }[]
+      }
+      record_storage_read: {
+        Args: { p_document_id: string; p_via: string }
+        Returns: number
       }
       requeue_stale_jobs: { Args: { p_stale?: string }; Returns: number }
       runway_call: { Args: { path: string }; Returns: number }

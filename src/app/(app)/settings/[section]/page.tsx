@@ -37,7 +37,8 @@ import { resolveRule } from '@/lib/reminders/rules';
 import { runSummary, sourceHealth, type RunRow } from '@/lib/sync/summary';
 import { termDatedFilter } from '@/lib/term/range';
 import { SETTINGS_SECTIONS } from '@/lib/ui';
-import { formatAgo, formatListDate, fromTorontoLocal } from '@/lib/time';
+import { formatAgo, formatListDate, fromTorontoLocal, toTorontoDate } from '@/lib/time';
+import { STORAGE_READ_CAPS, STORAGE_READ_WARN, summarizeStorageReads, type StorageReadRow } from '@/lib/files/storage-reads';
 import { cn } from '@/lib/utils';
 
 export async function generateMetadata({ params }: PageProps<'/settings/[section]'>) {
@@ -661,10 +662,17 @@ export default async function SettingsSection({ params, searchParams }: PageProp
     }
 
     case 'data': {
-      const [{ data: terms }, { data: termCourses }] = await Promise.all([
+      const today = toTorontoDate(now);
+      const [{ data: terms }, { data: termCourses }, { data: readRows, error: readsError }] = await Promise.all([
         supabase.from('terms').select('id, name, starts_on, ends_on').order('starts_on', { ascending: false }),
         supabase.from('courses').select('id, term_id'),
+        supabase
+          .from('storage_reads')
+          .select('document_id, via, day, reads, updated_at, documents(title)')
+          .gte('day', toTorontoDate(new Date(now.getTime() - 6 * 86_400_000)))
+          .limit(1000),
       ]);
+      const reads = summarizeStorageReads((readRows ?? []) as StorageReadRow[], today);
       const [itemCounts, termWideCounts] = await Promise.all([
         Promise.all((termCourses ?? []).map((c) => supabase.from('items').select('id', { count: 'exact', head: true }).eq('course_id', c.id))),
         Promise.all(
@@ -694,6 +702,35 @@ export default async function SettingsSection({ params, searchParams }: PageProp
                 Download export
               </a>
             </div>
+          </Block>
+          <Block title="File reads">
+            <p className="max-w-prose text-sm text-muted-foreground">
+              Each time a stored file is fetched from storage: the viewer opening it (once per browser session), Open the original, the job
+              that reads it, and the export. Storage egress on the free plan is 5 GB a month, so a file read more than {STORAGE_READ_WARN}{' '}
+              times in a day is marked. Past {STORAGE_READ_CAPS.worker} reads in a day the job stops reading a file until tomorrow, and the
+              viewer past {STORAGE_READ_CAPS.viewer}.
+            </p>
+            {readsError ? (
+              <p className="text-sm text-late">File reads aren&apos;t counted yet: migration 20261021005208_storage_reads.sql is not applied.</p>
+            ) : reads.length ? (
+              <ul className="divide-y divide-rule border-y border-rule text-sm">
+                {reads.map((r) => (
+                  <li key={r.documentId} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-2">
+                    <Link href={`/library/${r.documentId}`} className="min-w-0 break-words text-link underline-offset-2 hover:underline">
+                      {r.title}
+                    </Link>
+                    <span className={cn('tabular', r.flagged ? 'font-semibold text-late' : 'text-muted-foreground')}>
+                      {r.today} today
+                      {r.todayBy.length ? ` (${r.todayBy.map((v) => `${v.via} ${v.reads}`).join(', ')})` : ''}, {r.week} this week, last{' '}
+                      {formatAgo(new Date(r.lastAt), now)}
+                      {r.flagged ? '. Read too often' : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No file was read from storage in the last 7 days.</p>
+            )}
           </Block>
           <Block title="Delete a term">
             {terms?.length ? (

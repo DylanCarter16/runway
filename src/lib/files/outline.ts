@@ -42,7 +42,8 @@ export function textPieces(items: unknown[]): TextPiece[] {
 
 /** A page's text the way unpdf's extractText builds it, so stored text matches Phase 9's. */
 export function pageText(pieces: TextPiece[]): string {
-  return pieces.map((p) => p.str + (p.hasEOL ? '\n' : '')).join('').trim();
+  // No NUL: Postgres text can't store it (see readPdf).
+  return pieces.map((p) => p.str + (p.hasEOL ? '\n' : '')).join('').replace(/\u0000/g, '').trim();
 }
 
 interface Line {

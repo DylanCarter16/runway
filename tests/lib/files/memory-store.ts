@@ -21,10 +21,10 @@ export class MemoryFileStore implements FileStore {
     return d && d.user_id === userId ? structuredClone(d) : null;
   }
 
-  async download(path: string) {
+  async download(doc: Pick<FileDoc, 'id' | 'storage_path'>) {
     this.downloads++;
-    const f = this.files.get(path);
-    if (!f) throw new Error(`No file at ${path}`);
+    const f = this.files.get(doc.storage_path ?? '');
+    if (!f) throw new Error(`No file at ${doc.storage_path}`);
     return new Uint8Array(f);
   }
 

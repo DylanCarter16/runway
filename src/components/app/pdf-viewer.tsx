@@ -8,7 +8,8 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { searchPages, type PageHit } from '@/app/(app)/files/actions';
+import { searchPages, viewerFileUrl, type PageHit } from '@/app/(app)/files/actions';
+import { PDF_RANGE_OPTIONS, openCachedFile, rangeTransportFor, type FileLink } from '@/lib/files/pdf-cache';
 import type { OutlineEntry } from '@/lib/files/outline';
 import { cn } from '@/lib/utils';
 import { MarkedSnippet } from './marked-snippet';
@@ -16,12 +17,45 @@ import { MarkedSnippet } from './marked-snippet';
 // The in-app PDF viewer (PHASES.md Phase 10, Task 3): one page at a time, page number input,
 // fit width, fit page, and zoom steps, a selectable text layer, the stored outline, and search
 // inside the document. pdf.js runs in a worker; react-pdf asks for the worker in this module.
+// The file comes from the session cache by document id, never from a URL prop: a page refresh
+// used to hand the viewer a new signed URL and react-pdf downloaded the whole PDF again.
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
 
 type Zoom = 'width' | 'page' | number;
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 4;
+
+type Transport = InstanceType<typeof pdfjs.PDFDataRangeTransport>;
+
+async function fileLink(documentId: string): Promise<FileLink> {
+  const res = await viewerFileUrl(documentId);
+  if (!res.ok) throw new Error(res.error);
+  return res.data;
+}
+
+/**
+ * pdf.js's view of the cached file: a fresh range transport per load (pdf.js aborts it on
+ * unmount), over bytes that stay in the session cache. Only the document id is a dependency.
+ */
+function useCachedPdf(documentId: string): { source: Transport | null; error: string | null } {
+  const [state, setState] = useState<{ id: string; source: Transport | null; error: string | null }>({ id: documentId, source: null, error: null });
+  useEffect(() => {
+    let live = true;
+    const fail = (e: unknown) => {
+      if (live) setState({ id: documentId, source: null, error: e instanceof Error ? e.message : String(e) });
+    };
+    openCachedFile(documentId, fileLink)
+      .then((file) => rangeTransportFor(pdfjs.PDFDataRangeTransport, file, fail))
+      .then((source) => {
+        if (live) setState({ id: documentId, source, error: null });
+      }, fail);
+    return () => {
+      live = false;
+    };
+  }, [documentId]);
+  return state.id === documentId ? state : { source: null, error: null };
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -41,7 +75,6 @@ function currentEntry(outline: OutlineEntry[], page: number): number {
 }
 
 export interface PdfViewerProps {
-  url: string;
   documentId: string;
   title: string;
   pageCount: number | null;
@@ -49,7 +82,7 @@ export interface PdfViewerProps {
   initialPage: number;
 }
 
-export default function PdfViewer({ url, documentId, title, pageCount, outline, initialPage }: PdfViewerProps) {
+export default function PdfViewer({ documentId, title, pageCount, outline, initialPage }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number | null>(pageCount);
   const [page, setPage] = useState(initialPage);
   const [pageInput, setPageInput] = useState(String(initialPage));
@@ -63,7 +96,8 @@ export default function PdfViewer({ url, documentId, title, pageCount, outline, 
   const [searched, setSearched] = useState('');
   const [isSearching, startSearch] = useTransition();
   const frame = useRef<HTMLDivElement>(null);
-  const file = useMemo(() => ({ url }), [url]);
+  const { source, error: fileError } = useCachedPdf(documentId);
+  const file = useMemo(() => (source ? { range: source } : null), [source]);
 
   useEffect(() => {
     const el = frame.current;
@@ -281,8 +315,10 @@ export default function PdfViewer({ url, documentId, title, pageCount, outline, 
           {outlineList}
         </nav>
         <div ref={frame} className="min-w-0 overflow-auto rounded-md border border-rule bg-sheet" data-testid="pdf-frame">
+          {fileError ? <p className="p-4 text-sm text-late">{fileError}</p> : null}
           <Document
             file={file}
+            options={PDF_RANGE_OPTIONS}
             suspense={false}
             onLoadSuccess={(pdf) => {
               setNumPages(pdf.numPages);
@@ -290,6 +326,7 @@ export default function PdfViewer({ url, documentId, title, pageCount, outline, 
             }}
             onItemClick={({ pageNumber }) => goTo(pageNumber)}
             loading={<p className="p-4 text-sm text-muted-foreground">Loading the PDF…</p>}
+            noData={fileError ? null : <p className="p-4 text-sm text-muted-foreground">Loading the PDF…</p>}
             error={<p className="p-4 text-sm text-late">The PDF could not be opened here. Use Open the original instead.</p>}
             externalLinkTarget="_blank"
             externalLinkRel="noopener noreferrer"

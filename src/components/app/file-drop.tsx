@@ -80,6 +80,10 @@ export function useFileUploads(options: UploadOptions) {
           router.refresh();
           return;
         }
+        if (res.ok && res.data.status === 'failed') {
+          patch(key, { state: 'error', message: res.data.summary ?? 'Reading the file failed. It is stored as uploaded.' });
+          return;
+        }
         if (res.ok && res.data.summary) patch(key, { message: res.data.summary });
       }
       patch(key, { message: 'Still reading. The Library shows progress.' });

@@ -1,5 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/db/types';
+import { StorageReadLimitError, recordStorageRead } from '@/lib/files/storage-reads';
 import { EXPORT_TABLES, type ExportFile, type ExportInput, type ExportRow, type ExportTable } from './build';
 
 // Reads everything for the export through the signed-in user's client, so RLS decides
@@ -24,10 +26,18 @@ async function loadTable(db: SupabaseClient, table: ExportTable): Promise<Export
 }
 
 async function loadFiles(db: SupabaseClient, documents: ExportRow[]): Promise<{ files: ExportFile[]; missingFiles: string[] }> {
-  const paths = [...new Set(documents.map((d) => d.storage_path).filter((p): p is string => typeof p === 'string' && p.length > 0))];
+  const byPath = new Map<string, string>();
+  for (const d of documents) if (typeof d.storage_path === 'string' && d.storage_path.length > 0 && !byPath.has(d.storage_path)) byPath.set(d.storage_path, String(d.id));
   const files: ExportFile[] = [];
   const missingFiles: string[] = [];
-  for (const path of paths) {
+  for (const [path, documentId] of byPath) {
+    try {
+      await recordStorageRead(db as SupabaseClient<Database>, documentId, 'export');
+    } catch (e) {
+      if (!(e instanceof StorageReadLimitError)) throw e;
+      missingFiles.push(path);
+      continue;
+    }
     const { data, error } = await db.storage.from(LIBRARY_BUCKET).download(path);
     if (error || !data) missingFiles.push(path);
     else files.push({ path, bytes: new Uint8Array(await data.arrayBuffer()) });

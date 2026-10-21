@@ -28,7 +28,7 @@ export function CourseFiles({ courseId, courseCode, aiOn, files }: { courseId: s
   const uploads = files.filter((f) => f.kind !== 'textbook');
   return (
     <section aria-labelledby="course-files" className="grid gap-3">
-      <RefreshWhileReading active={files.some((f) => f.reading)} />
+      <RefreshWhileReading documentIds={files.filter((f) => f.reading).map((f) => f.id)} active={files.some((f) => f.reading)} />
       <h3 id="course-files" className="text-lg font-semibold">
         Files
       </h3>

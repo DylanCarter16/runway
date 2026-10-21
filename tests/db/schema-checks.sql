@@ -232,3 +232,19 @@ select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222
 select 'T34 other user gets no pages (RLS): ' || (count(*) = 0)::text from search_pages('load-use hazard');
 select 'T35 other user sees no page rows: ' || (count(*) = 0)::text from document_pages;
 rollback;
+
+-- ===== 2026-10-20: storage reads (egress guard) =====
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+insert into documents (kind, title, raw_text, content_hash, storage_path, file_name, file_type)
+values ('upload', 'Slides', '', 'hash-reads-1', '11111111-1111-1111-1111-111111111111/r/slides.pdf', 'slides.pdf', 'application/pdf');
+select record_storage_read(id, 'viewer') from documents where content_hash = 'hash-reads-1';
+select 'T36 second read counts 2: ' || (record_storage_read(id, 'viewer') = 2)::text from documents where content_hash = 'hash-reads-1';
+select 'T37 one row per document, reader, and day: ' || (count(*) = 1 and sum(reads) = 2)::text from storage_reads;
+select set_config('test.reads_doc', id::text, true) from documents where content_hash = 'hash-reads-1';
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', true);
+select 'T38 other user cannot count Dylan''s file: '
+       || (record_storage_read(current_setting('test.reads_doc')::uuid, 'viewer') is null)::text;
+select 'T39 other user sees no read rows: ' || (count(*) = 0)::text from storage_reads;
+rollback;
